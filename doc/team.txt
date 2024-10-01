@@ -2,3 +2,4 @@ Name | Username on Github
 Hirdae S. | YoniKAr
 Xavier | Xavialess
 Simi Kamali | kams65
+Simon Marcotte | simonMarcotte
