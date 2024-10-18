@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1073874736080",
+    "project_id": "potato1-events",
+    "storage_bucket": "potato1-events.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1073874736080:android:cc5ef644ac001e07b61fd5",
+        "android_client_info": {
+          "package_name": "com.example.potato1_events"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC2OprdoZwST4wU7bKUZKAr_1tQneljrDU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
