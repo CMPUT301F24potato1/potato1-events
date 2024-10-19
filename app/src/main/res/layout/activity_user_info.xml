@@ -11,7 +11,6 @@
         android:layout_height="wrap_content"
         android:padding="16dp">
 
-        <!-- Profile Picture -->
         <ImageView
             android:id="@+id/profileImageView"
             android:layout_width="100dp"
@@ -23,7 +22,6 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent" />
 
-        <!-- Upload Picture Button -->
         <Button
             android:id="@+id/uploadPictureButton"
             android:layout_width="wrap_content"
@@ -57,7 +55,6 @@
             app:layout_constraintEnd_toEndOf="parent"
             android:layout_marginTop="8dp" />
 
-        <!-- Phone Number Input (Optional) -->
         <EditText
             android:id="@+id/phoneEditText"
             android:layout_width="0dp"
@@ -69,7 +66,6 @@
             app:layout_constraintEnd_toEndOf="parent"
             android:layout_marginTop="8dp" />
 
-        <!-- Save Button -->
         <Button
             android:id="@+id/saveButton"
             android:layout_width="wrap_content"
