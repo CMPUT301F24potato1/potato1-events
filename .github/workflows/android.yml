@@ -22,22 +22,23 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: '22'
+          cache: gradle
 
       # Cache Gradle packages
-      - name: Cache Gradle packages
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
+      # - name: Cache Gradle packages
+      #   uses: actions/cache@v3
+      #   with:
+      #     path: |
+      #       ~/.gradle/caches
+      #       ~/.gradle/wrapper
+      #     key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+      #     restore-keys: |
+      #       ${{ runner.os }}-gradle-
 
       # Build the project
       - name: Build with Gradle
         run: ./gradlew build
-
+      
       # Run Lint Checks on main branch
       - name: Run Lint Checks
         if: github.ref == 'refs/heads/main'
@@ -94,7 +95,7 @@ jobs:
           {
             "username": "GitHub Actions",
             "embeds": [{
-              "title": "Build $STATUS",
+              "title": "Regression $STATUS",
               "color": $COLOR,
               "fields": [
                 {
