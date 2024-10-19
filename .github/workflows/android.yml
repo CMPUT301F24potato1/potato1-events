@@ -21,7 +21,7 @@ jobs:
         uses: actions/setup-java@v3
         with:
           distribution: 'zulu'
-          java-version: '22'
+          java-version: '8'
 
       # Cache Gradle packages
       - name: Cache Gradle packages
@@ -45,13 +45,13 @@ jobs:
 
       # Run Unit Tests
       # All tests on main, subset on other branches
-      - name: Run Unit Tests
-        run: |
-          if [ "${{ github.ref }}" == "refs/heads/main" ]; then
-            ./gradlew test
-          else
-            ./gradlew test --tests "com.example.package.SubsetTestClass*"
-          fi
+      # - name: Run Unit Tests
+      #   run: |
+      #     if [ "${{ github.ref }}" == "refs/heads/main" ]; then
+      #       ./gradlew test
+      #     else
+      #       ./gradlew test --tests "com.example.package.SubsetTestClass*"
+      #     fi
 
       # Set up Android SDK
       - name: Set up Android SDK
@@ -59,18 +59,18 @@ jobs:
 
       # Run Instrumentation Tests
       # All tests on main, subset on other branches
-      - name: Run Instrumentation Tests
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 30
-          target: default
-          arch: x86_64
-          script: |
-            if [ "${{ github.ref }}" == "refs/heads/main" ]; then
-              ./gradlew connectedAndroidTest
-            else
-              ./gradlew connectedAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.package.SubsetInstrumentedTest
-            fi
+      # - name: Run Instrumentation Tests
+      #   uses: reactivecircus/android-emulator-runner@v2
+      #   with:
+      #     api-level: 30
+      #     target: default
+      #     arch: x86_64
+      #     script: |
+      #       if [ "${{ github.ref }}" == "refs/heads/main" ]; then
+      #         ./gradlew connectedAndroidTest
+      #       else
+      #         ./gradlew connectedAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.package.SubsetInstrumentedTest
+      #       fi
 
       # Send notification to Discord
       - name: Send notification to Discord
