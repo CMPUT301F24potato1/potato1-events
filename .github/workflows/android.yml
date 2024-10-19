@@ -100,12 +100,12 @@ jobs:
                 {
                   "name": "Repository",
                   "value": "${{ github.repository }}",
-                  "inline": true
+                  "inline": false
                 },
                 {
                   "name": "Branch",
                   "value": "$BRANCH_NAME",
-                  "inline": true
+                  "inline": false
                 },
                 {
                   "name": "Commit",
@@ -115,7 +115,7 @@ jobs:
                 {
                   "name": "Author",
                   "value": "$AUTHOR_NAME",
-                  "inline": true
+                  "inline": false
                 },
                 {
                   "name": "Message",
