@@ -97,11 +97,6 @@ jobs:
               "color": $COLOR,
               "fields": [
                 {
-                  "name": "Repository",
-                  "value": "${{ github.repository }}",
-                  "inline": false
-                },
-                {
                   "name": "Branch",
                   "value": "$BRANCH_NAME",
                   "inline": false
