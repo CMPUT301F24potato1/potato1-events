@@ -1,1 +1,10 @@
 Event Lottery App
+
+Steps to Check Code in
+
+1. Commit your Changes on the respective branch
+2. Pull New Canges from Main via merge
+3. Resolve Merge Conflicts (if any)
+4. Push to your branch
+5. Create Pull Request on main from your branch
+
