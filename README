@@ -6,5 +6,6 @@ Steps to Check Code in
 2. Pull New Canges from Main via merge
 3. Resolve Merge Conflicts (if any)
 4. Push to your branch
-5. Create Pull Request on main from your branch
+5. Wait for Regression to Complete
+6. Create Pull Request on main from your branch
 
