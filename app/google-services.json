@@ -1,6 +1,7 @@
 {
   "project_info": {
     "project_number": "1073874736080",
+    "firebase_url": "https://potato1-events-default-rtdb.firebaseio.com",
     "project_id": "potato1-events",
     "storage_bucket": "potato1-events.appspot.com"
   },

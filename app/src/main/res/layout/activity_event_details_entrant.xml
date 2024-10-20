@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/eventDetailsScrollView"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:id="@+id/eventDetailsLinearLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Event Poster -->
+        <ImageView
+            android:id="@+id/eventPosterImageView"
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            android:scaleType="centerCrop"
+            android:contentDescription="Event Poster" />
+
+        <!-- Event Name -->
+        <TextView
+            android:id="@+id/eventNameTextView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Event Name"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:layout_marginTop="16dp" />
+
+        <!-- Event Description -->
+        <TextView
+            android:id="@+id/eventDescriptionTextView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Event Description"
+            android:layout_marginTop="8dp" />
+
+        <!-- Event Time -->
+        <TextView
+            android:id="@+id/eventTimeTextView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Event Time"
+            android:layout_marginTop="8dp" />
+
+        <!-- Event Capacity -->
+        <TextView
+            android:id="@+id/eventCapacityTextView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Event Capacity"
+            android:layout_marginTop="8dp" />
+
+        <!-- Number of People Signed Up -->
+        <TextView
+            android:id="@+id/eventSignedUpTextView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Signed Up"
+            android:layout_marginTop="8dp" />
+
+    </LinearLayout>
+</ScrollView>

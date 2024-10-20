@@ -11,21 +11,16 @@ import android.widget.ImageView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 
 public class UserInfoActivity extends AppCompatActivity {
 
     private String userType;
     private String deviceId;
-    private DatabaseReference databaseReference;
+    private FirebaseFirestore firestore;
 
     private ImageView profileImageView;
     private Button uploadPictureButton;
@@ -44,8 +39,8 @@ public class UserInfoActivity extends AppCompatActivity {
         // Get device ID
         deviceId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
 
-        // Initialize Firebase reference
-        databaseReference = FirebaseDatabase.getInstance().getReference("Users").child(userType + "s");
+        // Initialize Firebase Firestore
+        firestore = FirebaseFirestore.getInstance();
 
         // Initialize views
         profileImageView = findViewById(R.id.profileImageView);
@@ -54,9 +49,6 @@ public class UserInfoActivity extends AppCompatActivity {
         emailEditText = findViewById(R.id.emailEditText);
         phoneEditText = findViewById(R.id.phoneEditText);
         saveButton = findViewById(R.id.saveButton);
-
-        // Check if user already exists
-        checkIfUserExists();
 
         // Set up listeners
         uploadPictureButton.setOnClickListener(v -> {
@@ -67,32 +59,12 @@ public class UserInfoActivity extends AppCompatActivity {
         saveButton.setOnClickListener(v -> saveUserInfo());
     }
 
-    private void checkIfUserExists() {
-        databaseReference.child(deviceId).addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                if(snapshot.exists()) {
-                    // User exists, proceed to the next activity
-                    navigateToHomePage();
-                } else {
-                    // User does not exist, stay on this page for input
-                }
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-                // Handle errors here
-                Toast.makeText(UserInfoActivity.this, "Database error: " + error.getMessage(), Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
     private void saveUserInfo() {
         String name = nameEditText.getText().toString().trim();
         String email = emailEditText.getText().toString().trim();
         String phoneNumber = phoneEditText.getText().toString().trim();
 
-        if(TextUtils.isEmpty(name) || TextUtils.isEmpty(email)) {
+        if (TextUtils.isEmpty(name) || TextUtils.isEmpty(email)) {
             Toast.makeText(this, "Please enter all required fields", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -100,26 +72,25 @@ public class UserInfoActivity extends AppCompatActivity {
         // Create user object
         User user = new User(name, email, phoneNumber, null); // null for profile picture URL (implement upload later)
 
-        // Save to Firebase
-        databaseReference.child(deviceId).setValue(user).addOnCompleteListener(task -> {
-            if(task.isSuccessful()) {
-                Toast.makeText(UserInfoActivity.this, "User information saved", Toast.LENGTH_SHORT).show();
-                navigateToHomePage();
-            } else {
-                Toast.makeText(UserInfoActivity.this, "Error saving user information", Toast.LENGTH_SHORT).show();
-            }
-        });
+        // Save to Firestore
+        firestore.collection(userType + "s").document(deviceId).set(user)
+                .addOnSuccessListener(aVoid -> {
+                    Toast.makeText(UserInfoActivity.this, "User information saved", Toast.LENGTH_SHORT).show();
+                    navigateToHomePage();
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(UserInfoActivity.this, "Error saving user information: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
     }
 
     private void navigateToHomePage() {
-        if(userType.equals("ENTRANT")) {
-            //FIXME
-            //Intent intent = new Intent(UserInfoActivity.this, EntrantHomeActivity.class);
-            //startActivity(intent);
-        } else if(userType.equals("ORGANIZER")) {
-            //FIXME
-            //Intent intent = new Intent(UserInfoActivity.this, OrganizerHomeActivity.class);
-            //startActivity(intent);
+        if (userType.equals("Entrant")) {
+            Intent intent = new Intent(UserInfoActivity.this, EntrantHomeActivity.class);
+            startActivity(intent);
+        } else if (userType.equals("Organizer")) {
+            // Placeholder for OrganizerHomeActivity
+            // Intent intent = new Intent(UserInfoActivity.this, OrganizerHomeActivity.class);
+            // startActivity(intent);
         }
         finish(); // Close current activity
     }
