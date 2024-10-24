@@ -32,7 +32,6 @@ public class Users_OpsTest {
     public void setUp() {
         MockitoAnnotations.openMocks(this);
         // Initialize the repository with the mocked Firestore instance
-//        entrantRepository = new EntrantRepository(mockFirestore);
 
         // Mock the behavior of Firestore's collection and document methods
         when(mockFirestore.collection("Entrants")).thenReturn(mockCollectionReference);
