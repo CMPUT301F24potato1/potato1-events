@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - verification
 
 jobs:
   build:
