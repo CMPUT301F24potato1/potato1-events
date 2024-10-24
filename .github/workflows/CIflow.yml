@@ -3,7 +3,8 @@ name: Android CI
 on:
   push:
     branches:
-      - '**'
+      - main
+      - verification
 
 jobs:
   build:

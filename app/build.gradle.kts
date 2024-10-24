@@ -47,6 +47,10 @@ dependencies {
     implementation(libs.activity)
     implementation(libs.firebase.firestore)
     testImplementation(libs.junit)
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.7.0")
+    testImplementation("org.junit.jupiter:junit-jupiter-params:5.7.0")
+    testImplementation("org.assertj:assertj-core:3.17.2")
+    testImplementation("org.mockito:mockito-core:3.5.13")
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
 }
