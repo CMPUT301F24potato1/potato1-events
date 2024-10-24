@@ -1,0 +1,25 @@
+name: Verification Branch CI
+
+on:
+  push:
+    branches:
+      - verification
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Set up JDK 11
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '22'
+          cache: gradle
+
+      - name: Run Unit Tests
+        run: ./gradlew test
