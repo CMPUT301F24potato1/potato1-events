@@ -44,14 +44,8 @@ jobs:
         run: ./gradlew lint
 
       # Run Unit Tests
-      # All tests on main, subset on other branches
-      # - name: Run Unit Tests
-      #   run: |
-      #     if [ "${{ github.ref }}" == "refs/heads/main" ]; then
-      #       ./gradlew test
-      #     else
-      #       ./gradlew test --tests "com.example.package.SubsetTestClass*"
-      #     fi
+      - name: Run tests
+      - run: ./gradlew test
 
       # Set up Android SDK
       - name: Set up Android SDK
