@@ -71,9 +71,9 @@ public class EventDetailsEntrantActivity extends AppCompatActivity {
         // Set event details
         eventNameTextView.setText(event.getName());
         eventDescriptionTextView.setText(event.getDescription());
-        eventTimeTextView.setText(event.getTime().toString()); // Assuming 'time' field exists
+        eventTimeTextView.setText(event.getRegistrationStart().toString()); // Assuming 'time' field exists
         eventCapacityTextView.setText("Capacity: " + event.getCapacity());
-        eventSignedUpTextView.setText("Signed Up: " + event.getSignedUp()); // Assuming 'signedUp' field exists
+        eventSignedUpTextView.setText("Signed Up: " + event.getCapacity()); // Assuming 'signedUp' field exists
 
         // Load event poster using Glide or any other image loading library
         //FIXME
