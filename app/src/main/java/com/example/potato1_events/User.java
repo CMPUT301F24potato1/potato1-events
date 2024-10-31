@@ -1,20 +1,24 @@
 package com.example.potato1_events;
 
 import com.google.firebase.firestore.Exclude;
+import com.google.firebase.firestore.IgnoreExtraProperties;
 
 /**
  * Represents a user within the Potato1 Events application.
  * This class includes all necessary information for entrants, organizers, and administrators.
  */
+@IgnoreExtraProperties // Ensures Firestore ignores any extra fields not mapped in this class
 public class User {
     private String userId; // Firebase Authentication UID
     private String role; // Entrant, Organizer, Admin
     private String name;
     private String email;
     private String phoneNumber;
-    private String profilePictureUrl;
+    private String imagePath; // Firebase Storage path for profile picture
     private boolean notificationsEnabled; // For opting in/out of notifications
     private long createdAt; // Timestamp of account creation
+    private long updatedAt; // Timestamp of last update
+    private boolean isActive; // Indicates if the user account is active
 
     /**
      * Default constructor required for Firestore serialization.
@@ -25,23 +29,23 @@ public class User {
     /**
      * Parameterized constructor to create a User object.
      *
-     * @param userId             The unique identifier (UID) from Firebase Authentication.
-     * @param role               The role of the user (Entrant, Organizer, Admin).
-     * @param name               The user's full name.
-     * @param email              The user's email address.
-     * @param phoneNumber        The user's phone number.
-     * @param profilePictureUrl  The URL to the user's profile picture.
+     * @param userId               The unique identifier (UID) from Firebase Authentication.
+     * @param role                 The role of the user (Entrant, Organizer, Admin).
+     * @param name                 The user's full name.
+     * @param email                The user's email address.
+     * @param phoneNumber          The user's phone number.
+     * @param imagePath            The Firebase Storage path to the user's profile picture.
      * @param notificationsEnabled Whether the user has opted in for notifications.
-     * @param createdAt          Timestamp of when the user was created.
+     * @param createdAt            Timestamp of when the user was created.
      */
     public User(String userId, String role, String name, String email, String phoneNumber,
-                String profilePictureUrl, boolean notificationsEnabled, long createdAt) {
+                String imagePath, boolean notificationsEnabled, long createdAt) {
         this.userId = userId;
         this.role = role;
         this.name = name;
         this.email = email;
         this.phoneNumber = phoneNumber;
-        this.profilePictureUrl = profilePictureUrl;
+        this.imagePath = imagePath;
         this.notificationsEnabled = notificationsEnabled;
         this.createdAt = createdAt;
     }
@@ -139,21 +143,21 @@ public class User {
     }
 
     /**
-     * Gets the URL of the user's profile picture.
+     * Gets the Firebase Storage path of the user's profile picture.
      *
-     * @return The profile picture URL.
+     * @return The profile picture storage path.
      */
-    public String getProfilePictureUrl() {
-        return profilePictureUrl;
+    public String getImagePath() {
+        return imagePath;
     }
 
     /**
-     * Sets the URL of the user's profile picture.
+     * Sets the Firebase Storage path of the user's profile picture.
      *
-     * @param profilePictureUrl The profile picture URL.
+     * @param imagePath The profile picture storage path.
      */
-    public void setProfilePictureUrl(String profilePictureUrl) {
-        this.profilePictureUrl = profilePictureUrl;
+    public void setImagePath(String imagePath) {
+        this.imagePath = imagePath;
     }
 
     /**

@@ -66,6 +66,7 @@ public class LandingActivity extends AppCompatActivity {
                         // User does not exist, navigate to UserInfoActivity
                         Intent intent = new Intent(LandingActivity.this, UserInfoActivity.class);
                         intent.putExtra("USER_TYPE", userType);
+                        intent.putExtra("MODE", "CREATE");
                         startActivity(intent);
                     }
                 })

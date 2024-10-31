@@ -273,9 +273,12 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
         } else if (id == R.id.nav_edit_profile) {
             //FIXME Implement this
             // Navigate to EditProfileActivity
-//            Intent intent = new Intent(EntrantHomeActivity.this, EditProfileActivity.class);
-//            startActivity(intent);
-            Toast.makeText(this, "Edit Profile feature not implemented yet.", Toast.LENGTH_SHORT).show();
+            Intent intent = new Intent(EntrantHomeActivity.this, UserInfoActivity.class);
+            intent.putExtra("USER_TYPE", "Entrant"); // or "Organizer"
+            intent.putExtra("MODE", "EDIT");
+            startActivity(intent);
+
+//            Toast.makeText(this, "Edit Profile feature not implemented yet.", Toast.LENGTH_SHORT).show();
         }
 
         drawerLayout.closeDrawer(GravityCompat.START);
