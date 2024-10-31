@@ -43,6 +43,8 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_entrant_home);
 
+        final boolean isAdmin = getIntent().getBooleanExtra("IS_ADMIN", false);
+
         // Get device ID
         deviceId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
 
@@ -55,11 +57,17 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
         eventsLinearLayout = findViewById(R.id.eventsLinearLayout);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
         // Set up Navigation Drawer
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawerLayout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawerLayout.addDrawerListener(toggle);
         toggle.syncState();
+
+        // Make admin options available
+        if (isAdmin) {
+            navigationView.getMenu().getItem(R.id.nav_manage_media).setVisible(true);
+        }
 
         navigationView.setNavigationItemSelectedListener(this);
 
