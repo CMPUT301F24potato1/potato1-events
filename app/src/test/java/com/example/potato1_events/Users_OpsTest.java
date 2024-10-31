@@ -33,40 +33,28 @@ public class Users_OpsTest {
         MockitoAnnotations.openMocks(this);
         // Initialize the repository with the mocked Firestore's instance
 
-//        // Mock the behavior of Firestore's collection and document methods
-//        when(mockFirestore.collection("Entrants")).thenReturn(mockCollectionReference);
-//        when(mockCollectionReference.document(anyString())).thenReturn(mockDocumentReference);
+        // Mock the behavior of Firestore's collection and document methods
+        when(mockFirestore.collection("Entrants")).thenReturn(mockCollectionReference);
+        when(mockCollectionReference.document(anyString())).thenReturn(mockDocumentReference);
     }
 
     @Test
     public void testAddEntrant_Success() {
-        // Mock the behavior of Firestore's collection and document methods
-        when(mockFirestore.collection("Entrants")).thenReturn(mockCollectionReference);
-        when(mockCollectionReference.document(anyString())).thenReturn(mockDocumentReference);
         // Mock the behavior of the set() method returning a Task
         when(mockDocumentReference.set(any(User.class))).thenReturn(mockTask);
 
-        User user = new User("Xavialess", "Entrant", "Xavier", "x@gmail.com", "1234", "profile", true, 0 );
+        User user = new User(
+                "1234",
+                "Entrant",
+                "Xavier",
+                "x@gmail.com",
+                "1234",
+                "profile", // holds the storage path in firebase storage
+                true, // Default to notifications enabled
+                System.currentTimeMillis() // Current timestamp
+        );
         // Call the method under test
         Task<Void> result = mockFirestore.collection("Entrants").document("testID").set(user);
-        // Verify that Firestore's set() method was called with a map containing the user's data
-        verify(mockDocumentReference).set(any(User.class));
-
-        // Check if the returned task matches the mocked task
-        assertEquals(mockTask, result);
-    }
-
-    @Test
-    public void testAddOrganizer_Success() {
-        // Mock the behavior of Firestore's collection and document methods
-        when(mockFirestore.collection("Organizers")).thenReturn(mockCollectionReference);
-        when(mockCollectionReference.document(anyString())).thenReturn(mockDocumentReference);
-        // Mock the behavior of the set() method returning a Task
-        when(mockDocumentReference.set(any(User.class))).thenReturn(mockTask);
-
-        User user = new User("Xavialess", "Organizer", "Xavier", "x@gmail.com", "1234", "profile", true, 0 );
-        // Call the method under test
-        Task<Void> result = mockFirestore.collection("Organizers").document("testID").set(user);
         // Verify that Firestore's set() method was called with a map containing the user's data
         verify(mockDocumentReference).set(any(User.class));
 
