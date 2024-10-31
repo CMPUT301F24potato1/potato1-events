@@ -43,7 +43,16 @@ public class Users_OpsTest {
         // Mock the behavior of the set() method returning a Task
         when(mockDocumentReference.set(any(User.class))).thenReturn(mockTask);
 
-        User user = new User("Xavier", "x@gmail.com", "1234", "profile");
+        User user = new User(
+                "1234",
+                "Entrant",
+                "Xavier",
+                "x@gmail.com",
+                "1234",
+                "profile", // holds the storage path in firebase storage
+                true, // Default to notifications enabled
+                System.currentTimeMillis() // Current timestamp
+        );
         // Call the method under test
         Task<Void> result = mockFirestore.collection("Entrants").document("testID").set(user);
         // Verify that Firestore's set() method was called with a map containing the user's data
