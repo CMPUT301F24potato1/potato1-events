@@ -61,6 +61,16 @@ public class Event {
     private int capacity;
 
     /**
+     * current number of Entrants
+     */
+    private int currentEntrantsNumber;
+
+    /**
+     * Maximum number of entrants in the waiting list.
+     */
+    private int waitingListCapacity;
+
+    /**
      * URL of the event poster image.
      */
     private String posterImageUrl;
@@ -102,6 +112,17 @@ public class Event {
     private String status;
 
     /**
+     * Switch to let organizers set geolocation status
+     */
+    private boolean geolocationRequired;
+
+    /**
+     * Events location
+     */
+    private String eventLocation;
+
+
+    /**
      * Default constructor required for Firebase deserialization.
      */
     public Event() {
@@ -121,6 +142,8 @@ public class Event {
      * @param registrationEnd   Registration end date and time.
      * @param price            Price for attending.
      * @param capacity         Maximum number of attendees.
+     * @param currentEntrantsNumber Current number of entrants
+     * @param waitingListCapacity   Maximum entrants in the waiting list
      * @param posterImageUrl   URL of the poster image.
      * @param qrCodeHash       Hashed QR code data.
      * @param waitingList      List of entrant IDs in waiting.
@@ -129,11 +152,13 @@ public class Event {
      * @param declinedEntrants List of declined entrant IDs.
      * @param createdAt        Creation timestamp.
      * @param status           Status of the event.
+     * @param geolocationRequired  Switch enabling geolocation requirement.
+     * @param eventLocation     Events location
      */
     public Event(String id, String facilityId, String name, String description, Date startDate, Date endDate,
-                 Date registrationStart, Date registrationEnd, double price, int capacity, String posterImageUrl,
+                 Date registrationStart, Date registrationEnd, double price, int capacity, int currentEntrantsNumber, int waitingListCapacity, String posterImageUrl,
                  String qrCodeHash, List<String> waitingList, List<String> selectedEntrants,
-                 List<String> confirmedEntrants, List<String> declinedEntrants, Date createdAt, String status) {
+                 List<String> confirmedEntrants, List<String> declinedEntrants, Date createdAt, String status, boolean geolocationRequired, String eventLocation) {
         this.id = id;
         this.facilityId = facilityId;
         this.name = name;
@@ -144,6 +169,7 @@ public class Event {
         this.registrationEnd = registrationEnd;
         this.price = price;
         this.capacity = capacity;
+        this.waitingListCapacity = waitingListCapacity;
         this.posterImageUrl = posterImageUrl;
         this.qrCodeHash = qrCodeHash;
         this.waitingList = waitingList;
@@ -152,6 +178,8 @@ public class Event {
         this.declinedEntrants = declinedEntrants;
         this.createdAt = createdAt;
         this.status = status;
+        this.geolocationRequired = geolocationRequired;
+        this.eventLocation = eventLocation;
     }
 
     // Getters and Setters
@@ -532,5 +560,74 @@ public class Event {
      */
     public void updateStatus(String newStatus) {
         this.status = newStatus;
+    }
+
+    /**
+     * Grabs the Event Location.
+     *
+     */
+    public String getEventLocation() {
+        return eventLocation;
+    }
+
+    /**
+     * Sets new location of event
+     *
+     * @param eventLocation new eventLocation
+     */
+    public void setEventLocation(String eventLocation) {
+        this.eventLocation = eventLocation;
+    }
+
+
+    /**
+     * Grabs the gelocation requirement status.
+     *
+     */
+    public boolean isGeolocationRequired() {
+        return geolocationRequired;
+    }
+
+    /**
+     * Sets geolocation reqiurements status
+     *
+     * @param geolocationRequired changes geolocation requirement
+     */
+    public void setGeolocationRequired(boolean geolocationRequired) {
+        this.geolocationRequired = geolocationRequired;
+    }
+
+    /**
+     * Grabs capacity number for the waiting list
+     *
+     */
+    public int getWaitingListCapacity() {
+        return waitingListCapacity;
+    }
+
+    /**
+     * Sets geolocation reqiurements status
+     *
+     * @param waitingListCapacity changes the capcity of the waiting list
+     */
+    public void setWaitingListCapacity(int waitingListCapacity) {
+        this.waitingListCapacity = waitingListCapacity;
+    }
+
+    /**
+     * Grabs current number of entrants in the event
+     *
+     */
+    public int getCurrentEntrantsNumber() {
+        return currentEntrantsNumber;
+    }
+
+    /**
+     * Sets the current number of entrants in the event
+     *
+     * @param currentEntrantsNumber changes the current number of entrants
+     */
+    public void setCurrentEntrantsNumber(int currentEntrantsNumber) {
+        this.currentEntrantsNumber = currentEntrantsNumber;
     }
 }
