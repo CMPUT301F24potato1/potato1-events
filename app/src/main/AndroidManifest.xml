@@ -25,6 +25,12 @@
             android:name=".UserInfoActivity"
             android:exported="false" />
         <activity
+            android:name=".OrganizerHomeActivity"
+            android:exported="false"/>
+        <activity
+            android:name=".CreateEditEventActivity"
+            android:exported="false"/>
+        <activity
             android:name=".LandingActivity"
             android:exported="true">
             <intent-filter>

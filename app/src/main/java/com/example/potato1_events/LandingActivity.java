@@ -59,9 +59,8 @@ public class LandingActivity extends AppCompatActivity {
                             Intent intent = new Intent(LandingActivity.this, EntrantHomeActivity.class);
                             startActivity(intent);
                         } else if (userType.equals("Organizer")) {
-                            // Placeholder for OrganizerHomeActivity
-                            // Intent intent = new Intent(LandingActivity.this, OrganizerHomeActivity.class);
-                            // startActivity(intent);
+                            Intent intent = new Intent(LandingActivity.this, OrganizerHomeActivity.class);
+                            startActivity(intent);
                         }
                     } else {
                         // User does not exist, navigate to UserInfoActivity
