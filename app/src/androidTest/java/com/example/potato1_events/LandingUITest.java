@@ -27,7 +27,7 @@ public class LandingUITest {
 
         // 1-second delay to wait for activity transition
         try {
-            Thread.sleep(1000);
+            Thread.sleep(2000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
