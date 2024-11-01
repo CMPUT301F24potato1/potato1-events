@@ -80,7 +80,7 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
 
         // Make admin options available
         if (isAdmin) {
-            navigationView.getMenu().getItem(R.id.nav_manage_media).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_manage_media).setVisible(true);
         }
 
         navigationView.setNavigationItemSelectedListener(this);
