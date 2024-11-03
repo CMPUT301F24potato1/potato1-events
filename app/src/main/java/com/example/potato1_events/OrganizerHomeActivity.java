@@ -34,7 +34,7 @@ import com.google.firebase.firestore.GeoPoint;
 import java.util.ArrayList;
 import java.util.List;
 
-public class EntrantHomeActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
+public class OrganizerHomeActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
     private DrawerLayout drawerLayout;
     private LinearLayout eventsLinearLayout;
@@ -55,7 +55,7 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
-        setContentView(R.layout.activity_entrant_home);
+        setContentView(R.layout.activity_organizer_home);
 
         // Get device ID
         deviceId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
@@ -64,7 +64,7 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
         firestore = FirebaseFirestore.getInstance();
 
         // Initialize views
-        drawerLayout = findViewById(R.id.drawer_layout);
+        drawerLayout = findViewById(R.id.drawer_organizer_layout);
         NavigationView navigationView = findViewById(R.id.nav_view);
         eventsLinearLayout = findViewById(R.id.eventsLinearLayout);
         Toolbar toolbar = findViewById(R.id.toolbar);
@@ -88,7 +88,7 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
                     if (isGranted) {
                         fetchLocationAndLoadEvents();
                     } else {
-                        Toast.makeText(EntrantHomeActivity.this,
+                        Toast.makeText(OrganizerHomeActivity.this,
                                 "Location permission denied. Unable to load nearby events.",
                                 Toast.LENGTH_SHORT).show();
                     }
@@ -124,18 +124,18 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
                     currentLocation = location;
                     loadEventsNearLocation(currentLocation);
                 } else {
-                    Toast.makeText(EntrantHomeActivity.this,
+                    Toast.makeText(OrganizerHomeActivity.this,
                             "Unable to determine current location.",
                             Toast.LENGTH_SHORT).show();
                 }
             }).addOnFailureListener(e -> {
-                Toast.makeText(EntrantHomeActivity.this,
+                Toast.makeText(OrganizerHomeActivity.this,
                         "Error fetching location: " + e.getMessage(),
                         Toast.LENGTH_SHORT).show();
             });
         } catch (SecurityException e) {
             // This should not happen as we've already checked permissions
-            Toast.makeText(EntrantHomeActivity.this,
+            Toast.makeText(OrganizerHomeActivity.this,
                     "Location permission not granted.",
                     Toast.LENGTH_SHORT).show();
         }
@@ -174,7 +174,7 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
             }
 
             if (nearbyFacilityIds.isEmpty()) {
-                Toast.makeText(EntrantHomeActivity.this,
+                Toast.makeText(OrganizerHomeActivity.this,
                         "No facilities found within " + SEARCH_RADIUS_KM + " km.",
                         Toast.LENGTH_SHORT).show();
                 return;
@@ -193,19 +193,19 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
                         }
 
                         if (eventList.isEmpty()) {
-                            Toast.makeText(EntrantHomeActivity.this,
+                            Toast.makeText(OrganizerHomeActivity.this,
                                     "No events found near your location.",
                                     Toast.LENGTH_SHORT).show();
                         }
                     })
                     .addOnFailureListener(e -> {
-                        Toast.makeText(EntrantHomeActivity.this,
+                        Toast.makeText(OrganizerHomeActivity.this,
                                 "Error loading events: " + e.getMessage(),
                                 Toast.LENGTH_SHORT).show();
                     });
 
         }).addOnFailureListener(e -> {
-            Toast.makeText(EntrantHomeActivity.this,
+            Toast.makeText(OrganizerHomeActivity.this,
                     "Error loading facilities: " + e.getMessage(),
                     Toast.LENGTH_SHORT).show();
         });
@@ -250,7 +250,7 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
         // Set OnClickListener
         eventButton.setOnClickListener(v -> {
             String eventId = (String) v.getTag();
-            Intent intent = new Intent(EntrantHomeActivity.this, EventDetailsEntrantActivity.class);
+            Intent intent = new Intent(OrganizerHomeActivity.this, EventDetailsEntrantActivity.class);
             intent.putExtra("EVENT_ID", eventId);
             startActivity(intent);
         });
@@ -270,15 +270,15 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
 //            Intent intent = new Intent(EntrantHomeActivity.this, NotificationsActivity.class);
 //            startActivity(intent);
             Toast.makeText(this, "Notifications feature not implemented yet.", Toast.LENGTH_SHORT).show();
-        } else if (id == R.id.nav_edit_profile) {
-            //FIXME Implement this
-            // Navigate to EditProfileActivity
-            Intent intent = new Intent(EntrantHomeActivity.this, UserInfoActivity.class);
-            intent.putExtra("USER_TYPE", "Entrant"); // or "Organizer"
-            intent.putExtra("MODE", "EDIT");
+        } else if (id == R.id.nav_create_event) {
+            Intent intent = new Intent(OrganizerHomeActivity.this, CreateEditEventActivity.class);
             startActivity(intent);
-
-//            Toast.makeText(this, "Edit Profile feature not implemented yet.", Toast.LENGTH_SHORT).show();
+        } else if (id == R.id.nav_my_events_centres) {
+            //FIXME Implement this
+            // Navigate to my_events_centre
+//            Intent intent = new Intent(EntrantHomeActivity.this, NotificationsActivity.class);
+//            startActivity(intent);
+            Toast.makeText(this, "Events Centres not implemented yet", Toast.LENGTH_SHORT).show();
         }
 
         drawerLayout.closeDrawer(GravityCompat.START);

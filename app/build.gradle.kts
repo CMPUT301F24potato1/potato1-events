@@ -37,7 +37,12 @@ android {
 }
 
 dependencies {
+    implementation ("com.journeyapps:zxing-android-embedded:4.3.0")
+    implementation ("com.google.zxing:core:3.3.3")
+    implementation("com.squareup.picasso:picasso:2.8")
+    implementation("de.hdodenhof:circleimageview:3.1.0")
     implementation(platform("com.google.firebase:firebase-bom:33.4.0"))
+    implementation(platform("com.google.firebase:firebase-storage:20.2.1"))
     implementation (libs.firebase.database)
     implementation(libs.appcompat)
     implementation(libs.material)
@@ -46,7 +51,13 @@ dependencies {
     implementation(libs.navigation.ui)
     implementation(libs.activity)
     implementation(libs.firebase.firestore)
+    implementation(libs.play.services.location)
+    implementation(libs.firebase.storage)
     testImplementation(libs.junit)
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.7.0")
+    testImplementation("org.junit.jupiter:junit-jupiter-params:5.7.0")
+    testImplementation("org.assertj:assertj-core:3.17.2")
+    testImplementation("org.mockito:mockito-core:3.5.13")
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
 }

@@ -3,7 +3,8 @@ name: Android CI
 on:
   push:
     branches:
-      - '**'
+      - main
+      - verification
 
 jobs:
   build:
@@ -19,7 +20,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '11'
+          java-version: '22'
           cache: gradle
 
       # Cache Gradle packages
@@ -43,14 +44,8 @@ jobs:
         run: ./gradlew lint
 
       # Run Unit Tests
-      # All tests on main, subset on other branches
-      # - name: Run Unit Tests
-      #   run: |
-      #     if [ "${{ github.ref }}" == "refs/heads/main" ]; then
-      #       ./gradlew test
-      #     else
-      #       ./gradlew test --tests "com.example.package.SubsetTestClass*"
-      #     fi
+      - name: Run tests
+        run: ./gradlew test
 
       # Set up Android SDK
       - name: Set up Android SDK
