@@ -161,7 +161,10 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
                 Facility facility = facilityDoc.toObject(Facility.class);
                 facility.setId(facilityDoc.getId());
 
-                double distance = calculateDistance(
+                // Commenting this section out rn, because no longer necessary
+                // and I need to check the facility functionality.
+                // I believe the entrant will just see all events. - Leo
+             /*   double distance = calculateDistance(
                         location.getLatitude(),
                         location.getLongitude(),
                         facility.getLatitude(),
@@ -170,7 +173,7 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
 
                 if (distance <= SEARCH_RADIUS_KM) {
                     nearbyFacilityIds.add(facility.getId());
-                }
+                } */
             }
 
             if (nearbyFacilityIds.isEmpty()) {
@@ -264,21 +267,19 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
         // Handle navigation
         int id = item.getItemId();
 
-        if (id == R.id.nav_notifications) {
+        if (id == R.id.nav_organizer_profile) {
             //FIXME Implement this
-            // Navigate to NotificationsActivity
-//            Intent intent = new Intent(EntrantHomeActivity.this, NotificationsActivity.class);
-//            startActivity(intent);
-            Toast.makeText(this, "Notifications feature not implemented yet.", Toast.LENGTH_SHORT).show();
+            // Navigate to Organizer Profile Activity
+            //Intent intent = new Intent(OrganizerHomeActivity.this, OrganizerProfileActivity.class);
+            //startActivity(intent);
         } else if (id == R.id.nav_create_event) {
             Intent intent = new Intent(OrganizerHomeActivity.this, CreateEditEventActivity.class);
             startActivity(intent);
-        } else if (id == R.id.nav_my_events_centres) {
-            //FIXME Implement this
-            // Navigate to my_events_centre
-//            Intent intent = new Intent(EntrantHomeActivity.this, NotificationsActivity.class);
-//            startActivity(intent);
-            Toast.makeText(this, "Events Centres not implemented yet", Toast.LENGTH_SHORT).show();
+        } else if (id == R.id.nav_edit_facility) {
+            Intent intent = new Intent(OrganizerHomeActivity.this, CreateEditFacilityActivity.class);
+            startActivity(intent);
+        } else if (id == R.id.nav_my_events) {
+            Toast.makeText(this, "Already on this page.", Toast.LENGTH_SHORT).show();
         }
 
         drawerLayout.closeDrawer(GravityCompat.START);

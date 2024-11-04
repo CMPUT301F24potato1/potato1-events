@@ -161,7 +161,10 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
                 Facility facility = facilityDoc.toObject(Facility.class);
                 facility.setId(facilityDoc.getId());
 
-                double distance = calculateDistance(
+                // Commenting this section out rn, because no longer necessary
+                // and I need to check the facility functionality.
+                // I believe the entrant will just see all events. - Leo
+             /*   double distance = calculateDistance(
                         location.getLatitude(),
                         location.getLongitude(),
                         facility.getLatitude(),
@@ -170,7 +173,7 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
 
                 if (distance <= SEARCH_RADIUS_KM) {
                     nearbyFacilityIds.add(facility.getId());
-                }
+                } */
             }
 
             if (nearbyFacilityIds.isEmpty()) {

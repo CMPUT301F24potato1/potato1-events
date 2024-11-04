@@ -506,14 +506,13 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
             //Intent intent = new Intent(CreateEditEventActivity.this, OrganizerProfileActivity.class);
             //startActivity(intent);
         } else if (id == R.id.nav_create_event) {
-            // Navigate to Create/Edit Event Activity (current activity)
-            // Optionally, you can restart the activity or show a message
-            Toast.makeText(this, "You are already on the Create/Edit Event page.", Toast.LENGTH_SHORT).show();
-        } else if (id == R.id.nav_my_events_centres) {
-            //FIXME Implement this
-            // Navigate to My Events Centres Activity
-            //Intent intent = new Intent(CreateEditEventActivity.this, MyEventsCentresActivity.class);
-            //startActivity(intent);
+            Toast.makeText(this, "Already on this page.", Toast.LENGTH_SHORT).show();
+        } else if (id == R.id.nav_edit_facility) {
+            Intent intent = new Intent(CreateEditEventActivity.this, CreateEditFacilityActivity.class);
+            startActivity(intent);
+        } else if (id == R.id.nav_my_events) {
+            Intent intent = new Intent(CreateEditEventActivity.this, OrganizerHomeActivity.class);
+            startActivity(intent);
         }
 
         drawerLayout.closeDrawer(GravityCompat.START);
