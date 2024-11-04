@@ -10,7 +10,13 @@
         android:icon="@drawable/ic_edit_profile" />
 
     <item
-        android:id="@+id/nav_my_events_centres"
-        android:title="My Events Centres"
+        android:id="@+id/nav_edit_facility"
+        android:title="My Facility Profile"
         android:icon="@drawable/ic_edit_profile" />
+
+    <item
+        android:id="@+id/nav_my_events"
+        android:title="My Created Events"
+        android:icon="@drawable/ic_edit_profile" />
+
 </menu>
