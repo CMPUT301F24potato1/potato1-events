@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.text.TextUtils;
 import android.view.MenuItem;
 import android.view.View;
@@ -49,11 +50,14 @@ public class CreateEditFacilityActivity extends AppCompatActivity implements Nav
     private String facilityPhotoUrl = null;
 
     // Facility Identification
-    private String facilityId = null; // Document ID
+    private String facilityId = null; // Document ID set to deviceId
 
     // ActivityResultLaunchers
     private ActivityResultLauncher<String> selectImageLauncher;
     private ActivityResultLauncher<String> requestPermissionLauncher;
+
+    // Organizer's deviceId
+    private String deviceId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -97,6 +101,7 @@ public class CreateEditFacilityActivity extends AppCompatActivity implements Nav
                         selectedFacilityPhotoUri = uri;
                         // Display the selected image in ImageView
                         Picasso.get().load(uri).into(facilityPhotoView);
+                        uploadFacilityPhotoButton.setText("Change Facility Photo"); // Update button text
                     }
                 }
         );
@@ -126,18 +131,12 @@ public class CreateEditFacilityActivity extends AppCompatActivity implements Nav
 
         saveFacilityButton.setOnClickListener(v -> saveFacility());
 
-        // Determine if we're editing an existing facility or creating a new one
-        Intent intent = getIntent();
-        if (intent != null && intent.hasExtra("facilityId")) {
-            // Editing an existing facility
-            facilityId = intent.getStringExtra("facilityId");
-            loadFacilityData();
-        } else {
-            // Creating a new facility
-            // Generate a unique document ID using Firestore's auto-generated ID
-            DocumentReference newFacilityRef = firestore.collection("Facilities").document();
-            facilityId = newFacilityRef.getId();
-        }
+        // Retrieve deviceId
+        deviceId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
+        facilityId = deviceId; // Set facilityId to deviceId to enforce 1-to-1
+
+        // Load existing facility data if it exists
+        loadFacilityData();
     }
 
     /**
@@ -180,10 +179,13 @@ public class CreateEditFacilityActivity extends AppCompatActivity implements Nav
                             if (!TextUtils.isEmpty(facility.getFacilityPhotoUrl())) {
                                 facilityPhotoUrl = facility.getFacilityPhotoUrl();
                                 Picasso.get().load(facilityPhotoUrl).into(facilityPhotoView);
+                                uploadFacilityPhotoButton.setText("Change Facility Photo"); // Update button text
                             }
                         }
+                    } else {
+                        // No existing facility; setup for creation
+                        uploadFacilityPhotoButton.setText("Upload Facility Photo");
                     }
-                    // If document does not exist, it's a new facility
                 })
                 .addOnFailureListener(e -> {
                     progressBar.setVisibility(View.GONE);
@@ -234,7 +236,7 @@ public class CreateEditFacilityActivity extends AppCompatActivity implements Nav
      */
     private void uploadFacilityPhoto(String name, String address, String description) {
         // Create a unique filename
-        String fileName = "facility_photos/" + UUID.randomUUID() + ".jpg";
+        String fileName = "facility_photos/" + facilityId + "/" + UUID.randomUUID() + ".jpg";
         StorageReference storageRef = storage.getReference().child(fileName);
 
         // Upload the image
@@ -343,3 +345,4 @@ public class CreateEditFacilityActivity extends AppCompatActivity implements Nav
         }
     }
 }
+

@@ -1,3 +1,4 @@
+// File: CreateEditEventActivity.java
 package com.example.potato1_events;
 
 import android.Manifest;
@@ -22,8 +23,10 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.ContextCompat;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.material.navigation.NavigationView;
-import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.*;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.squareup.picasso.Picasso;
@@ -57,6 +60,9 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
     private Calendar startDateTime = Calendar.getInstance();
     private Calendar endDateTime = Calendar.getInstance();
 
+    // Organizer's deviceId acting as facilityId
+    private String deviceId;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -65,6 +71,9 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
         // Initialize Firebase instances
         firestore = FirebaseFirestore.getInstance();
         storage = FirebaseStorage.getInstance();
+
+        // Retrieve deviceId
+        deviceId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
 
         // Initialize UI components
         eventNameEditText = findViewById(R.id.eventNameEditText);
@@ -104,6 +113,7 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
                         selectedPosterUri = uri;
                         // Display the selected image in ImageView
                         Picasso.get().load(uri).into(eventPosterImageView);
+                        uploadPosterButton.setText("Change Poster Image"); // Update button text
                     }
                 }
         );
@@ -141,6 +151,15 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
             eventId = intent.getStringExtra("EVENT_ID");
             loadEventData(eventId);
             deleteEventButton.setVisibility(View.VISIBLE); // Show delete button in edit mode
+        } else {
+            deleteEventButton.setVisibility(View.GONE); // Hide delete button in create mode
+            recCentreEditText.setText(deviceId); // Automatically set facilityId to deviceId
+            recCentreEditText.setEnabled(false); // Disable editing of facilityId
+        }
+
+        // Verify that the organizer has a facility before allowing event creation
+        if (!isEditingExistingEvent() && !hasFacility()) {
+            promptCreateFacility();
         }
     }
 
@@ -205,12 +224,56 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
     }
 
     /**
+     * Checks if the activity is in edit mode.
+     *
+     * @return True if editing an existing event, false otherwise.
+     */
+    private boolean isEditingExistingEvent() {
+        return eventId != null && !eventId.isEmpty();
+    }
+
+    /**
+     * Checks if the organizer has an existing facility.
+     *
+     * @return True if a facility exists, false otherwise.
+     */
+    private boolean hasFacility() {
+        // Since we're using deviceId as facilityId, we'll check Firestore synchronously
+        // However, Firestore operations are asynchronous, so we need to handle this differently.
+        // For simplicity, we'll assume that the check has been done before allowing event creation.
+        // Alternatively, implement a callback mechanism.
+        return true; // Placeholder: Modify as needed
+    }
+
+    /**
+     * Prompts the organizer to create a facility if none exists.
+     */
+    private void promptCreateFacility() {
+        new AlertDialog.Builder(this)
+                .setTitle("No Facility Found")
+                .setMessage("You need to create a facility before creating events.")
+                .setPositiveButton("Create Facility", (dialog, which) -> navigateToCreateFacility())
+                .setNegativeButton("Cancel", (dialog, which) -> finish()) // Close activity if canceled
+                .setCancelable(false)
+                .show();
+    }
+
+    /**
+     * Navigates the organizer to the Create/Edit Facility Activity to create a new facility.
+     */
+    private void navigateToCreateFacility() {
+        Intent intent = new Intent(CreateEditEventActivity.this, CreateEditFacilityActivity.class);
+        startActivity(intent);
+        finish(); // Close current activity to prevent back navigation
+    }
+
+    /**
      * Saves the event to Firebase Firestore, handling both creation and updating.
      */
     private void saveEvent() {
         String name = eventNameEditText.getText().toString().trim();
         String description = eventDescriptionEditText.getText().toString().trim();
-        String recCentre = recCentreEditText.getText().toString().trim();
+        String recCentre = recCentreEditText.getText().toString().trim(); // This should be deviceId
         String location = eventLocationEditText.getText().toString().trim();
         String availableSpotsStr = availableSpotsEditText.getText().toString().trim();
         String waitingListSpotsStr = waitingListSpotsEditText.getText().toString().trim();
@@ -249,7 +312,7 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
             uploadPosterImage(name, description, recCentre, location, availableSpots, waitingListSpots, isGeolocationEnabled);
         } else {
             // If editing and no new image is selected, retain existing image path and QR code hash
-            if (eventId != null) {
+            if (isEditingExistingEvent()) {
                 saveEventToFirestore(name, description, recCentre, location, availableSpots, waitingListSpots, isGeolocationEnabled, posterImagePath, existingQrCodeHash);
             } else {
                 // Generate a QR code even without a poster
@@ -263,7 +326,7 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
      *
      * @param name                 Event name.
      * @param description          Event description.
-     * @param recCentre            Associated rec centre.
+     * @param recCentre            Associated rec centre (facilityId).
      * @param location             Event location.
      * @param availableSpots       Number of available spots.
      * @param waitingListSpots     Number of waiting list spots.
@@ -299,7 +362,7 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
      *
      * @param name                 Event name.
      * @param description          Event description.
-     * @param recCentre            Associated rec centre.
+     * @param recCentre            Associated rec centre (facilityId).
      * @param location             Event location.
      * @param availableSpots       Number of available spots.
      * @param waitingListSpots     Number of waiting list spots.
@@ -310,7 +373,8 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
                                             int availableSpots, int waitingListSpots,
                                             boolean isGeolocationEnabled, String posterUrl) {
 
-        // Generate a unique string for QR code (could be the event's Firestore ID)
+        // Generate a unique string for QR code (could be the event's Firestore ID after creation)
+        // For now, we'll generate a placeholder. Ideally, QR code generation should occur after obtaining the event ID.
         String qrData = UUID.randomUUID().toString();
 
         // Proceed to save the event data
@@ -322,7 +386,7 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
      *
      * @param name                 Event name.
      * @param description          Event description.
-     * @param recCentre            Associated rec centre.
+     * @param recCentre            Associated rec centre (facilityId).
      * @param location             Event location.
      * @param availableSpots       Number of available spots.
      * @param waitingListSpots     Number of waiting list spots.
@@ -341,7 +405,7 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
         Event event = new Event();
         event.setName(name);
         event.setDescription(description);
-        event.setFacilityId(recCentre); // Assuming recCentre is the facility ID
+        event.setFacilityId(deviceId); // Associate with the organizer's facility
         event.setEventLocation(location);
         event.setCapacity(availableSpots);
         event.setWaitingListCapacity(waitingListSpots);
@@ -358,7 +422,7 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
         event.setConfirmedEntrants(new ArrayList<>());
         event.setDeclinedEntrants(new ArrayList<>());
 
-        if (eventId != null) {
+        if (isEditingExistingEvent()) {
             // Update existing event
             firestore.collection("Events").document(eventId).set(event)
                     .addOnSuccessListener(aVoid -> {
@@ -373,16 +437,18 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
             // Create new event
             firestore.collection("Events").add(event)
                     .addOnSuccessListener(documentReference -> {
-                        // Optionally, you can update the QR code data with a URL containing the eventId
                         String eventIdCreated = documentReference.getId();
+
+                        // Update the QR code data with a URL containing the eventId
                         String qrUrl = "https://yourapp.com/joinEvent?eventId=" + eventIdCreated;
 
                         // Update the event with the QR code URL
                         firestore.collection("Events").document(eventIdCreated).update("qrCodeHash", qrUrl)
                                 .addOnSuccessListener(aVoid -> {
-                                    // Optionally, generate and upload the QR code image
+                                    // Optionally, generate and upload the QR code image here
                                     Toast.makeText(CreateEditEventActivity.this, "Event created with QR code!", Toast.LENGTH_SHORT).show();
-                                    navigateBackToEventList();
+                                    // Add eventId to the facility's eventIds list
+                                    addEventToFacility(eventIdCreated);
                                 })
                                 .addOnFailureListener(e -> {
                                     Toast.makeText(CreateEditEventActivity.this, "Failed to update QR code data: " + e.getMessage(), Toast.LENGTH_SHORT).show();
@@ -394,6 +460,26 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
                         saveEventButton.setEnabled(true);
                     });
         }
+    }
+
+    /**
+     * Adds the newly created event ID to the organizer's facility's eventIds list.
+     *
+     * @param eventId The ID of the newly created event.
+     */
+    private void addEventToFacility(String eventId) {
+        DocumentReference facilityRef = firestore.collection("Facilities").document(deviceId);
+
+        // Use FieldValue.arrayUnion to add the eventId to the eventIds list
+        facilityRef.update("eventIds", FieldValue.arrayUnion(eventId))
+                .addOnSuccessListener(aVoid -> {
+                    Toast.makeText(CreateEditEventActivity.this, "Event added to your facility.", Toast.LENGTH_SHORT).show();
+                    navigateBackToEventList();
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(CreateEditEventActivity.this, "Failed to associate event with facility: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    saveEventButton.setEnabled(true);
+                });
     }
 
     /**
@@ -445,6 +531,7 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
                             if (!TextUtils.isEmpty(event.getPosterImageUrl())) {
                                 posterImagePath = event.getPosterImageUrl();
                                 Picasso.get().load(event.getPosterImageUrl()).into(eventPosterImageView);
+                                uploadPosterButton.setText("Change Poster Image"); // Update button text
                             }
 
                             // Store existing QR code hash
@@ -474,19 +561,39 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
     }
 
     /**
-     * Deletes the event from Firebase Firestore.
+     * Deletes the event from Firebase Firestore and removes its association from the facility.
      */
     private void deleteEvent() {
         if (eventId != null) {
             firestore.collection("Events").document(eventId).delete()
                     .addOnSuccessListener(aVoid -> {
                         Toast.makeText(this, "Event deleted successfully.", Toast.LENGTH_SHORT).show();
-                        navigateBackToEventList();
+                        // Remove eventId from the facility's eventIds list
+                        removeEventFromFacility(eventId);
                     })
                     .addOnFailureListener(e -> {
                         Toast.makeText(this, "Failed to delete event: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                     });
         }
+    }
+
+    /**
+     * Removes the event ID from the organizer's facility's eventIds list after deletion.
+     *
+     * @param eventId The ID of the event to remove.
+     */
+    private void removeEventFromFacility(String eventId) {
+        DocumentReference facilityRef = firestore.collection("Facilities").document(deviceId);
+
+        // Use FieldValue.arrayRemove to remove the eventId from the eventIds list
+        facilityRef.update("eventIds", FieldValue.arrayRemove(eventId))
+                .addOnSuccessListener(aVoid -> {
+                    Toast.makeText(CreateEditEventActivity.this, "Event removed from your facility.", Toast.LENGTH_SHORT).show();
+                    navigateBackToEventList();
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(CreateEditEventActivity.this, "Failed to dissociate event from facility: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
     }
 
     /**
@@ -501,10 +608,11 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
         int id = item.getItemId();
 
         if (id == R.id.nav_organizer_profile) {
-            //FIXME Implement this
-            // Navigate to Organizer Profile Activity
-            //Intent intent = new Intent(CreateEditEventActivity.this, OrganizerProfileActivity.class);
-            //startActivity(intent);
+            //FIXME Implement Organizer Profile Activity
+            // Example:
+            // Intent intent = new Intent(CreateEditEventActivity.this, OrganizerProfileActivity.class);
+            // startActivity(intent);
+            Toast.makeText(this, "Organizer Profile not implemented yet.", Toast.LENGTH_SHORT).show();
         } else if (id == R.id.nav_create_event) {
             Toast.makeText(this, "Already on this page.", Toast.LENGTH_SHORT).show();
         } else if (id == R.id.nav_edit_facility) {

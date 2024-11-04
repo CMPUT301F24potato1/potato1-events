@@ -38,6 +38,7 @@ android {
 
 dependencies {
     implementation ("com.journeyapps:zxing-android-embedded:4.3.0")
+    implementation ("androidx.recyclerview:recyclerview:1.2.1")
     implementation ("com.google.zxing:core:3.3.3")
     implementation("com.squareup.picasso:picasso:2.8")
     implementation("de.hdodenhof:circleimageview:3.1.0")
