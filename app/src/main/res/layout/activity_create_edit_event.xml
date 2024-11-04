@@ -32,7 +32,8 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                android:gravity="center">
 
                 <!-- Event Name -->
                 <EditText
@@ -132,9 +133,9 @@
                     android:id="@+id/eventPosterImageView"
                     android:layout_width="200dp"
                     android:layout_height="200dp"
-                    android:scaleType="centerCrop"
                     android:background="#CCCCCC"
-                    android:contentDescription="Event Poster" />
+                    android:contentDescription="Event Poster"
+                    android:scaleType="centerCrop" />
 
                 <Button
                     android:id="@+id/uploadPosterButton"
