@@ -57,6 +57,8 @@ public class LandingActivity extends AppCompatActivity {
                         // User exists, navigate to the home activity
                         if (userType.equals("Entrant")) {
                             Intent intent = new Intent(LandingActivity.this, EntrantHomeActivity.class);
+                            boolean isAdmin = Boolean.parseBoolean(documentSnapshot.get("isAdmin").toString());
+                            intent.putExtra("IS_ADMIN", isAdmin);
                             startActivity(intent);
                         } else if (userType.equals("Organizer")) {
                             Intent intent = new Intent(LandingActivity.this, OrganizerHomeActivity.class);
