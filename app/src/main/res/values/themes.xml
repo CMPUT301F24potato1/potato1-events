@@ -3,6 +3,11 @@
     <style name="Base.Theme.Potato1events" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Customize your light theme here. -->
         <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+
+        <item name="android:windowBackground">@color/background_light_blue</item> <!-- Sets background color -->
+        <item name="colorPrimary">@color/button_dark_blue</item> <!-- Sets primary color to dark blue -->
+        <item name="colorPrimaryContainer">@color/button_dark_blue</item>
+        <item name="colorSecondary">@color/button_dark_blue</item>
     </style>
 
     <style name="Theme.Potato1events" parent="Base.Theme.Potato1events" />
