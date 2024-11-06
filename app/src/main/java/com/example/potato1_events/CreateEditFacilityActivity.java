@@ -315,10 +315,10 @@ public class CreateEditFacilityActivity extends AppCompatActivity implements Nav
         int id = item.getItemId();
 
         if (id == R.id.nav_organizer_profile) {
-            //FIXME Implement this
-            // Navigate to Organizer Profile Activity
-            //Intent intent = new Intent(CreateEditFacilityActivity.this, OrganizerProfileActivity.class);
-            //startActivity(intent);
+            Intent intent = new Intent(CreateEditFacilityActivity.this, UserInfoActivity.class);
+            intent.putExtra("USER_TYPE", "Organizer");
+            intent.putExtra("MODE", "EDIT");
+            startActivity(intent);
         } else if (id == R.id.nav_create_event) {
             Intent intent = new Intent(CreateEditFacilityActivity.this, CreateEditEventActivity.class);
             startActivity(intent);

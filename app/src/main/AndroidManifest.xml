@@ -36,6 +36,10 @@
         <activity
             android:name=".EventsAdapter"
             android:exported="false"/>
+        <activity
+            android:name=".EventDetailsOrganizerActivity"
+            android:exported="false"/>
+
 
         <activity
             android:name=".LandingActivity"

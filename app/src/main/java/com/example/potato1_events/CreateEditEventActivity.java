@@ -608,11 +608,10 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
         int id = item.getItemId();
 
         if (id == R.id.nav_organizer_profile) {
-            //FIXME Implement Organizer Profile Activity
-            // Example:
-            // Intent intent = new Intent(CreateEditEventActivity.this, OrganizerProfileActivity.class);
-            // startActivity(intent);
-            Toast.makeText(this, "Organizer Profile not implemented yet.", Toast.LENGTH_SHORT).show();
+            Intent intent = new Intent(CreateEditEventActivity.this, UserInfoActivity.class);
+            intent.putExtra("USER_TYPE", "Organizer"); // or "Organizer"
+            intent.putExtra("MODE", "EDIT");
+            startActivity(intent);
         } else if (id == R.id.nav_create_event) {
             Toast.makeText(this, "Already on this page.", Toast.LENGTH_SHORT).show();
         } else if (id == R.id.nav_edit_facility) {
