@@ -9,4 +9,10 @@
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
     <string name="event_poster">Event Poster</string>
+    <string name="entrant_avatar">Entrant Avatar</string>
+    <string name="open_navigation_drawer">Open Navigation Drawer</string>
+    <string name="edit_event">Edit Event</string>
+    <string name="delete_event">Delete Event</string>
+
+
 </resources>

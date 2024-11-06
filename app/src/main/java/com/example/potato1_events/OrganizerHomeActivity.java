@@ -169,7 +169,7 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
 
         // Set OnClickListener to navigate to Event Details
         eventCardView.setOnClickListener(v -> {
-            Intent intent = new Intent(OrganizerHomeActivity.this, EventDetailsEntrantActivity.class);
+            Intent intent = new Intent(OrganizerHomeActivity.this, EventDetailsOrganizerActivity.class);
             intent.putExtra("EVENT_ID", event.getId());
             startActivity(intent);
         });
@@ -193,11 +193,10 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
         int id = item.getItemId();
 
         if (id == R.id.nav_organizer_profile) {
-            //FIXME Implement Organizer Profile Activity
-            // Example:
-            // Intent intent = new Intent(OrganizerHomeActivity.this, OrganizerProfileActivity.class);
-            // startActivity(intent);
-            Toast.makeText(this, "Organizer Profile not implemented yet.", Toast.LENGTH_SHORT).show();
+            Intent intent = new Intent(OrganizerHomeActivity.this, UserInfoActivity.class);
+            intent.putExtra("USER_TYPE", "Organizer"); // or "Organizer"
+            intent.putExtra("MODE", "EDIT");
+            startActivity(intent);
         } else if (id == R.id.nav_create_event) {
             Intent intent = new Intent(OrganizerHomeActivity.this, CreateEditEventActivity.class);
             startActivity(intent);

@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.drawerlayout.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/drawer_event_details_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:openDrawer="start">
+
+    <!-- Main Content -->
+    <LinearLayout
+        android:id="@+id/event_details_main_layout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <!-- Toolbar -->
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="?attr/colorPrimary"
+            android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
+            app:title="Event Details" />
+
+        <!-- Event Details Scrollable Content -->
+        <ScrollView
+            android:id="@+id/scrollView_event_details"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:padding="16dp">
+
+            <LinearLayout
+                android:id="@+id/eventDetailsLinearLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <!-- Event Poster -->
+                <ImageView
+                    android:id="@+id/eventPosterImageView"
+                    android:layout_width="match_parent"
+                    android:layout_height="200dp"
+                    android:scaleType="centerCrop"
+                    android:contentDescription="@string/event_poster"
+                    android:src="@drawable/ic_placeholder_image" />
+
+                <!-- Event Name -->
+                <TextView
+                    android:id="@+id/eventNameTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Event Name"
+                    android:textAppearance="?attr/textAppearanceHeadline6"
+                    android:textStyle="bold"
+                    android:layout_marginTop="16dp" />
+
+                <!-- Event Description -->
+                <TextView
+                    android:id="@+id/eventDescriptionTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Event Description"
+                    android:textAppearance="?attr/textAppearanceBody1"
+                    android:layout_marginTop="8dp" />
+
+                <!-- Event Location -->
+                <TextView
+                    android:id="@+id/eventLocationTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Location: Event Location"
+                    android:textAppearance="?attr/textAppearanceBody2"
+                    android:layout_marginTop="8dp" />
+
+                <!-- Event Dates -->
+                <TextView
+                    android:id="@+id/eventDatesTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Dates: Start Date - End Date"
+                    android:textAppearance="?attr/textAppearanceBody2"
+                    android:layout_marginTop="8dp" />
+
+                <!-- Event Capacity -->
+                <TextView
+                    android:id="@+id/eventCapacityTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Capacity: Available Spots / Waiting List Spots"
+                    android:textAppearance="?attr/textAppearanceBody2"
+                    android:layout_marginTop="8dp" />
+
+                <!-- Geolocation Requirement -->
+                <TextView
+                    android:id="@+id/eventGeolocationTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Geolocation Required: Yes/No"
+                    android:textAppearance="?attr/textAppearanceBody2"
+                    android:layout_marginTop="8dp" />
+
+                <!-- Event Status -->
+                <TextView
+                    android:id="@+id/eventStatusTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Status: Open/Closed"
+                    android:textAppearance="?attr/textAppearanceBody2"
+                    android:layout_marginTop="8dp" />
+
+            </LinearLayout>
+        </ScrollView>
+
+        <!-- Action Buttons -->
+        <LinearLayout
+            android:id="@+id/actionButtonsLinearLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="16dp"
+            android:gravity="end">
+
+            <!-- Edit Button -->
+            <Button
+                android:id="@+id/editButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Edit"
+                android:layout_marginEnd="8dp" />
+
+            <!-- Delete Button -->
+            <Button
+                android:id="@+id/deleteButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Delete" />
+
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Navigation Drawer -->
+    <com.google.android.material.navigation.NavigationView
+        android:id="@+id/nav_view"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        app:menu="@menu/drawer_menu_organizer" />
+
+
+</androidx.drawerlayout.widget.DrawerLayout>
