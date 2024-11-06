@@ -24,7 +24,8 @@
                 android:id="@+id/switchModeButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Organizer" />
+                android:text="Organizer"
+                android:textSize="22dp"/>
 
             <!-- Search Bar -->
             <androidx.appcompat.widget.SearchView
