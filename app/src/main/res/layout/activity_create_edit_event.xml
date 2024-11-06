@@ -98,6 +98,20 @@
                     android:layout_height="wrap_content"
                     android:text="Select End Date and Time" />
 
+                <!-- Waiting list sign up deadline -->
+                <TextView
+                    android:id="@+id/waitingListDeadline"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Waiting List Deadline"
+                    android:layout_marginTop="16dp" />
+
+                <Button
+                    android:id="@+id/waitingListDeadlineButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Select Deadline to Join Waiting List" />
+
                 <!-- Associated Rec Centre -->
                 <EditText
                     android:id="@+id/recCentreEditText"
@@ -184,7 +198,7 @@
 
     </LinearLayout>
 
-    <!-- Navigation Drawer -->
+    <!-- Navigation Drawers -->
     <com.google.android.material.navigation.NavigationView
         android:id="@+id/nav_view"
         android:layout_width="wrap_content"
