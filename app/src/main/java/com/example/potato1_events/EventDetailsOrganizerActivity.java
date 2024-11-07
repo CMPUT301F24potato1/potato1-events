@@ -104,7 +104,9 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
             eventId = intent.getStringExtra("EVENT_ID");
             loadEventDetails(eventId);
         } else {
-            Toast.makeText(this, "No Event ID provided.", Toast.LENGTH_SHORT).show();
+            // Honestly rn barely works, will probably need to make it so it checks whether it's coming from editing an event or clicking on an event to update.
+            Toast.makeText(this, "Checking Edit event", Toast.LENGTH_SHORT).show();
+            loadEventDetails(eventId);
             finish();
         }
 

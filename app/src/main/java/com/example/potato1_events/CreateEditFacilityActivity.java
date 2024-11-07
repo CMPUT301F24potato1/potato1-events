@@ -31,6 +31,9 @@ import com.google.firebase.storage.StorageReference;
 import com.squareup.picasso.Picasso;
 import java.util.*;
 
+/**
+ * Activity to create or edit a facility.
+ */
 public class CreateEditFacilityActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
     // UI Components
@@ -60,6 +63,9 @@ public class CreateEditFacilityActivity extends AppCompatActivity implements Nav
 
     // Organizer's deviceId
     private String deviceId;
+
+    // Placeholder Image URL (Set this to your actual placeholder image URL)
+    private static final String PLACEHOLDER_IMAGE_URL = "https://firebasestorage.googleapis.com/v0/b/your-app-id.appspot.com/o/facility_photos%2Fplaceholder_facility.jpg?alt=media&token=your-token";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -181,7 +187,7 @@ public class CreateEditFacilityActivity extends AppCompatActivity implements Nav
 
                             if (!TextUtils.isEmpty(facility.getFacilityPhotoUrl())) {
                                 facilityPhotoUrl = facility.getFacilityPhotoUrl();
-                                Picasso.get().load(facilityPhotoUrl).into(facilityPhotoView);
+                                Picasso.get().load(facilityPhotoUrl).placeholder(R.drawable.ic_placeholder_image).into(facilityPhotoView);
                                 uploadFacilityPhotoButton.setText("Change Facility Photo"); // Update button text
                             }
                         }
@@ -210,7 +216,6 @@ public class CreateEditFacilityActivity extends AppCompatActivity implements Nav
             return;
         }
 
-        // Disable the save button to prevent multiple clicks
         saveFacilityButton.setEnabled(false);
         progressBar.setVisibility(View.VISIBLE);
 
@@ -218,15 +223,9 @@ public class CreateEditFacilityActivity extends AppCompatActivity implements Nav
         if (selectedFacilityPhotoUri != null) {
             uploadFacilityPhoto(name, address, description);
         } else {
-            // If no new photo is selected, check if an existing photo URL exists
-            if (facilityPhotoUrl != null) {
-                saveFacilityToFirestore(name, address, description, facilityPhotoUrl);
-            } else {
-                // Photo is mandatory; prompt the user to upload
-                progressBar.setVisibility(View.GONE);
-                Toast.makeText(this, "Please upload a facility photo.", Toast.LENGTH_SHORT).show();
-                saveFacilityButton.setEnabled(true);
-            }
+            // If no new photo is selected, assign the placeholder image URL
+            facilityPhotoUrl = PLACEHOLDER_IMAGE_URL;
+            saveFacilityToFirestore(name, address, description, facilityPhotoUrl);
         }
     }
 
@@ -302,8 +301,8 @@ public class CreateEditFacilityActivity extends AppCompatActivity implements Nav
      * Navigates back to the previous activity after saving/updating.
      */
     private void navigateBackToPrevious() {
-        // Implement navigation logic, e.g., finish() or start a new Activity
-        finish();
+        Intent intent = new Intent(CreateEditFacilityActivity.this, OrganizerHomeActivity.class);
+        startActivity(intent);
     }
 
     /**
@@ -355,4 +354,3 @@ public class CreateEditFacilityActivity extends AppCompatActivity implements Nav
         getOnBackPressedDispatcher().addCallback(this, callback);
     }
 }
-
