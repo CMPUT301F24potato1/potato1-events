@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="4dp">
+
+    <!-- Media Image -->
+    <ImageView
+        android:id="@+id/imageViewMedia"
+        android:layout_width="match_parent"
+        android:layout_height="150dp"
+        android:scaleType="centerCrop"
+        android:contentDescription="@string/media_image"
+        android:src="@drawable/ic_placeholder_image" />
+
+    <!-- Delete Button -->
+    <ImageButton
+        android:id="@+id/buttonDeleteMedia"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:layout_gravity="top|end"
+        android:layout_margin="8dp"
+        android:src="@drawable/ic_delete"
+        android:padding="4dp" />
+</FrameLayout>
