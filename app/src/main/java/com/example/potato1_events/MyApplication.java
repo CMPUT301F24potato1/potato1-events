@@ -20,7 +20,7 @@ public class MyApplication extends Application {
                 .build();
 
         PeriodicWorkRequest randomDrawWorkRequest =
-                new PeriodicWorkRequest.Builder(RandomDrawWorker.class, 15, TimeUnit.MINUTES)
+                new PeriodicWorkRequest.Builder(RandomDrawWorker.class, 1, TimeUnit.MINUTES)
                         .setConstraints(constraints)
                         .build();
 

@@ -37,10 +37,9 @@ public class RandomDrawWorker extends Worker {
         // Query events where random draw needs to be performed
         firestore.collection("Events")
                 .whereLessThanOrEqualTo("registrationEnd", now)
-                .whereEqualTo("randomDrawPerformed", false)
+                //.whereEqualTo("randomDrawPerformed", false)
                 .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    if (queryDocumentSnapshots.isEmpty()) {
+                .addOnSuccessListener(queryDocumentSnapshots -> {if (queryDocumentSnapshots.isEmpty()) {
                         Log.d(TAG, "No events require random draw at this time.");
                         return;
                     }
