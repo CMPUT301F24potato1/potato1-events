@@ -430,10 +430,9 @@ public class UserInfoActivity extends AppCompatActivity {
             Intent intent = new Intent(UserInfoActivity.this, EntrantHomeActivity.class);
             startActivity(intent);
         } else if (userType.equals("Organizer")) {
-            // Placeholder for OrganizerHomeActivity
-            // Intent intent = new Intent(UserInfoActivity.this, OrganizerHomeActivity.class);
-            // startActivity(intent);
-            Toast.makeText(this, "Organizer Home Page not implemented yet.", Toast.LENGTH_SHORT).show();
+            Intent intent = new Intent(UserInfoActivity.this, OrganizerHomeActivity.class);
+            startActivity(intent);
+
         }
         finish(); // Close current activity
     }

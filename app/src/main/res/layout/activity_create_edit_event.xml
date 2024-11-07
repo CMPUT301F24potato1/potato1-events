@@ -32,7 +32,25 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:background="@drawable/white_square_background"
                 android:orientation="vertical">
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="16dp">
+
+                    <!-- Generate QR Code Button -->
+                    <Button
+                        android:id="@+id/generateQRCodeButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Generate QR Code"
+                        android:textColor="#FFFFFF"
+                        android:layout_marginStart="8dp"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="8dp" />
+                </LinearLayout>
 
                 <!-- Event Name -->
                 <EditText
@@ -79,6 +97,20 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Select End Date and Time" />
+
+                <!-- Waiting list sign up deadline -->
+                <TextView
+                    android:id="@+id/waitingListDeadline"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Waiting List Deadline"
+                    android:layout_marginTop="16dp" />
+
+                <Button
+                    android:id="@+id/waitingListDeadlineButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Select Deadline to Join Waiting List" />
 
                 <!-- Associated Rec Centre -->
                 <EditText
@@ -166,7 +198,7 @@
 
     </LinearLayout>
 
-    <!-- Navigation Drawer -->
+    <!-- Navigation Drawers -->
     <com.google.android.material.navigation.NavigationView
         android:id="@+id/nav_view"
         android:layout_width="wrap_content"

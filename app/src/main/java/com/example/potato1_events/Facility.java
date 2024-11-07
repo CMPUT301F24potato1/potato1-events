@@ -1,6 +1,8 @@
+// File: Facility.java
 package com.example.potato1_events;
 
 import com.google.firebase.firestore.ServerTimestamp;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -18,32 +20,22 @@ public class Facility {
     /**
      * Name of the facility.
      */
-    private String name;
+    private String facilityName;
 
     /**
      * Address of the facility.
      */
-    private String address;
+    private String facilityAddress;
 
     /**
-     * Latitude for geolocation verification.
+     * Description of the facility.
      */
-    private double latitude;
+    private String facilityDescription;
 
     /**
-     * Longitude for geolocation verification.
+     * URL of the facility photo.
      */
-    private double longitude;
-
-    /**
-     * Contact email for the facility.
-     */
-    private String contactEmail;
-
-    /**
-     * Contact phone number for the facility.
-     */
-    private String contactPhone;
+    private String facilityPhotoUrl;
 
     /**
      * List of event IDs associated with this facility.
@@ -60,32 +52,29 @@ public class Facility {
      * Default constructor required for Firebase deserialization.
      */
     public Facility() {
-        // Default constructor
+        // Initialize eventIds to prevent NullPointerException
+        this.eventIds = new ArrayList<>();
     }
 
     /**
      * Parameterized constructor to create a Facility instance.
      *
-     * @param id            Unique identifier for the facility.
-     * @param name          Name of the facility.
-     * @param address       Address of the facility.
-     * @param latitude      Latitude for geolocation.
-     * @param longitude     Longitude for geolocation.
-     * @param contactEmail  Contact email.
-     * @param contactPhone  Contact phone number.
-     * @param eventIds      List of associated event IDs.
-     * @param createdAt     Creation timestamp.
+     * @param id                   Unique identifier for the facility.
+     * @param facilityName         Name of the facility.
+     * @param facilityAddress      Address of the facility.
+     * @param facilityDescription  Description of the facility.
+     * @param facilityPhotoUrl     URL of the facility photo.
+     * @param eventIds             List of associated event IDs.
+     * @param createdAt            Creation timestamp.
      */
-    public Facility(String id, String name, String address, double latitude, double longitude,
-                    String contactEmail, String contactPhone, List<String> eventIds, Date createdAt) {
+    public Facility(String id, String facilityName, String facilityAddress, String facilityDescription,
+                    String facilityPhotoUrl, List<String> eventIds, Date createdAt) {
         this.id = id;
-        this.name = name;
-        this.address = address;
-        this.latitude = latitude;
-        this.longitude = longitude;
-        this.contactEmail = contactEmail;
-        this.contactPhone = contactPhone;
-        this.eventIds = eventIds;
+        this.facilityName = facilityName;
+        this.facilityAddress = facilityAddress;
+        this.facilityDescription = facilityDescription;
+        this.facilityPhotoUrl = facilityPhotoUrl;
+        this.eventIds = eventIds != null ? eventIds : new ArrayList<>();
         this.createdAt = createdAt;
     }
 
@@ -114,17 +103,17 @@ public class Facility {
      *
      * @return Facility name.
      */
-    public String getName() {
-        return name;
+    public String getFacilityName() {
+        return facilityName;
     }
 
     /**
      * Sets the facility name.
      *
-     * @param name Facility name.
+     * @param facilityName Facility name.
      */
-    public void setName(String name) {
-        this.name = name;
+    public void setFacilityName(String facilityName) {
+        this.facilityName = facilityName;
     }
 
     /**
@@ -132,89 +121,53 @@ public class Facility {
      *
      * @return Facility address.
      */
-    public String getAddress() {
-        return address;
+    public String getFacilityAddress() {
+        return facilityAddress;
     }
 
     /**
      * Sets the facility address.
      *
-     * @param address Facility address.
+     * @param facilityAddress Facility address.
      */
-    public void setAddress(String address) {
-        this.address = address;
+    public void setFacilityAddress(String facilityAddress) {
+        this.facilityAddress = facilityAddress;
     }
 
     /**
-     * Gets the latitude for geolocation.
+     * Gets the facility description.
      *
-     * @return Latitude.
+     * @return Facility description.
      */
-    public double getLatitude() {
-        return latitude;
+    public String getFacilityDescription() {
+        return facilityDescription;
     }
 
     /**
-     * Sets the latitude for geolocation.
+     * Sets the facility description.
      *
-     * @param latitude Latitude.
+     * @param facilityDescription Facility description.
      */
-    public void setLatitude(double latitude) {
-        this.latitude = latitude;
+    public void setFacilityDescription(String facilityDescription) {
+        this.facilityDescription = facilityDescription;
     }
 
     /**
-     * Gets the longitude for geolocation.
+     * Gets the facility photo URL.
      *
-     * @return Longitude.
+     * @return Facility photo URL.
      */
-    public double getLongitude() {
-        return longitude;
+    public String getFacilityPhotoUrl() {
+        return facilityPhotoUrl;
     }
 
     /**
-     * Sets the longitude for geolocation.
+     * Sets the facility photo URL.
      *
-     * @param longitude Longitude.
+     * @param facilityPhotoUrl Facility photo URL.
      */
-    public void setLongitude(double longitude) {
-        this.longitude = longitude;
-    }
-
-    /**
-     * Gets the contact email.
-     *
-     * @return Contact email.
-     */
-    public String getContactEmail() {
-        return contactEmail;
-    }
-
-    /**
-     * Sets the contact email.
-     *
-     * @param contactEmail Contact email.
-     */
-    public void setContactEmail(String contactEmail) {
-        this.contactEmail = contactEmail;
-    }
-
-    /**
-     * Gets the contact phone number.
-     *
-     * @return Contact phone number.
-     */
-    public String getContactPhone() {
-        return contactPhone;
-    }
-
-    /**
-     * Sets the contact phone number.
-     *
-     * @param contactPhone Contact phone number.
-     */
-    public void setContactPhone(String contactPhone) {
-        this.contactPhone = contactPhone;
+    public void setFacilityPhotoUrl(String facilityPhotoUrl) {
+        this.facilityPhotoUrl = facilityPhotoUrl;
     }
 
     /**
@@ -232,7 +185,7 @@ public class Facility {
      * @param eventIds List of event IDs.
      */
     public void setEventIds(List<String> eventIds) {
-        this.eventIds = eventIds;
+        this.eventIds = eventIds != null ? eventIds : new ArrayList<>();
     }
 
     /**
@@ -259,6 +212,9 @@ public class Facility {
      * @param eventId Event ID to add.
      */
     public void addEventId(String eventId) {
+        if (this.eventIds == null) {
+            this.eventIds = new ArrayList<>();
+        }
         this.eventIds.add(eventId);
     }
 
@@ -268,6 +224,8 @@ public class Facility {
      * @param eventId Event ID to remove.
      */
     public void removeEventId(String eventId) {
-        this.eventIds.remove(eventId);
+        if (this.eventIds != null) {
+            this.eventIds.remove(eventId);
+        }
     }
 }

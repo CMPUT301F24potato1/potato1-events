@@ -31,6 +31,24 @@
             android:name=".CreateEditEventActivity"
             android:exported="false"/>
         <activity
+            android:name=".CreateEditFacilityActivity"
+            android:exported="false"/>
+        <activity
+            android:name=".EventsAdapter"
+            android:exported="false"/>
+
+        <activity
+            android:name=".EventWaitingListActivity"
+            android:exported="false"/>
+
+        <activity
+            android:name=".EventDetailsOrganizerActivity"
+            android:exported="false"/>
+        <activity android:name=".ManageMediaActivity" />
+        <activity android:name=".ManageUsersActivity" />
+
+
+        <activity
             android:name=".LandingActivity"
             android:exported="true">
             <intent-filter>

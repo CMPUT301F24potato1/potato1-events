@@ -19,11 +19,15 @@ public class User {
     private long createdAt; // Timestamp of account creation
     private long updatedAt; // Timestamp of last update
     private boolean isActive; // Indicates if the user account is active
+    private boolean isAdmin = false; // Indicates if the user has administrative privileges
+    private String status; // Status related to event participation (e.g., Waiting List, Accepted, Rejected)
 
     /**
      * Default constructor required for Firestore serialization.
+     * Initializes isAdmin to false by default.
      */
     public User() {
+        this.isAdmin = false;
     }
 
     /**
@@ -32,7 +36,7 @@ public class User {
      * @param userId               The unique identifier (UID) from Firebase Authentication.
      * @param role                 The role of the user (Entrant, Organizer, Admin).
      * @param name                 The user's full name.
-     * @param email                The user's email address.
+     * @param email                 The user's email address.
      * @param phoneNumber          The user's phone number.
      * @param imagePath            The Firebase Storage path to the user's profile picture.
      * @param notificationsEnabled Whether the user has opted in for notifications.
@@ -48,6 +52,7 @@ public class User {
         this.imagePath = imagePath;
         this.notificationsEnabled = notificationsEnabled;
         this.createdAt = createdAt;
+        this.isAdmin = false; // Ensure isAdmin is false by default
     }
 
     // Getters and Setters
@@ -194,5 +199,44 @@ public class User {
      */
     public void setCreatedAt(long createdAt) {
         this.createdAt = createdAt;
+    }
+    /**
+     * Checks if the user has administrative privileges.
+     * This field is intended to be managed directly in the database.
+     *
+     * @return True if the user is an admin, false otherwise.
+     */
+    public boolean isAdmin() {
+        return isAdmin;
+    }
+
+    /**
+     * Sets the administrative status of the user.
+     * This method is private to prevent modification from application code.
+     * Only the database can modify this field.
+     *
+     * @param admin True to grant admin privileges, false to revoke.
+     */
+    @Exclude // Prevents this setter from being used by Firestore serialization
+    private void setAdmin(boolean admin) {
+        this.isAdmin = admin;
+    }
+
+    /**
+     * Gets the entrant's status related to event participation.
+     *
+     * @return The entrant's status (e.g., Waiting List, Accepted, Rejected).
+     */
+    public String getStatus() {
+        return status;
+    }
+
+    /**
+     * Sets the entrant's status related to event participation.
+     *
+     * @param status The entrant's status (e.g., Waiting List, Accepted, Rejected).
+     */
+    public void setStatus(String status) {
+        this.status = status;
     }
 }
