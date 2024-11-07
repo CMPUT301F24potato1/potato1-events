@@ -12,6 +12,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+import androidx.activity.OnBackPressedCallback;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBarDrawerToggle;
@@ -43,20 +44,23 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // Ensure EdgeToEdge is correctly implemented or remove if not necessary
-        // EdgeToEdge.enable(this);
+
         setContentView(R.layout.activity_organizer_home);
 
         // Get device ID
         deviceId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
 
-        // Initialize Firebase Firestore
+        // Initialize Firestore
         firestore = FirebaseFirestore.getInstance();
 
-        // Initialize views
+        // Refers to the event_details_organizer
         drawerLayout = findViewById(R.id.drawer_organizer_layout);
+
+        // Refers to the side bar
         NavigationView navigationView = findViewById(R.id.nav_view);
         eventsLinearLayout = findViewById(R.id.eventsLinearLayout);
+
+        // Refers to the header
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
@@ -70,6 +74,7 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
 
         // Load events associated with the organizer's facility
         loadEventsForOrganizerFacility();
+        handleBackPressed();
     }
 
     /**
@@ -98,19 +103,20 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
                                         .whereIn(FieldPath.documentId(), limitedEventIds)
                                         .get()
                                         .addOnSuccessListener(eventsSnapshot -> {
-                                            for (QueryDocumentSnapshot eventDoc : eventsSnapshot) {
+                                            for (QueryDocumentSnapshot eventDoc : eventsSnapshot) { // Adding event to the list in firebase and the view
                                                 Event event = eventDoc.toObject(Event.class);
                                                 event.setId(eventDoc.getId());
                                                 eventList.add(event);
                                                 addEventView(event);
                                             }
-
+                                            // Case if you facility has no events
                                             if (eventList.isEmpty()) {
                                                 Toast.makeText(OrganizerHomeActivity.this,
                                                         "No events found for your facility.",
                                                         Toast.LENGTH_SHORT).show();
                                             }
                                         })
+                                        // Case if there was a failure when loading events
                                         .addOnFailureListener(e -> {
                                             Toast.makeText(OrganizerHomeActivity.this,
                                                     "Error loading events: " + e.getMessage(),
@@ -138,12 +144,12 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
     }
 
     /**
-     * Adds a custom event view to the LinearLayout.
+     * Adds as event view to the LinearLayout for the added event.
      *
      * @param event The Event object to display.
      */
     private void addEventView(Event event) {
-        // Inflate the event_item.xml layout
+        // Inflate event_item.xml
         LayoutInflater inflater = LayoutInflater.from(this);
         View eventView = inflater.inflate(R.layout.event_item, eventsLinearLayout, false);
 
@@ -153,40 +159,46 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
         TextView eventLocationTextView = eventView.findViewById(R.id.eventLocationTextView);
         CardView eventCardView = eventView.findViewById(R.id.eventCardView);
 
-        // Populate the views with event data
+        // Adding the information desired to the event view (Need to add deadline for waitlist too)
         eventNameTextView.setText(event.getName());
         eventLocationTextView.setText(event.getEventLocation());
 
         if (!TextUtils.isEmpty(event.getPosterImageUrl())) {
             Picasso.get()
                     .load(event.getPosterImageUrl())
-                    .placeholder(R.drawable.ic_placeholder_image) // Ensure you have a placeholder image
-                    .error(R.drawable.ic_error_image) // Ensure you have an error image
+                    .placeholder(R.drawable.ic_placeholder_image)
+                    .error(R.drawable.ic_error_image)
                     .into(eventPosterImageView);
         } else {
-            eventPosterImageView.setImageResource(R.drawable.ic_placeholder_image); // Default image
+            eventPosterImageView.setImageResource(R.drawable.ic_placeholder_image);
         }
 
-        // Set OnClickListener to navigate to Event Details
+        // listener to switch to event details if clicked
         eventCardView.setOnClickListener(v -> {
             Intent intent = new Intent(OrganizerHomeActivity.this, EventDetailsOrganizerActivity.class);
             intent.putExtra("EVENT_ID", event.getId());
             startActivity(intent);
         });
 
-        // Add the populated event view to the LinearLayout
+        // Finally add the new view to the linear view
         eventsLinearLayout.addView(eventView);
     }
 
     /**
      * Navigates the organizer to the Create/Edit Facility Activity to create a new facility.
+     * This is for when an organizer is first chosen (Will probably be removed if we combine organizer and entrant, instead having a warning for creating an event)
      */
     private void navigateToCreateFacility() {
         Intent intent = new Intent(OrganizerHomeActivity.this, CreateEditFacilityActivity.class);
         startActivity(intent);
-        finish(); // Close current activity to prevent back navigation
+        finish();
     }
 
+    /**
+     * Used to control changing between different pages in teh side bar
+     *
+     * @param item The option clicked on by the user in the side bar
+     */
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         // Handle navigation
@@ -194,7 +206,7 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
 
         if (id == R.id.nav_organizer_profile) {
             Intent intent = new Intent(OrganizerHomeActivity.this, UserInfoActivity.class);
-            intent.putExtra("USER_TYPE", "Organizer"); // or "Organizer"
+            intent.putExtra("USER_TYPE", "Organizer");
             intent.putExtra("MODE", "EDIT");
             startActivity(intent);
         } else if (id == R.id.nav_create_event) {
@@ -212,14 +224,21 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
     }
 
     /**
-     * Handles the back button press to close the drawer if it's open.
+     * If back button is pressed and side bar is opened, then return to the page.
+     * If done on the page itself, then default back to the normal back press action
      */
-    @Override
-    public void onBackPressed() {
-        if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
-            drawerLayout.closeDrawer(GravityCompat.START);
-        } else {
-            super.onBackPressed();
-        }
+    private void handleBackPressed() {
+        OnBackPressedCallback callback = new OnBackPressedCallback(true /* enabled */) {
+            @Override
+            public void handleOnBackPressed() {
+                if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
+                    drawerLayout.closeDrawer(GravityCompat.START);
+                } else {
+                    setEnabled(false);
+                    getOnBackPressedDispatcher().onBackPressed();
+                }
+            }
+        };
+        getOnBackPressedDispatcher().addCallback(this, callback);
     }
 }
