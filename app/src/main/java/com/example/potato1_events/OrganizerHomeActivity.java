@@ -8,6 +8,7 @@ import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -16,6 +17,7 @@ import androidx.activity.OnBackPressedCallback;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBarDrawerToggle;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.cardview.widget.CardView;
@@ -41,10 +43,12 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
     private String deviceId;
     private ArrayList<Event> eventList = new ArrayList<>(); // To store events
 
+    // Declare the Switch Mode button
+    private Button switchModeButton;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         setContentView(R.layout.activity_organizer_home);
 
         // Get device ID
@@ -53,16 +57,15 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
         // Initialize Firestore
         firestore = FirebaseFirestore.getInstance();
 
-        // Refers to the event_details_organizer
+        // Initialize views
         drawerLayout = findViewById(R.id.drawer_organizer_layout);
-
-        // Refers to the side bar
         NavigationView navigationView = findViewById(R.id.nav_view);
         eventsLinearLayout = findViewById(R.id.eventsLinearLayout);
-
-        // Refers to the header
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        // Bind the Switch Mode button
+        switchModeButton = findViewById(R.id.switchModeButton);
 
         // Set up Navigation Drawer
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
@@ -72,9 +75,29 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
 
         navigationView.setNavigationItemSelectedListener(this);
 
+        // Set Click Listener for Switch Mode Button
+        switchModeButton.setOnClickListener(v -> switchMode());
+
         // Load events associated with the organizer's facility
         loadEventsForOrganizerFacility();
         handleBackPressed();
+    }
+
+    /**
+     * Navigates back to LandingActivity when Switch Mode button is clicked.
+     */
+    private void switchMode() {
+        // Create an Intent to navigate to LandingActivity
+        Intent intent = new Intent(OrganizerHomeActivity.this, LandingActivity.class);
+
+        // Set flags to clear the current activity stack
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+
+        // Start LandingActivity
+        startActivity(intent);
+
+        // Finish the current activity to remove it from the back stack
+        finish();
     }
 
     /**
@@ -109,7 +132,7 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
                                                 eventList.add(event);
                                                 addEventView(event);
                                             }
-                                            // Case if you facility has no events
+                                            // Case if your facility has no events
                                             if (eventList.isEmpty()) {
                                                 Toast.makeText(OrganizerHomeActivity.this,
                                                         "No events found for your facility.",
@@ -144,7 +167,7 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
     }
 
     /**
-     * Adds as event view to the LinearLayout for the added event.
+     * Adds an event view to the LinearLayout for the added event.
      *
      * @param event The Event object to display.
      */
@@ -173,7 +196,7 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
             eventPosterImageView.setImageResource(R.drawable.ic_placeholder_image);
         }
 
-        // listener to switch to event details if clicked
+        // Listener to switch to event details if clicked
         eventCardView.setOnClickListener(v -> {
             Intent intent = new Intent(OrganizerHomeActivity.this, EventDetailsOrganizerActivity.class);
             intent.putExtra("EVENT_ID", event.getId());
@@ -195,7 +218,7 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
     }
 
     /**
-     * Used to control changing between different pages in teh side bar
+     * Used to control changing between different pages in the side bar
      *
      * @param item The option clicked on by the user in the side bar
      */

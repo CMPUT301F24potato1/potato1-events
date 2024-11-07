@@ -8,6 +8,7 @@ import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -41,6 +42,9 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
     private String deviceId;
     private ArrayList<Event> eventList = new ArrayList<>(); // To store events
 
+    // Declare the Switch Mode button
+    private Button switchModeButton;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -61,6 +65,9 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        // Bind the Switch Mode button
+        switchModeButton = findViewById(R.id.switchModeButton);
+
         // Set up Navigation Drawer
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawerLayout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
@@ -74,8 +81,28 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
 
         navigationView.setNavigationItemSelectedListener(this);
 
+        // Set Click Listener for Switch Mode Button
+        switchModeButton.setOnClickListener(v -> switchMode());
+
         // Load all events
         loadAllEvents();
+    }
+
+    /**
+     * Navigates back to LandingActivity when Switch Mode button is clicked.
+     */
+    private void switchMode() {
+        // Create an Intent to navigate to LandingActivity
+        Intent intent = new Intent(EntrantHomeActivity.this, LandingActivity.class);
+
+        // Set flags to clear the current activity stack
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+
+        // Start LandingActivity
+        startActivity(intent);
+
+        // Finish the current activity to remove it from the back stack
+        finish();
     }
 
     /**
