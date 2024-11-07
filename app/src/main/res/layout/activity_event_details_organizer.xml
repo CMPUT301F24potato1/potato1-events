@@ -131,6 +131,14 @@
             android:padding="16dp"
             android:gravity="end">
 
+            <!-- View Entrants list Button -->
+            <Button
+                android:id="@+id/entrantsListButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="View Entrants"
+                android:layout_marginEnd="50dp"/>
+
             <!-- Edit Button -->
             <Button
                 android:id="@+id/editButton"
@@ -145,6 +153,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Delete" />
+
+
 
         </LinearLayout>
     </LinearLayout>
