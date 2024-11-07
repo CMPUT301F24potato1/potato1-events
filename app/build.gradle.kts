@@ -44,6 +44,7 @@ dependencies {
     implementation("de.hdodenhof:circleimageview:3.1.0")
     implementation(platform("com.google.firebase:firebase-bom:33.4.0"))
     implementation(platform("com.google.firebase:firebase-storage:20.2.1"))
+    implementation ("androidx.work:work-runtime:2.7.1")
     implementation (libs.firebase.database)
     implementation(libs.appcompat)
     implementation(libs.material)
