@@ -11,6 +11,8 @@ import android.text.TextUtils;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.*;
+
+import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
@@ -137,6 +139,7 @@ public class CreateEditFacilityActivity extends AppCompatActivity implements Nav
 
         // Load existing facility data if it exists
         loadFacilityData();
+        handleBackPressed();
     }
 
     /**
@@ -334,15 +337,22 @@ public class CreateEditFacilityActivity extends AppCompatActivity implements Nav
     }
 
     /**
-     * Handles the back button press to close the drawer if it's open.
+     * If back button is pressed and side bar is opened, then return to the page.
+     * If done on the page itself, then default back to the normal back press action
      */
-    @Override
-    public void onBackPressed() {
-        if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
-            drawerLayout.closeDrawer(GravityCompat.START);
-        } else {
-            super.onBackPressed();
-        }
+    private void handleBackPressed() {
+        OnBackPressedCallback callback = new OnBackPressedCallback(true /* enabled */) {
+            @Override
+            public void handleOnBackPressed() {
+                if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
+                    drawerLayout.closeDrawer(GravityCompat.START);
+                } else {
+                    setEnabled(false);
+                    getOnBackPressedDispatcher().onBackPressed();
+                }
+            }
+        };
+        getOnBackPressedDispatcher().addCallback(this, callback);
     }
 }
 
