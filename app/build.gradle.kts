@@ -54,7 +54,7 @@ dependencies {
     implementation(libs.firebase.firestore)
     implementation(libs.play.services.location)
     implementation(libs.firebase.storage)
-    // implementation(libs.rules)
+    implementation("androidx.test:rules:1.4.0")
     testImplementation(libs.junit)
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.7.0")
     testImplementation("org.junit.jupiter:junit-jupiter-params:5.7.0")
