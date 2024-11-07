@@ -309,13 +309,14 @@ public class ManageUsersActivity extends AppCompatActivity {
         for (String eventId : eventsJoined) {
             DocumentReference eventRef = firestore.collection("Events").document(eventId);
 
-            eventRef.update("waitingList", FieldValue.arrayRemove(user.getUserId()))
+            eventRef.update("entrants." + user.getUserId(), FieldValue.delete())
                     .addOnSuccessListener(aVoid -> {
-                        Log.d(TAG, "Removed user from event waiting list: " + eventId);
+                        Log.d(TAG, "Removed " + user.getUserId() + " event waiting list: " + eventId);
                     })
                     .addOnFailureListener(e -> {
                         Log.e(TAG, "Error removing user from event " + eventId + ": " + e.getMessage(), e);
                     });
+            eventRef.update("currentEntrantsNumber", FieldValue.increment(-1));
         }
     }
 
