@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.drawerlayout.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/drawer_organizer_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:openDrawer="start">
+
+    <!-- Main Content -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <!-- Toolbar -->
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="?attr/colorPrimary"
+            android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
+            app:title="Create/Edit Event" />
+
+        <!-- ScrollView containing LinearLayout for form fields -->
+        <ScrollView
+            android:id="@+id/scrollView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/white_square_background"
+                android:orientation="vertical">
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="16dp">
+
+                    <!-- Generate QR Code Button -->
+                    <Button
+                        android:id="@+id/generateQRCodeButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Generate QR Code"
+                        android:textColor="#FFFFFF"
+                        android:layout_marginStart="8dp"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="8dp" />
+                </LinearLayout>
+
+                <!-- Event Name -->
+                <EditText
+                    android:id="@+id/eventNameEditText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Event Name"
+                    android:inputType="textPersonName" />
+
+                <!-- Description -->
+                <EditText
+                    android:id="@+id/eventDescriptionEditText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Description"
+                    android:inputType="textMultiLine"
+                    android:minLines="3"
+                    android:gravity="top" />
+
+                <!-- Start Date and Time -->
+                <TextView
+                    android:id="@+id/startDateLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Start Date and Time"
+                    android:layout_marginTop="16dp" />
+
+                <Button
+                    android:id="@+id/startDateButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Select Start Date and Time" />
+
+                <!-- End Date and Time -->
+                <TextView
+                    android:id="@+id/endDateLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="End Date and Time"
+                    android:layout_marginTop="16dp" />
+
+                <Button
+                    android:id="@+id/endDateButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Select End Date and Time" />
+
+                <!-- Waiting list sign up deadline -->
+                <TextView
+                    android:id="@+id/waitingListDeadline"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Waiting List Deadline"
+                    android:layout_marginTop="16dp" />
+
+                <Button
+                    android:id="@+id/waitingListDeadlineButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Select Deadline to Join Waiting List" />
+
+                <!-- Associated Rec Centre -->
+                <EditText
+                    android:id="@+id/recCentreEditText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Associated Rec Centre"
+                    android:inputType="text" />
+
+                <!-- Event Location -->
+                <EditText
+                    android:id="@+id/eventLocationEditText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Event Location"
+                    android:inputType="text" />
+
+                <!-- Number of Available Spots -->
+                <EditText
+                    android:id="@+id/availableSpotsEditText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Number of Available Spots"
+                    android:inputType="number" />
+
+                <!-- Number of Waiting List Spots -->
+                <EditText
+                    android:id="@+id/waitingListSpotsEditText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Number of Waiting List Spots"
+                    android:inputType="number" />
+
+                <!-- Geolocation Requirement -->
+                <CheckBox
+                    android:id="@+id/geolocationCheckBox"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Enable Geolocation Requirement"
+                    android:layout_marginTop="16dp" />
+
+                <!-- Event Poster -->
+                <TextView
+                    android:id="@+id/eventPosterLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Event Poster"
+                    android:layout_marginTop="16dp" />
+
+                <ImageView
+                    android:id="@+id/eventPosterImageView"
+                    android:layout_width="200dp"
+                    android:layout_height="200dp"
+                    android:scaleType="centerCrop"
+                    android:background="#CCCCCC"
+                    android:contentDescription="Event Poster" />
+
+                <Button
+                    android:id="@+id/uploadPosterButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Upload Poster" />
+
+                <!-- Save Button -->
+                <Button
+                    android:id="@+id/saveEventButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Save Event"
+                    android:layout_marginTop="24dp" />
+
+                <!-- Delete Button for edit mode -->
+                <Button
+                    android:id="@+id/deleteEventButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Delete Event"
+                    android:layout_marginTop="8dp"
+                    android:backgroundTint="#FF0000"
+                    android:visibility="gone" />
+
+            </LinearLayout>
+
+        </ScrollView>
+
+    </LinearLayout>
+
+    <!-- Navigation Drawers -->
+    <com.google.android.material.navigation.NavigationView
+        android:id="@+id/nav_view"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        app:menu="@menu/drawer_menu_organizer" />
+
+</androidx.drawerlayout.widget.DrawerLayout>

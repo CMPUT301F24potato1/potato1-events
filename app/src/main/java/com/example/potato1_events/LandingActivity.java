@@ -57,16 +57,18 @@ public class LandingActivity extends AppCompatActivity {
                         // User exists, navigate to the home activity
                         if (userType.equals("Entrant")) {
                             Intent intent = new Intent(LandingActivity.this, EntrantHomeActivity.class);
+                            boolean isAdmin = Boolean.parseBoolean(documentSnapshot.get("admin").toString());
+                            intent.putExtra("IS_ADMIN", isAdmin);
                             startActivity(intent);
                         } else if (userType.equals("Organizer")) {
-                            // Placeholder for OrganizerHomeActivity
-                            // Intent intent = new Intent(LandingActivity.this, OrganizerHomeActivity.class);
-                            // startActivity(intent);
+                            Intent intent = new Intent(LandingActivity.this, OrganizerHomeActivity.class);
+                            startActivity(intent);
                         }
                     } else {
                         // User does not exist, navigate to UserInfoActivity
                         Intent intent = new Intent(LandingActivity.this, UserInfoActivity.class);
                         intent.putExtra("USER_TYPE", userType);
+                        intent.putExtra("MODE", "CREATE");
                         startActivity(intent);
                     }
                 })

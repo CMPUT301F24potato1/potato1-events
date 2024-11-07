@@ -1,33 +1,38 @@
+// File: EntrantHomeActivity.java
 package com.example.potato1_events;
 
 import android.content.Intent;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.text.TextUtils;
+import android.view.LayoutInflater;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
-import androidx.core.graphics.Insets;
+import androidx.cardview.widget.CardView;
 import androidx.core.view.GravityCompat;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.navigation.NavigationView;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
-import java.util.List;
 
+/**
+ * Activity to display all events for entrants.
+ * Entrants can view event details and join or leave waiting lists.
+ */
 public class EntrantHomeActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
     private DrawerLayout drawerLayout;
@@ -37,11 +42,15 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
     private String deviceId;
     private ArrayList<Event> eventList = new ArrayList<>(); // To store events
 
+    // Declare the Switch Mode button
+    private Button switchModeButton;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_entrant_home);
+
+        final boolean isAdmin = getIntent().getBooleanExtra("IS_ADMIN", false);
 
         // Get device ID
         deviceId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
@@ -55,97 +64,166 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
         eventsLinearLayout = findViewById(R.id.eventsLinearLayout);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        // Bind the Switch Mode button
+        switchModeButton = findViewById(R.id.switchModeButton);
+
         // Set up Navigation Drawer
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawerLayout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawerLayout.addDrawerListener(toggle);
         toggle.syncState();
 
+        // Make admin options available
+        if (isAdmin) {
+            navigationView.getMenu().findItem(R.id.nav_manage_media).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_manage_users).setVisible(true);
+        }
+
         navigationView.setNavigationItemSelectedListener(this);
 
-        // Load events from Firestore
-        loadEvents();
+        // Set Click Listener for Switch Mode Button
+        switchModeButton.setOnClickListener(v -> switchMode());
 
-//        SearchView searchView = findViewById(R.id.searchView);
-//        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-//            @Override
-//            public boolean onQueryTextSubmit(String query) {
-//                filterEvents(query);
-//                return false;
-//            }
-//
-//            @Override
-//            public boolean onQueryTextChange(String newText) {
-//                filterEvents(newText);
-//                return false;
-//            }
-//        });
-//
-//        private void filterEvents(String query) {
-//            eventsLinearLayout.removeAllViews(); // Clear existing views
-//
-//            for (Event event : eventList) {
-//                if (event.getName().toLowerCase().contains(query.toLowerCase())) {
-//                    addEventView(event);
-//                }
-//            }
-//        }
+        // Load all events
+        loadAllEvents();
     }
 
-    private void loadEvents() {
-        firestore.collection("Events").get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    eventsLinearLayout.removeAllViews(); // Clear existing views
-                    eventList.clear();
+    /**
+     * Navigates back to LandingActivity when Switch Mode button is clicked.
+     */
+    private void switchMode() {
+        // Create an Intent to navigate to LandingActivity
+        Intent intent = new Intent(EntrantHomeActivity.this, LandingActivity.class);
 
-                    for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
-                        Event event = document.toObject(Event.class);
-                        event.setEventId(document.getId()); // Ensure event ID is set
-                        eventList.add(event);
-                        addEventView(event);
+        // Set flags to clear the current activity stack
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+
+        // Start LandingActivity
+        startActivity(intent);
+
+        // Finish the current activity to remove it from the back stack
+        finish();
+    }
+
+    /**
+     * Loads all events from the "Events" collection in Firestore.
+     */
+    private void loadAllEvents() {
+        // Clear existing views and list
+        eventsLinearLayout.removeAllViews();
+        eventList.clear();
+
+        firestore.collection("Events")
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    if (!queryDocumentSnapshots.isEmpty()) {
+                        for (QueryDocumentSnapshot eventDoc : queryDocumentSnapshots) {
+                            Event event = eventDoc.toObject(Event.class);
+                            event.setId(eventDoc.getId());
+                            eventList.add(event);
+                            addEventView(event);
+                        }
+                    } else {
+                        Toast.makeText(EntrantHomeActivity.this,
+                                "No events available at the moment.",
+                                Toast.LENGTH_SHORT).show();
                     }
                 })
                 .addOnFailureListener(e -> {
-                    Toast.makeText(EntrantHomeActivity.this, "Error loading events: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(EntrantHomeActivity.this,
+                            "Error loading events: " + e.getMessage(),
+                            Toast.LENGTH_SHORT).show();
                 });
     }
 
+    /**
+     * Adds a custom event view to the LinearLayout.
+     *
+     * @param event The Event object to display.
+     */
     private void addEventView(Event event) {
-        // Create a Button for each event
-        Button eventButton = new Button(this);
-        eventButton.setText(event.getName()); // Set event name
-        eventButton.setTag(event.getEventId()); // Store event ID
+        // Inflate the event_item.xml layout
+        LayoutInflater inflater = LayoutInflater.from(this);
+        View eventView = inflater.inflate(R.layout.event_item, eventsLinearLayout, false);
 
-        // Set OnClickListener
-        eventButton.setOnClickListener(v -> {
-            String eventId = (String) v.getTag();
+        // Initialize UI components within event_item.xml
+        ImageView eventPosterImageView = eventView.findViewById(R.id.eventPosterImageView);
+        TextView eventNameTextView = eventView.findViewById(R.id.eventNameTextView);
+        TextView eventLocationTextView = eventView.findViewById(R.id.eventLocationTextView);
+        CardView eventCardView = eventView.findViewById(R.id.eventCardView);
+
+        // Populate the views with event data
+        eventNameTextView.setText(event.getName());
+        eventLocationTextView.setText(event.getEventLocation());
+
+        if (!TextUtils.isEmpty(event.getPosterImageUrl())) {
+            Picasso.get()
+                    .load(event.getPosterImageUrl())
+                    .placeholder(R.drawable.ic_placeholder_image) // Ensure you have a placeholder image
+                    .error(R.drawable.ic_error_image) // Ensure you have an error image
+                    .into(eventPosterImageView);
+        } else {
+            eventPosterImageView.setImageResource(R.drawable.ic_placeholder_image); // Default image
+        }
+
+        // Set OnClickListener to navigate to Event Details
+        eventCardView.setOnClickListener(v -> {
             Intent intent = new Intent(EntrantHomeActivity.this, EventDetailsEntrantActivity.class);
-            intent.putExtra("EVENT_ID", eventId);
+            intent.putExtra("EVENT_ID", event.getId());
             startActivity(intent);
         });
 
-        // Add the button to the LinearLayout
-        eventsLinearLayout.addView(eventButton);
+        // Add the populated event view to the LinearLayout
+        eventsLinearLayout.addView(eventView);
     }
 
+    /**
+     * Handles navigation menu item selections.
+     *
+     * @param item The selected menu item.
+     * @return True if handled, else false.
+     */
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         // Handle navigation
         int id = item.getItemId();
 
         if (id == R.id.nav_notifications) {
-            //FIXME Implement this
             // Navigate to NotificationsActivity
 //            Intent intent = new Intent(EntrantHomeActivity.this, NotificationsActivity.class);
 //            startActivity(intent);
         } else if (id == R.id.nav_edit_profile) {
-            //FIXME Implement this
             // Navigate to EditProfileActivity
-//            Intent intent = new Intent(EntrantHomeActivity.this, EditProfileActivity.class);
-//            startActivity(intent);
+            Intent intent = new Intent(EntrantHomeActivity.this, UserInfoActivity.class);
+            intent.putExtra("USER_TYPE", "Entrant"); // or "Organizer"
+            intent.putExtra("MODE", "EDIT");
+            startActivity(intent);
+        } else if (id == R.id.nav_manage_media) {
+            // Navigate to ManageMediaActivity (visible only to admins)
+            Intent intent = new Intent(EntrantHomeActivity.this, ManageMediaActivity.class);
+            startActivity(intent);
+        } else if (id == R.id.nav_manage_users) {
+            // Navigate to ManageMediaActivity (visible only to admins)
+            Intent intent = new Intent(EntrantHomeActivity.this, ManageUsersActivity.class);
+            startActivity(intent);
         }
 
         drawerLayout.closeDrawer(GravityCompat.START);
         return true;
+    }
+
+
+
+    /**
+     * Handles the back button press to close the drawer if open.
+     */
+    @Override
+    public void onBackPressed() {
+        if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
+            drawerLayout.closeDrawer(GravityCompat.START);
+        } else {
+            super.onBackPressed();
+        }
     }
 }
