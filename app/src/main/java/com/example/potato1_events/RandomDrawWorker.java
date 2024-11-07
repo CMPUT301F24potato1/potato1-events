@@ -1,4 +1,3 @@
-// File: RandomDrawWorker.java
 package com.example.potato1_events; // Replace with your actual package name
 
 import android.content.Context;
