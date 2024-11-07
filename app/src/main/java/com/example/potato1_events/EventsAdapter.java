@@ -44,11 +44,11 @@ public class EventsAdapter extends RecyclerView.Adapter<EventsAdapter.EventViewH
         if (!TextUtils.isEmpty(event.getPosterImageUrl())) {
             Picasso.get()
                     .load(event.getPosterImageUrl())
-                    .placeholder(R.drawable.ic_placeholder_image) // Ensure you have a placeholder image
-                    .error(R.drawable.ic_error_image) // Ensure you have an error image
+                    .placeholder(R.drawable.ic_placeholder_image)
+                    .error(R.drawable.ic_error_image)
                     .into(holder.eventPosterImageView);
         } else {
-            holder.eventPosterImageView.setImageResource(R.drawable.ic_placeholder_image); // Default image
+            holder.eventPosterImageView.setImageResource(R.drawable.ic_placeholder_image);
         }
 
         holder.eventCardView.setOnClickListener(v -> {
