@@ -13,43 +13,51 @@ import android.os.Bundle;
 import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
-import androidx.activity.EdgeToEdge;
+import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.ActionBarDrawerToggle;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
+import androidx.core.view.GravityCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
 
-// Import for image loading
-import com.squareup.picasso.Picasso;
-
-// Import for CircleImageView
-import de.hdodenhof.circleimageview.CircleImageView;
-
+import com.google.android.material.navigation.NavigationView;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
+import com.squareup.picasso.Picasso;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.UUID;
 
+import de.hdodenhof.circleimageview.CircleImageView;
+
 /**
  * Activity responsible for handling user information, including profile picture selection,
  * uploading images to Firebase Storage, generating default avatars, and saving/updating user data to Firestore.
  */
-public class UserInfoActivity extends AppCompatActivity {
+public class UserInfoActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
     private static final String TAG = "UserInfoActivity";
 
     // Modes
     private static final String MODE_CREATE = "CREATE";
     private static final String MODE_EDIT = "EDIT";
+
+    // Drawer Layout and Navigation View
+    private DrawerLayout drawerLayout;
+    private NavigationView navigationView;
+    private androidx.appcompat.widget.Toolbar toolbar;
 
     private String userType;
     private String deviceId;
@@ -76,15 +84,48 @@ public class UserInfoActivity extends AppCompatActivity {
     // Current mode: CREATE or EDIT
     private String mode;
 
+    // ActionBarDrawerToggle
+    private ActionBarDrawerToggle toggle;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_user_info);
 
+        // Initialize Firebase Firestore and Storage
+        firestore = FirebaseFirestore.getInstance();
+        storage = FirebaseStorage.getInstance();
+
+        // Initialize DrawerLayout and NavigationView
+        drawerLayout = findViewById(R.id.user_info_activity);
+        navigationView = findViewById(R.id.nav_view);
+
+        // Initialize Toolbar
+        toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+        getSupportActionBar().setTitle("User Information");
+
+        // Setup ActionBarDrawerToggle
+        toggle = new ActionBarDrawerToggle(
+                this, drawerLayout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+        drawerLayout.addDrawerListener(toggle);
+        toggle.syncState();
+
+        // Set NavigationView listener
+        navigationView.setNavigationItemSelectedListener(this);
+
+        // Initialize UI Components
+        profileImageView = findViewById(R.id.profileImageView);
+        uploadRemovePictureButton = findViewById(R.id.uploadPictureButton);
+        nameEditText = findViewById(R.id.nameEditText);
+        emailEditText = findViewById(R.id.emailEditText);
+        phoneEditText = findViewById(R.id.phoneEditText);
+        saveButton = findViewById(R.id.saveButton);
+
         // Get user type and mode from intent
-        userType = getIntent().getStringExtra("USER_TYPE");
-        mode = getIntent().getStringExtra("MODE"); // Expected to be "CREATE" or "EDIT"
+        Intent intent = getIntent();
+        userType = intent.getStringExtra("USER_TYPE");
+        mode = intent.getStringExtra("MODE"); // Expected to be "CREATE" or "EDIT"
 
         if (userType == null || (!mode.equals(MODE_CREATE) && !mode.equals(MODE_EDIT))) {
             Toast.makeText(this, "Invalid mode or user type.", Toast.LENGTH_SHORT).show();
@@ -94,18 +135,6 @@ public class UserInfoActivity extends AppCompatActivity {
 
         // Get device ID
         deviceId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
-
-        // Initialize Firebase Firestore and Storage
-        firestore = FirebaseFirestore.getInstance();
-        storage = FirebaseStorage.getInstance();
-
-        // Initialize views
-        profileImageView = findViewById(R.id.profileImageView);
-        uploadRemovePictureButton = findViewById(R.id.uploadPictureButton);
-        nameEditText = findViewById(R.id.nameEditText);
-        emailEditText = findViewById(R.id.emailEditText);
-        phoneEditText = findViewById(R.id.phoneEditText);
-        saveButton = findViewById(R.id.saveButton);
 
         // Initialize ActivityResultLauncher for image selection
         selectImageLauncher = registerForActivityResult(
@@ -156,6 +185,16 @@ public class UserInfoActivity extends AppCompatActivity {
 
         // Load user data or set up for new user
         loadOrInitializeUserData();
+
+        // Handle back press to close drawer if open
+        handleBackPressed();
+
+        // Disable the drawer if in MODE_CREATE
+        if (mode.equals(MODE_CREATE)) {
+            disableDrawer();
+        } else {
+            enableDrawer();
+        }
     }
 
     /**
@@ -233,6 +272,31 @@ public class UserInfoActivity extends AppCompatActivity {
     }
 
     /**
+     * Disables the navigation drawer by locking it and hiding the hamburger icon.
+     */
+    private void disableDrawer() {
+        // Disable the drawer toggle
+        toggle.setDrawerIndicatorEnabled(false);
+        // Lock the drawer closed
+        drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
+        // Optionally, remove the hamburger icon by setting a different navigation icon or hiding it
+        // Here, we'll remove the navigation icon
+        toolbar.setNavigationIcon(null);
+    }
+
+    /**
+     * Enables the navigation drawer by unlocking it and showing the hamburger icon.
+     */
+    private void enableDrawer() {
+        // Enable the drawer toggle
+        toggle.setDrawerIndicatorEnabled(true);
+        // Unlock the drawer
+        drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
+        // Restore the hamburger icon
+        toggle.syncState();
+    }
+
+    /**
      * Handles the process of saving or updating user information, including uploading a selected image
      * or handling image removal, and updating Firestore accordingly.
      */
@@ -243,6 +307,7 @@ public class UserInfoActivity extends AppCompatActivity {
 
         if (TextUtils.isEmpty(name) || TextUtils.isEmpty(email)) {
             Toast.makeText(this, "Please enter all required fields", Toast.LENGTH_SHORT).show();
+            saveButton.setEnabled(true);
             return;
         }
 
@@ -450,7 +515,6 @@ public class UserInfoActivity extends AppCompatActivity {
         } else if (userType.equals("Organizer")) {
             Intent intent = new Intent(UserInfoActivity.this, OrganizerHomeActivity.class);
             startActivity(intent);
-
         }
         finish(); // Close current activity
     }
@@ -524,5 +588,59 @@ public class UserInfoActivity extends AppCompatActivity {
             b = (b + 100) % 256;
         }
         return Color.rgb(r, g, b);
+    }
+
+
+
+    /**
+     * Handles navigation menu item selections.
+     *
+     * @param item The selected menu item.
+     * @return True if handled, else false.
+     */
+    @Override
+    public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+        // Handle navigation
+        int id = item.getItemId();
+
+        if (id == R.id.nav_organizer_profile) {
+            Intent intent = new Intent(UserInfoActivity.this, UserInfoActivity.class);
+            Toast.makeText(this, "Already on this page.", Toast.LENGTH_SHORT).show();
+        } else if (id == R.id.nav_create_event) {
+            Intent intent = new Intent(UserInfoActivity.this, CreateEditEventActivity.class);
+            startActivity(intent);
+        } else if (id == R.id.nav_edit_facility) {
+            Intent intent = new Intent(UserInfoActivity.this, CreateEditFacilityActivity.class);
+            startActivity(intent);
+        } else if (id == R.id.nav_manage_media) {
+            // Navigate to ManageMediaActivity
+            Intent intent = new Intent(UserInfoActivity.this, ManageMediaActivity.class);
+            startActivity(intent);
+        } else if (id == R.id.nav_my_events) {
+            Intent intent = new Intent(UserInfoActivity.this, OrganizerHomeActivity.class);
+            startActivity(intent);
+        }
+
+        drawerLayout.closeDrawer(GravityCompat.START);
+        return true;
+    }
+
+    /**
+     * If back button is pressed and side bar is opened, then return to the page.
+     * If done on the page itself, then default back to the normal back press action
+     */
+    private void handleBackPressed() {
+        OnBackPressedCallback callback = new OnBackPressedCallback(true /* enabled */) {
+            @Override
+            public void handleOnBackPressed() {
+                if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
+                    drawerLayout.closeDrawer(GravityCompat.START);
+                } else {
+                    setEnabled(false);
+                    getOnBackPressedDispatcher().onBackPressed();
+                }
+            }
+        };
+        getOnBackPressedDispatcher().addCallback(this, callback);
     }
 }
