@@ -1,3 +1,4 @@
+// File: UserInfoActivity.java
 package com.example.potato1_events;
 
 import android.Manifest;
@@ -35,6 +36,7 @@ import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 
 import java.io.ByteArrayOutputStream;
+import java.util.ArrayList;
 import java.util.UUID;
 
 /**
@@ -152,14 +154,8 @@ public class UserInfoActivity extends AppCompatActivity {
 
         saveButton.setOnClickListener(v -> saveUserInfo());
 
-        // If in EDIT mode, load existing user data
-        if (mode.equals(MODE_EDIT)) {
-            loadUserData();
-        } else {
-            // In CREATE mode, set default UI state
-            generateAndSetDefaultAvatar("");
-            uploadRemovePictureButton.setText("Upload Picture");
-        }
+        // Load user data or set up for new user
+        loadOrInitializeUserData();
     }
 
     /**
@@ -184,13 +180,15 @@ public class UserInfoActivity extends AppCompatActivity {
     }
 
     /**
-     * Loads the existing user data from Firestore and pre-fills the input fields.
+     * Loads the existing user data from Firestore or initializes for a new user.
      */
-    private void loadUserData() {
+    private void loadOrInitializeUserData() {
         saveButton.setEnabled(false); // Disable save button while loading
         firestore.collection(userType + "s").document(deviceId).get()
                 .addOnSuccessListener(documentSnapshot -> {
                     if (documentSnapshot.exists()) {
+                        // User data exists, proceed in EDIT mode
+                        mode = MODE_EDIT;
                         User user = documentSnapshot.toObject(User.class);
                         if (user != null) {
                             nameEditText.setText(user.getName());
@@ -219,8 +217,11 @@ public class UserInfoActivity extends AppCompatActivity {
                             }
                         }
                     } else {
-                        Toast.makeText(UserInfoActivity.this, "User data not found.", Toast.LENGTH_SHORT).show();
-                        finish();
+                        // User data does not exist, proceed in CREATE mode
+                        mode = MODE_CREATE;
+                        // In CREATE mode, set default UI state
+                        generateAndSetDefaultAvatar("");
+                        uploadRemovePictureButton.setText("Upload Picture");
                     }
                     saveButton.setEnabled(true);
                 })
@@ -268,20 +269,17 @@ public class UserInfoActivity extends AppCompatActivity {
                 // No existing image to delete, generate and upload default avatar
                 generateAndUploadDefaultAvatar(name, email, phoneNumber);
             }
-        }
-        else if (selectedImageUri != null) {
+        } else if (selectedImageUri != null) {
             // Handle new image selected
             uploadImageToFirebase(name, email, phoneNumber);
-        }
-        else {
+        } else {
             // No changes to profile picture
             if (mode.equals(MODE_CREATE)) {
                 // In CREATE mode, generate and upload default avatar
                 generateAndUploadDefaultAvatar(name, email, phoneNumber);
-            }
-            else {
+            } else {
                 // In EDIT mode, keep existing image (if any)
-                updateUserInFirestore(name, email, phoneNumber, existingImagePath);
+                saveOrUpdateUserInFirestore(name, email, phoneNumber, existingImagePath);
             }
         }
     }
@@ -311,7 +309,7 @@ public class UserInfoActivity extends AppCompatActivity {
                                 .addOnSuccessListener(aVoid -> {
                                     Log.d(TAG, "Existing image deleted successfully.");
                                     // Update Firestore with new image path
-                                    updateUserInFirestore(name, email, phoneNumber, imagePath);
+                                    saveOrUpdateUserInFirestore(name, email, phoneNumber, imagePath);
                                 })
                                 .addOnFailureListener(e -> {
                                     Toast.makeText(UserInfoActivity.this, "Failed to delete existing image: " + e.getMessage(), Toast.LENGTH_SHORT).show();
@@ -320,40 +318,12 @@ public class UserInfoActivity extends AppCompatActivity {
                                 });
                     } else {
                         // No existing image, update Firestore with new image path
-                        updateUserInFirestore(name, email, phoneNumber, imagePath);
+                        saveOrUpdateUserInFirestore(name, email, phoneNumber, imagePath);
                     }
                 })
                 .addOnFailureListener(e -> {
                     Toast.makeText(UserInfoActivity.this, "Image upload failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                     Log.e(TAG, "Image upload failed", e);
-                    saveButton.setEnabled(true);
-                });
-    }
-
-    /**
-     * Updates the user's information in Firestore.
-     *
-     * @param name        The user's name.
-     * @param email       The user's email address.
-     * @param phoneNumber The user's phone number.
-     * @param imagePath   The image path to save (can be null).
-     */
-    private void updateUserInFirestore(String name, String email, String phoneNumber, String imagePath) {
-        User updatedUser = new User(); // Assuming you have a default constructor
-        updatedUser.setName(name);
-        updatedUser.setEmail(email);
-        updatedUser.setPhoneNumber(phoneNumber);
-        updatedUser.setImagePath(imagePath);
-
-        // Update Firestore document
-        firestore.collection(userType + "s").document(deviceId).set(updatedUser)
-                .addOnSuccessListener(aVoid -> {
-                    Toast.makeText(UserInfoActivity.this, "Profile updated successfully", Toast.LENGTH_SHORT).show();
-                    navigateToHomePage();
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(UserInfoActivity.this, "Error updating profile: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    Log.e(TAG, "Error updating profile", e);
                     saveButton.setEnabled(true);
                 });
     }
@@ -387,13 +357,61 @@ public class UserInfoActivity extends AppCompatActivity {
                     // Get the storage path
                     String avatarPath = storageRef.getPath();
                     // Update Firestore with new default avatar path
-                    updateUserInFirestore(name, email, phoneNumber, avatarPath);
+                    saveOrUpdateUserInFirestore(name, email, phoneNumber, avatarPath);
                 })
                 .addOnFailureListener(e -> {
                     Toast.makeText(UserInfoActivity.this, "Default avatar upload failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                     Log.e(TAG, "Default avatar upload failed", e);
                     saveButton.setEnabled(true);
                 });
+    }
+
+    /**
+     * Saves or updates the user's information in Firestore.
+     *
+     * @param name        The user's name.
+     * @param email       The user's email address.
+     * @param phoneNumber The user's phone number.
+     * @param imagePath   The image path to save (can be null).
+     */
+    private void saveOrUpdateUserInFirestore(String name, String email, String phoneNumber, String imagePath) {
+        User user = new User();
+        user.setUserId(deviceId); // Assign device ID as userId
+        user.setName(name);
+        user.setEmail(email);
+        user.setPhoneNumber(phoneNumber);
+        user.setImagePath(imagePath);
+        user.setRole(userType);
+        if (mode.equals(MODE_CREATE)) {
+            // Initialize eventsJoined list for new users
+            user.setEventsJoined(new ArrayList<>());
+
+            // Save new user to Firestore
+            firestore.collection(userType + "s").document(deviceId)
+                    .set(user)
+                    .addOnSuccessListener(aVoid -> {
+                        Toast.makeText(UserInfoActivity.this, "Profile created successfully", Toast.LENGTH_SHORT).show();
+                        navigateToHomePage();
+                    })
+                    .addOnFailureListener(e -> {
+                        Toast.makeText(UserInfoActivity.this, "Error creating profile: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        Log.e(TAG, "Error creating profile", e);
+                        saveButton.setEnabled(true);
+                    });
+        } else {
+            // Update existing user in Firestore
+            firestore.collection(userType + "s").document(deviceId)
+                    .set(user)
+                    .addOnSuccessListener(aVoid -> {
+                        Toast.makeText(UserInfoActivity.this, "Profile updated successfully", Toast.LENGTH_SHORT).show();
+                        navigateToHomePage();
+                    })
+                    .addOnFailureListener(e -> {
+                        Toast.makeText(UserInfoActivity.this, "Error updating profile: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        Log.e(TAG, "Error updating profile", e);
+                        saveButton.setEnabled(true);
+                    });
+        }
     }
 
     /**

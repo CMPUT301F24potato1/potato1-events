@@ -26,6 +26,7 @@ import com.google.android.gms.tasks.Tasks;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.storage.FirebaseStorage;
@@ -235,7 +236,15 @@ public class ManageUsersActivity extends AppCompatActivity {
      */
     private void deleteUser(User user) {
         String collection = "";
-        switch (user.getRole()) {
+        String role = user.getRole();
+
+        if (role == null) {
+            Toast.makeText(this, "User role is not specified.", Toast.LENGTH_SHORT).show();
+            Log.e(TAG, "User role is null for user: " + user.getUserId());
+            return;
+        }
+
+        switch (role) {
             case "Entrant":
                 collection = "Entrants";
                 break;
@@ -244,8 +253,8 @@ public class ManageUsersActivity extends AppCompatActivity {
                 break;
             // Optionally handle Admin or other roles
             default:
-                Toast.makeText(this, "Unknown user role: " + user.getRole(), Toast.LENGTH_SHORT).show();
-                Log.e(TAG, "Unknown user role: " + user.getRole());
+                Toast.makeText(this, "Unknown user role: " + role, Toast.LENGTH_SHORT).show();
+                Log.e(TAG, "Unknown user role: " + role);
                 return; // Exit the method as the role is unrecognized
         }
 
@@ -256,6 +265,9 @@ public class ManageUsersActivity extends AppCompatActivity {
             userRef.delete()
                     .addOnSuccessListener(aVoid -> {
                         Toast.makeText(ManageUsersActivity.this, "User deleted successfully.", Toast.LENGTH_SHORT).show();
+
+                        // Remove user from events' waiting lists
+                        removeUserFromEventsWaitingLists(user);
 
                         // Now, delete the profile image from Firebase Storage if it exists
                         if (!TextUtils.isEmpty(user.getImagePath())) {
@@ -280,4 +292,33 @@ public class ManageUsersActivity extends AppCompatActivity {
             Log.e(TAG, "Collection not determined for user: " + user.getUserId());
         }
     }
+
+    /**
+     * Removes the user from the waiting lists of the events they have joined.
+     *
+     * @param user The user to remove from events' waiting lists.
+     */
+    private void removeUserFromEventsWaitingLists(User user) {
+        List<String> eventsJoined = user.getEventsJoined();
+
+        if (eventsJoined == null || eventsJoined.isEmpty()) {
+            Log.d(TAG, "User has not joined any events.");
+            return;
+        }
+
+        for (String eventId : eventsJoined) {
+            DocumentReference eventRef = firestore.collection("Events").document(eventId);
+
+            eventRef.update("entrants." + user.getUserId(), FieldValue.delete())
+                    .addOnSuccessListener(aVoid -> {
+                        Log.d(TAG, "Removed " + user.getUserId() + " event waiting list: " + eventId);
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.e(TAG, "Error removing user from event " + eventId + ": " + e.getMessage(), e);
+                    });
+            eventRef.update("currentEntrantsNumber", FieldValue.increment(-1));
+        }
+    }
+
+
 }

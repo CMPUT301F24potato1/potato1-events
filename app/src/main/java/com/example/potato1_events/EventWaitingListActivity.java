@@ -19,10 +19,10 @@ import com.google.android.gms.tasks.Tasks;
 import com.google.android.material.navigation.NavigationView;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Activity to display the list of entrants on the waiting list for an event.
@@ -69,8 +69,8 @@ public class EventWaitingListActivity extends AppCompatActivity implements Navig
         waitingListRecyclerView = findViewById(R.id.waitingListRecyclerView);
         waitingListRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         userList = new ArrayList<>();
-        userAdapter = new UserAdapter(userList, this);
-        waitingListRecyclerView.setAdapter(userAdapter);
+
+
 
         // Retrieve EVENT_ID from Intent
         Intent intent = getIntent();
@@ -91,56 +91,85 @@ public class EventWaitingListActivity extends AppCompatActivity implements Navig
     private void fetchWaitingListUsers(String eventId) {
         firestore.collection("Events")
                 .document(eventId)
-                .collection("WaitingList")
                 .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    userList.clear();
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        Event event = documentSnapshot.toObject(Event.class);
+                        if (event != null) {
+                            Map<String, String> entrantsMap = event.getEntrants();
+                            if (entrantsMap == null || entrantsMap.isEmpty()) {
+                                Toast.makeText(this, "No entrants on the waiting list.", Toast.LENGTH_SHORT).show();
+                                userList.clear();
+                                if (userAdapter != null) {
+                                    userAdapter.notifyDataSetChanged();
+                                }
+                                return;
+                            }
 
-                    if (queryDocumentSnapshots.isEmpty()) {
-                        Toast.makeText(this, "No entrants on the waiting list.", Toast.LENGTH_SHORT).show();
-                        userAdapter.notifyDataSetChanged();
-                        return;
-                    }
+                            List<Task<DocumentSnapshot>> userTasks = new ArrayList<>();
 
-                    List<Task<DocumentSnapshot>> userTasks = new ArrayList<>();
+                            for (Map.Entry<String, String> entry : entrantsMap.entrySet()) {
+                                String entrantId = entry.getKey();
+                                String status = entry.getValue();
 
-                    for (QueryDocumentSnapshot documentSnapshot : queryDocumentSnapshots) {
-                        String entrantId = documentSnapshot.getId(); // Document ID is the entrantId
-                        // Create a task to fetch the entrant's user details
-                        Task<DocumentSnapshot> userTask = firestore.collection("Entrants").document(entrantId).get();
-                        userTasks.add(userTask);
-                    }
+                                // Only include entrants with the desired status
+                                if ("waitlist".equals(status)) {
+                                    Task<DocumentSnapshot> userTask = firestore.collection("Entrants").document(entrantId).get();
+                                    userTasks.add(userTask);
+                                }
+                            }
 
-                    // Wait for all user fetch tasks to complete
-                    Tasks.whenAllSuccess(userTasks)
-                            .addOnSuccessListener(results -> {
-                                for (Object result : results) {
-                                    if (result instanceof DocumentSnapshot) {
-                                        DocumentSnapshot userSnapshot = (DocumentSnapshot) result;
-                                        User user = userSnapshot.toObject(User.class);
-                                        if (user != null) {
-                                            user.setUserId(userSnapshot.getId());
-                                            userList.add(user);
+                            if (userTasks.isEmpty()) {
+                                Toast.makeText(this, "No entrants on the waiting list.", Toast.LENGTH_SHORT).show();
+                                userList.clear();
+                                if (userAdapter != null) {
+                                    userAdapter.notifyDataSetChanged();
+                                }
+                                return;
+                            }
+
+                            // Wait for all user fetch tasks to complete
+                            Tasks.whenAllSuccess(userTasks)
+                                    .addOnSuccessListener(results -> {
+                                        userList.clear();
+                                        for (Object result : results) {
+                                            if (result instanceof DocumentSnapshot) {
+                                                DocumentSnapshot userSnapshot = (DocumentSnapshot) result;
+                                                User user = userSnapshot.toObject(User.class);
+                                                if (user != null) {
+                                                    user.setUserId(userSnapshot.getId());
+                                                    userList.add(user);
+                                                }
+                                            }
                                         }
-                                    }
-                                }
 
-                                userAdapter.notifyDataSetChanged();
+                                        // Initialize or update the UserAdapter with entrantsMap
+                                        userAdapter = new UserAdapter(userList, entrantsMap, this);
+                                        waitingListRecyclerView.setAdapter(userAdapter);
 
-                                if (userList.isEmpty()) {
-                                    Toast.makeText(EventWaitingListActivity.this, "No users found.", Toast.LENGTH_SHORT).show();
-                                } else {
-                                    Toast.makeText(EventWaitingListActivity.this, "Loaded Users: " + userList.size(), Toast.LENGTH_SHORT).show();
-                                }
-                            })
-                            .addOnFailureListener(e -> {
-                                Toast.makeText(EventWaitingListActivity.this, "Error loading users: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                            });
+                                        userAdapter.notifyDataSetChanged();
+
+                                        if (userList.isEmpty()) {
+                                            Toast.makeText(EventWaitingListActivity.this, "No users found.", Toast.LENGTH_SHORT).show();
+                                        } else {
+                                            Toast.makeText(EventWaitingListActivity.this, "Loaded Users: " + userList.size(), Toast.LENGTH_SHORT).show();
+                                        }
+                                    })
+                                    .addOnFailureListener(e -> {
+                                        Toast.makeText(EventWaitingListActivity.this, "Error loading users: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                                    });
+                        } else {
+                            Toast.makeText(this, "Error parsing event data.", Toast.LENGTH_SHORT).show();
+                        }
+                    } else {
+                        Toast.makeText(this, "Event not found.", Toast.LENGTH_SHORT).show();
+                    }
                 })
                 .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Error fetching waiting list: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Error fetching event data: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 });
     }
+
 
     /**
      * Handles navigation menu item selections.
