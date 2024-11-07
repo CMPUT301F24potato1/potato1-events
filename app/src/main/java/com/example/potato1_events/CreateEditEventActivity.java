@@ -6,6 +6,7 @@ import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.media.Image;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
@@ -238,16 +239,13 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
     }
 
     /**
-     * Checks if the organizer has an existing facility.
+     * Checks if the organizer has an existing facility (Placeholder for now).
      *
      * @return True if a facility exists, false otherwise.
      */
     private boolean hasFacility() {
-        // Since we're using deviceId as facilityId, we'll check Firestore synchronously
-        // However, Firestore operations are asynchronous, so we need to handle this differently.
-        // For simplicity, we'll assume that the check has been done before allowing event creation.
-        // Alternatively, implement a callback mechanism.
-        return true; // Placeholder: Modify as needed
+
+        return true;
     }
 
     /**
@@ -269,7 +267,6 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
     private void navigateToCreateFacility() {
         Intent intent = new Intent(CreateEditEventActivity.this, CreateEditFacilityActivity.class);
         startActivity(intent);
-        finish(); // Close current activity to prevent back navigation
     }
 
     /**
@@ -292,6 +289,12 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
             return;
         }
 
+        if (TextUtils.isEmpty(waitingListSpotsStr)) {
+            waitingListSpotsStr = "10000";
+        }
+
+
+
         int availableSpots;
         int waitingListSpots;
 
@@ -303,20 +306,15 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
             return;
         }
 
-        // Optional: Validate that waiting list capacity is non-negative
-        if (waitingListSpots < 0) {
-            Toast.makeText(this, "Waiting list capacity cannot be negative.", Toast.LENGTH_SHORT).show();
-            return;
-        }
 
-        // Disable the save button to prevent multiple clicks
+
         saveEventButton.setEnabled(false);
 
-        // Handle poster image upload
+        // Image for the event, if empty then we have a placeholder
         if (selectedPosterUri != null) {
             uploadPosterImage(name, description, recCentre, location, availableSpots, waitingListSpots, isGeolocationEnabled);
         } else {
-            // If editing and no new image is selected, retain existing image path and QR code hash
+            // If editing and no new image is selected, keep the last image
             if (isEditingExistingEvent()) {
                 saveEventToFirestore(name, description, recCentre, location, availableSpots, waitingListSpots, isGeolocationEnabled, posterImagePath, existingQrCodeHash);
             } else {
@@ -458,7 +456,7 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
                                 })
                                 .addOnFailureListener(e -> {
                                     Toast.makeText(CreateEditEventActivity.this, "Failed to update QR code data: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                                    // Optionally, you might want to delete the event if QR code update fails
+
                                 });
                     })
                     .addOnFailureListener(e -> {
@@ -493,7 +491,8 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
      * Navigates back to the Event Details page after saving/updating.
      */
     private void navigateBackToEventDetails() {
-        // Implement navigation logic, e.g., finish() or start a new Activity
+        Intent intent = new Intent(CreateEditEventActivity.this, EventDetailsOrganizerActivity.class);
+        startActivity(intent);
         finish();
     }
 
@@ -501,8 +500,8 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
      * Navigates back to the Event List page after creating a new event.
      */
     private void navigateBackToEventList() {
-        // Implement navigation logic, e.g., finish() or start a new Activity
-        finish();
+        Intent intent = new Intent(CreateEditEventActivity.this, OrganizerHomeActivity.class);
+        startActivity(intent);
     }
 
     /**

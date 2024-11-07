@@ -15,6 +15,12 @@
     <string name="delete_event">Delete Event</string>
     <string name="media_image">Media Image</string>
     <string name="delete_image">Delete Image</string>
+    <string-array name="status_filter_options">
+        <item>All</item>
+        <item>Cancelled</item>
+        <item>Enrolled</item>
+        <item>On Waiting List</item>
+    </string-array>
 
 
 </resources>
