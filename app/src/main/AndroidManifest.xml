@@ -36,6 +36,11 @@
         <activity
             android:name=".EventsAdapter"
             android:exported="false"/>
+
+        <activity
+            android:name=".EventWaitingListActivity"
+            android:exported="false"/>
+
         <activity
             android:name=".EventDetailsOrganizerActivity"
             android:exported="false"/>
