@@ -17,8 +17,10 @@ playServicesLocation = "21.3.0"
 firebaseStorage = "21.0.1"
 rules = "1.6.1"
 espressoIntents = "3.6.1"
+workRuntime = "2.10.0"
 
 [libraries]
+concurrent-futures = { module = "androidx.concurrent:concurrent-futures", version.ref = "concurrentFutures" }
 firebase-auth = { module = "com.google.firebase:firebase-auth", version.ref = "firebaseAuth" }
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
 firebase-database = { module = "com.google.firebase:firebase-database", version.ref = "firebaseDatabase" }
@@ -34,8 +36,6 @@ activity = { group = "androidx.activity", name = "activity", version.ref = "acti
 firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore", version.ref = "firebaseFirestore" }
 play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
 firebase-storage = { group = "com.google.firebase", name = "firebase-storage", version.ref = "firebaseStorage" }
-rules = { group = "androidx.test", name = "rules", version.ref = "rules" }
-espresso-intents = { group = "androidx.test.espresso", name = "espresso-intents", version.ref = "espressoIntents" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

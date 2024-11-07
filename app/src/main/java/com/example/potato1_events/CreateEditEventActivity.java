@@ -43,7 +43,7 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
     private Button startDateButton, endDateButton, uploadPosterButton, saveEventButton, deleteEventButton;
     private CheckBox geolocationCheckBox;
     private ImageView eventPosterImageView;
-
+    private Button waitingListDeadlineButton;
     private FirebaseFirestore firestore;
     private FirebaseStorage storage;
     private DrawerLayout drawerLayout;
@@ -63,7 +63,7 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
     // Variables to store selected dates and times
     private Calendar startDateTime = Calendar.getInstance();
     private Calendar endDateTime = Calendar.getInstance();
-
+    private Calendar registrationEndDateTime = Calendar.getInstance();
     // Organizer's deviceId acting as facilityId
     private String deviceId;
 
@@ -93,7 +93,7 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
         uploadPosterButton = findViewById(R.id.uploadPosterButton);
         saveEventButton = findViewById(R.id.saveEventButton);
         deleteEventButton = findViewById(R.id.deleteEventButton);
-
+        waitingListDeadlineButton = findViewById(R.id.waitingListDeadlineButton);
         // Initialize Toolbar
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -137,6 +137,7 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
         // Set up listeners
         startDateButton.setOnClickListener(v -> showDateTimePicker(true));
         endDateButton.setOnClickListener(v -> showDateTimePicker(false));
+        waitingListDeadlineButton.setOnClickListener(v -> showDateTimePickerForRegistrationEnd());
         uploadPosterButton.setOnClickListener(v -> {
             // Check and request permissions if necessary
             if (ContextCompat.checkSelfPermission(this, getReadPermission()) == PackageManager.PERMISSION_GRANTED) {
@@ -188,6 +189,25 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
     private void openImageSelector() {
         // Launch the image picker
         selectImageLauncher.launch("image/*");
+    }
+
+    /**
+     * Displays a DatePicker and TimePicker dialog to select the waiting list deadline.
+     */
+    private void showDateTimePickerForRegistrationEnd() {
+        final Calendar currentDate = Calendar.getInstance();
+        final Calendar date = Calendar.getInstance();
+        new DatePickerDialog(CreateEditEventActivity.this, (view, year, monthOfYear, dayOfMonth) -> {
+            date.set(year, monthOfYear, dayOfMonth);
+            new TimePickerDialog(CreateEditEventActivity.this, (view1, hourOfDay, minute) -> {
+                date.set(Calendar.HOUR_OF_DAY, hourOfDay);
+                date.set(Calendar.MINUTE, minute);
+
+                registrationEndDateTime = (Calendar) date.clone();
+                waitingListDeadlineButton.setText("Deadline: " + formatDateTime(registrationEndDateTime));
+
+            }, currentDate.get(Calendar.HOUR_OF_DAY), currentDate.get(Calendar.MINUTE), false).show();
+        }, currentDate.get(Calendar.YEAR), currentDate.get(Calendar.MONTH), currentDate.get(Calendar.DATE)).show();
     }
 
     /**
@@ -286,6 +306,18 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
                 TextUtils.isEmpty(location) || TextUtils.isEmpty(availableSpotsStr) ||
                 TextUtils.isEmpty(waitingListSpotsStr)) {
             Toast.makeText(this, "Please fill in all required fields.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Validate registration end date
+        if (registrationEndDateTime == null) {
+            Toast.makeText(this, "Please select a waiting list deadline.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Ensure registration end date is before event start date
+        if (registrationEndDateTime.after(startDateTime.getTime())) {
+            Toast.makeText(this, "Waiting list deadline must be before event start date.", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -424,7 +456,7 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
 
         event.setStartDate(startDateTime.getTime());
         event.setEndDate(endDateTime.getTime());
-
+        event.setRegistrationEnd(registrationEndDateTime.getTime());
 
         if (isEditingExistingEvent()) {
             // Update existing event
@@ -532,7 +564,10 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
                                 endDateTime.setTime(event.getEndDate());
                                 endDateButton.setText(formatDateTime(endDateTime));
                             }
-
+                            if (event.getRegistrationEnd() != null) {
+                                registrationEndDateTime.setTime(event.getRegistrationEnd());
+                                waitingListDeadlineButton.setText(formatDateTime(registrationEndDateTime));
+                            }
                             // Load poster image if available
                             if (!TextUtils.isEmpty(event.getPosterImageUrl())) {
                                 posterImagePath = event.getPosterImageUrl();

@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.example.potato1_events"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.example.potato1_events"
@@ -54,12 +54,7 @@ dependencies {
     implementation(libs.firebase.firestore)
     implementation(libs.play.services.location)
     implementation(libs.firebase.storage)
-    implementation(libs.rules)
-    implementation(libs.espresso.intents)
-    androidTestImplementation("com.android.support.test.espresso:espresso-contrib:3.0.2")
-    androidTestImplementation("androidx.test.uiautomator:uiautomator:2.2.0")
-
-
+    // implementation(libs.rules)
     testImplementation(libs.junit)
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.7.0")
     testImplementation("org.junit.jupiter:junit-jupiter-params:5.7.0")
