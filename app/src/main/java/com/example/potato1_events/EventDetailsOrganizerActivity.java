@@ -1,5 +1,6 @@
 package com.example.potato1_events;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AlertDialog;
@@ -8,6 +9,7 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.cardview.widget.CardView;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.activity.OnBackPressedCallback;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -63,9 +65,9 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
         // Initialize Firestore
         firestore = FirebaseFirestore.getInstance();
 
-        // Initialize UI Components
+        // Initialize UI
         drawerLayout = findViewById(R.id.drawer_event_details_layout);
-        //navigationView = findViewById(R.id.nav_view_event_details);
+        NavigationView navigationView = findViewById(R.id.nav_view);
         toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
@@ -74,7 +76,7 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
                 this, drawerLayout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawerLayout.addDrawerListener(toggle);
         toggle.syncState();
-        //navigationView.setNavigationItemSelectedListener(this);
+        navigationView.setNavigationItemSelectedListener(this);
 
         // Initialize Event Detail Views
         eventPosterImageView = findViewById(R.id.eventPosterImageView);
@@ -97,6 +99,9 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
             Toast.makeText(this, "No Event ID provided.", Toast.LENGTH_SHORT).show();
             finish();
         }
+
+
+        handleBackPressed();
 
         // Set Click Listeners for Action Buttons
         editButton.setOnClickListener(v -> handleEditAction());
@@ -268,14 +273,21 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
     }
 
     /**
-     * Handles the back button press to close the drawer if open.
+     * If back button is pressed and side bar is opened, then return to the page.
+     * If done on the page itself, then default back to the normal back press action
      */
-    @Override
-    public void onBackPressed() {
-        if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
-            drawerLayout.closeDrawer(GravityCompat.START);
-        } else {
-            super.onBackPressed();
-        }
+    private void handleBackPressed() {
+        OnBackPressedCallback callback = new OnBackPressedCallback(true /* enabled */) {
+            @Override
+            public void handleOnBackPressed() {
+                if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
+                    drawerLayout.closeDrawer(GravityCompat.START);
+                } else {
+                    setEnabled(false);
+                    getOnBackPressedDispatcher().onBackPressed();
+                }
+            }
+        };
+        getOnBackPressedDispatcher().addCallback(this, callback);
     }
 }
