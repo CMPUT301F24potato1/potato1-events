@@ -43,7 +43,6 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
     private String deviceId;
     private ArrayList<Event> eventList = new ArrayList<>(); // To store events
 
-    // Declare the Switch Mode button
     private Button switchModeButton;
 
     @Override

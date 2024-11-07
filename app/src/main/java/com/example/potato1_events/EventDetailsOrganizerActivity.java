@@ -51,6 +51,7 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
     private TextView eventWaitlistCountTextView; // New TextView for Waitlist Count
     private Button editButton;
     private Button deleteButton;
+    private Button entrantsListButton;
 
     // Firebase Firestore
     private FirebaseFirestore firestore;
@@ -91,9 +92,10 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
         eventCapacityTextView = findViewById(R.id.eventCapacityTextView);
         eventGeolocationTextView = findViewById(R.id.eventGeolocationTextView);
         eventStatusTextView = findViewById(R.id.eventStatusTextView);
-        eventWaitlistCountTextView = findViewById(R.id.eventWaitlistCountTextView); // Initialize new TextView
+        eventWaitlistCountTextView = findViewById(R.id.eventWaitlistCountTextView);
         editButton = findViewById(R.id.editButton);
         deleteButton = findViewById(R.id.deleteButton);
+        entrantsListButton = findViewById(R.id.entrantsListButton);
 
         // Retrieve EVENT_ID from Intent
         Intent intent = getIntent();
@@ -110,6 +112,7 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
         // Set Click Listeners for Action Buttons
         editButton.setOnClickListener(v -> handleEditAction());
         deleteButton.setOnClickListener(v -> handleDeleteAction());
+        entrantsListButton.setOnClickListener(v -> navigateToWaitingList());
     }
 
     /**
@@ -212,6 +215,16 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
                     eventWaitlistCountTextView.setText("Waiting List: N/A");
                 });
     }
+
+    /**
+     * Navigates to the EventWaitingListActivity to display the waiting list entrants.
+     */
+    private void navigateToWaitingList() {
+        Intent intent = new Intent(EventDetailsOrganizerActivity.this, EventWaitingListActivity.class);
+        intent.putExtra("EVENT_ID", eventId);
+        startActivity(intent);
+    }
+
 
     /**
      * Handles the Edit button action.
