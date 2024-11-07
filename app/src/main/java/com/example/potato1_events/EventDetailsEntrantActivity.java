@@ -98,10 +98,11 @@ public class EventDetailsEntrantActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar); // Ensure your layout has a Toolbar with this ID
         setSupportActionBar(toolbar);
 
-        // Enable the Up button
+        // Enable the Up button and set the title
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
             actionBar.setDisplayHomeAsUpEnabled(true);
+            actionBar.setTitle("Event Details"); // Set your desired title here
         }
     }
 
