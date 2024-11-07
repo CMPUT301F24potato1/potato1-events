@@ -3,6 +3,9 @@ package com.example.potato1_events;
 import com.google.firebase.firestore.Exclude;
 import com.google.firebase.firestore.IgnoreExtraProperties;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Represents a user within the Potato1 Events application.
  * This class includes all necessary information for entrants, organizers, and administrators.
@@ -22,12 +25,15 @@ public class User {
     private boolean isAdmin = false; // Indicates if the user has administrative privileges
     private String status; // Status related to event participation (e.g., Waiting List, Accepted, Rejected)
 
+    private List<String> eventsJoined; // List of event document IDs
+
     /**
      * Default constructor required for Firestore serialization.
      * Initializes isAdmin to false by default.
      */
     public User() {
         this.isAdmin = false;
+        this.eventsJoined = new ArrayList<>();
     }
 
     /**
@@ -53,6 +59,7 @@ public class User {
         this.notificationsEnabled = notificationsEnabled;
         this.createdAt = createdAt;
         this.isAdmin = false; // Ensure isAdmin is false by default
+        this.eventsJoined = new ArrayList<>();
     }
 
     // Getters and Setters
@@ -238,5 +245,23 @@ public class User {
      */
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    /**
+     * Gets the list of event IDs that the user has joined.
+     *
+     * @return A list of event document IDs.
+     */
+    public List<String> getEventsJoined() {
+        return eventsJoined;
+    }
+
+    /**
+     * Sets the list of event IDs that the user has joined.
+     *
+     * @param eventsJoined A list of event document IDs.
+     */
+    public void setEventsJoined(List<String> eventsJoined) {
+        this.eventsJoined = eventsJoined;
     }
 }

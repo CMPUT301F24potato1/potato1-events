@@ -421,11 +421,12 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
         event.setStatus("Open");
         event.setCreatedAt(new Date());
 
-        // Initialize lists if null
-        event.setWaitingList(new ArrayList<>());
-        event.setSelectedEntrants(new ArrayList<>());
-        event.setConfirmedEntrants(new ArrayList<>());
-        event.setDeclinedEntrants(new ArrayList<>());
+        // Initialize entrants map
+        event.setEntrants(new HashMap<>());
+
+        event.setStartDate(startDateTime.getTime());
+        event.setEndDate(endDateTime.getTime());
+
 
         if (isEditingExistingEvent()) {
             // Update existing event
@@ -466,6 +467,7 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
                     });
         }
     }
+
 
     /**
      * Adds the newly created event ID to the organizer's facility's eventIds list.
