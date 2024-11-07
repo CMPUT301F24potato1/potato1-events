@@ -22,101 +22,112 @@
         android:layout_weight="1"
         android:padding="16dp">
 
-        <LinearLayout
+        <!-- CardView for white background effect -->
+        <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:layout_margin="8dp"
+            android:background="@drawable/white_square_background"
+            app:cardElevation="4dp"
+            app:cardCornerRadius="8dp">
 
-            <!-- Event Poster -->
-            <ImageView
-                android:id="@+id/eventPosterImageView"
-                android:layout_width="match_parent"
-                android:layout_height="200dp"
-                android:scaleType="centerCrop"
-                android:contentDescription="@string/event_poster" />
-
-            <!-- Event Name -->
-            <TextView
-                android:id="@+id/eventNameTextView"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Event Name"
-                android:textSize="24sp"
-                android:textStyle="bold"
-                android:layout_marginTop="16dp" />
-
-            <!-- Event Description -->
-            <TextView
-                android:id="@+id/eventDescriptionTextView"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Event Description"
-                android:layout_marginTop="8dp" />
-
-            <!-- Event Location -->
-            <TextView
-                android:id="@+id/eventLocationTextView"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Event Location"
-                android:layout_marginTop="8dp" />
-
-            <!-- Event Dates -->
-            <TextView
-                android:id="@+id/eventDatesTextView"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Event Dates"
-                android:layout_marginTop="8dp" />
-
-            <!-- Event Capacity -->
-            <TextView
-                android:id="@+id/eventCapacityTextView"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Event Capacity"
-                android:layout_marginTop="8dp" />
-
-            <!-- Geolocation Requirement -->
-            <TextView
-                android:id="@+id/eventGeolocationTextView"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Geolocation Required"
-                android:layout_marginTop="8dp" />
-
-            <!-- Event Status -->
-            <TextView
-                android:id="@+id/eventStatusTextView"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Event Status"
-                android:layout_marginTop="8dp" />
-
-            <!-- Join and Leave Buttons -->
             <LinearLayout
-                android:id="@+id/buttonLayout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginTop="16dp">
+                android:orientation="vertical"
+                android:padding="16dp">
 
-                <Button
-                    android:id="@+id/joinButton"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Join Waiting List" />
+                <!-- Event Poster -->
+                <ImageView
+                    android:id="@+id/eventPosterImageView"
+                    android:layout_width="match_parent"
+                    android:layout_height="200dp"
+                    android:scaleType="centerCrop"
+                    android:contentDescription="@string/event_poster" />
 
-                <Button
-                    android:id="@+id/leaveButton"
-                    android:layout_width="0dp"
+                <!-- Event Name -->
+                <TextView
+                    android:id="@+id/eventNameTextView"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Leave Waiting List"
-                    android:visibility="gone" />
+                    android:text="Event Name"
+                    android:textSize="24sp"
+                    android:textStyle="bold"
+                    android:layout_marginTop="16dp" />
+
+                <!-- Event Description -->
+                <TextView
+                    android:id="@+id/eventDescriptionTextView"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Event Description"
+                    android:layout_marginTop="8dp" />
+
+                <!-- Event Location -->
+                <TextView
+                    android:id="@+id/eventLocationTextView"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Event Location"
+                    android:layout_marginTop="8dp" />
+
+                <!-- Event Dates -->
+                <TextView
+                    android:id="@+id/eventDatesTextView"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Event Dates"
+                    android:layout_marginTop="8dp" />
+
+                <!-- Event Capacity -->
+                <TextView
+                    android:id="@+id/eventCapacityTextView"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Event Capacity"
+                    android:layout_marginTop="8dp" />
+
+                <!-- Geolocation Requirement -->
+                <TextView
+                    android:id="@+id/eventGeolocationTextView"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Geolocation Required"
+                    android:layout_marginTop="8dp" />
+
+                <!-- Event Status -->
+                <TextView
+                    android:id="@+id/eventStatusTextView"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Event Status"
+                    android:layout_marginTop="8dp" />
+
+                <!-- Join and Leave Buttons -->
+                <LinearLayout
+                    android:id="@+id/buttonLayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="16dp">
+
+                    <Button
+                        android:id="@+id/joinButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Join Waiting List" />
+
+                    <Button
+                        android:id="@+id/leaveButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Leave Waiting List"
+                        android:visibility="gone" />
+                </LinearLayout>
+
             </LinearLayout>
-
-        </LinearLayout>
+        </androidx.cardview.widget.CardView>
     </ScrollView>
 </LinearLayout>

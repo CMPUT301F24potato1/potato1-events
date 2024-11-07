@@ -76,6 +76,7 @@
                         android:textAppearance="?attr/textAppearanceBody1"
                         android:layout_marginTop="8dp" />
 
+
                     <!-- Event Location -->
                     <TextView
                         android:id="@+id/eventLocationTextView"
