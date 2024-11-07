@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.drawerlayout.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/drawer_manage_users"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- Main Content -->
+    <LinearLayout
+        android:id="@+id/manage_users_layout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <!-- Toolbar with Back Button -->
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar_manage_users"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="?attr/colorPrimary"
+            android:elevation="4dp"
+            android:title="Manage Users"
+            android:titleTextColor="@android:color/white">
+
+            <!-- Optional: Add other views like a search bar here -->
+
+        </androidx.appcompat.widget.Toolbar>
+
+        <!-- RecyclerView to display users -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/usersRecyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:padding="8dp"
+            android:clipToPadding="false" />
+
+    </LinearLayout>
+
+    <!-- Navigation Drawer (if needed) -->
+    <com.google.android.material.navigation.NavigationView
+        android:id="@+id/nav_view_manage_users"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        app:menu="@menu/drawer_menu_organizer" /> <!-- Reuse existing menu or create a specific one -->
+
+</androidx.drawerlayout.widget.DrawerLayout>

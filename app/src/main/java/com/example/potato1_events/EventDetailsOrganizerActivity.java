@@ -292,6 +292,10 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
         } else if (id == R.id.nav_edit_facility) {
             Intent intent = new Intent(EventDetailsOrganizerActivity.this, CreateEditFacilityActivity.class);
             startActivity(intent);
+        } else if (id == R.id.nav_manage_media) {
+            // Navigate to ManageMediaActivity
+            Intent intent = new Intent(EventDetailsOrganizerActivity.this, ManageMediaActivity.class);
+            startActivity(intent);
         } else if (id == R.id.nav_my_events) {
             Toast.makeText(this, "Already on this page.", Toast.LENGTH_SHORT).show();
         }

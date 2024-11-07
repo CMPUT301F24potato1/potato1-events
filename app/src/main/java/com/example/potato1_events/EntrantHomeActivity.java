@@ -77,6 +77,7 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
         // Make admin options available
         if (isAdmin) {
             navigationView.getMenu().findItem(R.id.nav_manage_media).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_manage_users).setVisible(true);
         }
 
         navigationView.setNavigationItemSelectedListener(this);
@@ -189,19 +190,30 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
         int id = item.getItemId();
 
         if (id == R.id.nav_notifications) {
-            // FIXME: Implement NotificationsActivity
-            Toast.makeText(this, "Notifications feature not implemented yet.", Toast.LENGTH_SHORT).show();
+            // Navigate to NotificationsActivity
+//            Intent intent = new Intent(EntrantHomeActivity.this, NotificationsActivity.class);
+//            startActivity(intent);
         } else if (id == R.id.nav_edit_profile) {
             // Navigate to EditProfileActivity
             Intent intent = new Intent(EntrantHomeActivity.this, UserInfoActivity.class);
             intent.putExtra("USER_TYPE", "Entrant"); // or "Organizer"
             intent.putExtra("MODE", "EDIT");
             startActivity(intent);
+        } else if (id == R.id.nav_manage_media) {
+            // Navigate to ManageMediaActivity (visible only to admins)
+            Intent intent = new Intent(EntrantHomeActivity.this, ManageMediaActivity.class);
+            startActivity(intent);
+        } else if (id == R.id.nav_manage_users) {
+            // Navigate to ManageMediaActivity (visible only to admins)
+            Intent intent = new Intent(EntrantHomeActivity.this, ManageUsersActivity.class);
+            startActivity(intent);
         }
 
         drawerLayout.closeDrawer(GravityCompat.START);
         return true;
     }
+
+
 
     /**
      * Handles the back button press to close the drawer if open.
