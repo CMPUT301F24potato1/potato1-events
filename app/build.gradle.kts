@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.example.potato1_events"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.example.potato1_events"
@@ -44,6 +44,8 @@ dependencies {
     implementation("de.hdodenhof:circleimageview:3.1.0")
     implementation(platform("com.google.firebase:firebase-bom:33.4.0"))
     implementation(platform("com.google.firebase:firebase-storage:20.2.1"))
+    implementation ("com.google.guava:guava:29.0-android")
+    implementation (libs.work.runtime)
     implementation (libs.firebase.database)
     implementation(libs.appcompat)
     implementation(libs.material)
@@ -54,7 +56,7 @@ dependencies {
     implementation(libs.firebase.firestore)
     implementation(libs.play.services.location)
     implementation(libs.firebase.storage)
-    // implementation(libs.rules)
+    //implementation(libs.rules)
     testImplementation(libs.junit)
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.7.0")
     testImplementation("org.junit.jupiter:junit-jupiter-params:5.7.0")
