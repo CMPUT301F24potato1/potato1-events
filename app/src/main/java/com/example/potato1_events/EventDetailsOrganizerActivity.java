@@ -1,6 +1,6 @@
+// File: EventDetailsOrganizerActivity.java
 package com.example.potato1_events;
 
-import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AlertDialog;
@@ -24,6 +24,7 @@ import android.widget.Toast;
 import com.google.android.material.navigation.NavigationView;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.squareup.picasso.Picasso;
 
 import java.text.SimpleDateFormat;
@@ -47,6 +48,7 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
     private TextView eventCapacityTextView;
     private TextView eventGeolocationTextView;
     private TextView eventStatusTextView;
+    private TextView eventWaitlistCountTextView; // New TextView for Waitlist Count
     private Button editButton;
     private Button deleteButton;
 
@@ -71,6 +73,8 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
         toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+
+
         // Setup Navigation Drawer
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawerLayout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
@@ -87,6 +91,7 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
         eventCapacityTextView = findViewById(R.id.eventCapacityTextView);
         eventGeolocationTextView = findViewById(R.id.eventGeolocationTextView);
         eventStatusTextView = findViewById(R.id.eventStatusTextView);
+        eventWaitlistCountTextView = findViewById(R.id.eventWaitlistCountTextView); // Initialize new TextView
         editButton = findViewById(R.id.editButton);
         deleteButton = findViewById(R.id.deleteButton);
 
@@ -99,7 +104,6 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
             Toast.makeText(this, "No Event ID provided.", Toast.LENGTH_SHORT).show();
             finish();
         }
-
 
         handleBackPressed();
 
@@ -158,18 +162,22 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
         eventDescriptionTextView.setText(event.getDescription());
         eventLocationTextView.setText("Location: " + event.getEventLocation());
 
-        /*String dates = "Dates: " + formatDate(event.getStartDate()) + " - " + formatDate(event.getEndDate());
-        eventDatesTextView.setText(dates); */
+        // Format dates if startDate and endDate are available
+        String dates = "Dates: " + formatDate(event.getStartDate()) + " - " + formatDate(event.getEndDate());
+        eventDatesTextView.setText(dates);
 
-        String capacity = "Waiting List Capacity: " + (event.getCapacity() - event.getCurrentEntrantsNumber()) + " / " + event.getWaitingListCapacity();
-
+        String capacity = "Available spots for event: " + event.getCapacity();
         eventCapacityTextView.setText(capacity);
+
 
         String geo = "Geolocation Required: " + (event.isGeolocationRequired() ? "Yes" : "No");
         eventGeolocationTextView.setText(geo);
 
         String status = "Status: " + event.getStatus();
         eventStatusTextView.setText(status);
+
+        // Fetch and display waitlist count
+        fetchWaitlistCount(eventId);
     }
 
     /**
@@ -178,18 +186,38 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
      * @param date The Date object to format.
      * @return Formatted date string.
      */
-    /*private String formatDate(Date date) {
+    private String formatDate(java.util.Date date) {
         if (date == null) return "N/A";
         SimpleDateFormat sdf = new SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault());
         return sdf.format(date);
-    } */
+    }
 
     /**
-     * Handles the Add button action.
-     * For organizer, it could mean editing the event.
+     * Fetches the number of entrants in the waiting list for the event.
+     *
+     * @param eventId The ID of the event.
+     */
+    private void fetchWaitlistCount(String eventId) {
+        firestore.collection("Events")
+                .document(eventId)
+                .collection("WaitingList")
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    int waitlistCount = queryDocumentSnapshots.size();
+                    String waitlistText = "Waiting List: " + waitlistCount + "/" + event.getWaitingListCapacity() ;
+                    eventWaitlistCountTextView.setText(waitlistText);
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this, "Error fetching waitlist count: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    eventWaitlistCountTextView.setText("Waiting List: N/A");
+                });
+    }
+
+    /**
+     * Handles the Edit button action.
+     * Navigates to the CreateEditEventActivity for editing the event.
      */
     private void handleEditAction() {
-
         Intent intent = new Intent(EventDetailsOrganizerActivity.this, CreateEditEventActivity.class);
         intent.putExtra("EVENT_ID", eventId);
         startActivity(intent);
