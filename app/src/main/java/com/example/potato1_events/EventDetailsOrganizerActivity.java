@@ -29,6 +29,7 @@ import com.squareup.picasso.Picasso;
 
 import java.text.SimpleDateFormat;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * Activity to display the details of an event for organizers.
@@ -166,8 +167,14 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
         eventLocationTextView.setText("Location: " + event.getEventLocation());
 
         // Format dates if startDate and endDate are available
-        String dates = "Dates: " + formatDate(event.getStartDate()) + " - " + formatDate(event.getEndDate());
-        eventDatesTextView.setText(dates);
+        if (event.getStartDate() != null && event.getEndDate() != null) {
+            SimpleDateFormat dateFormat = new SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault());
+            String dates = "Event Dates: " + dateFormat.format(event.getStartDate()) + " - " + dateFormat.format(event.getEndDate());
+            eventDatesTextView.setText(dates);
+        } else {
+            eventDatesTextView.setText("Event Dates: Not Available");
+        }
+
 
         String capacity = "Available spots for event: " + event.getCapacity();
         eventCapacityTextView.setText(capacity);
@@ -196,25 +203,41 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
     }
 
     /**
-     * Fetches the number of entrants in the waiting list for the event.
+     * Fetches the number of entrants with the "waitlist" status for the event.
      *
      * @param eventId The ID of the event.
      */
     private void fetchWaitlistCount(String eventId) {
         firestore.collection("Events")
                 .document(eventId)
-                .collection("WaitingList")
                 .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    int waitlistCount = queryDocumentSnapshots.size();
-                    String waitlistText = "Waiting List: " + waitlistCount + "/" + event.getWaitingListCapacity() ;
-                    eventWaitlistCountTextView.setText(waitlistText);
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        Event event = documentSnapshot.toObject(Event.class);
+                        if (event != null) {
+                            Map<String, String> entrantsMap = event.getEntrants();
+                            if (entrantsMap != null) {
+                                // Count the number of entrants with the "waitlist" status
+                                long waitlistCount = entrantsMap.values().stream()
+                                        .filter(status -> "waitlist".equals(status))
+                                        .count();
+
+                                String waitlistText = "Waiting List: " + waitlistCount + "/" + event.getWaitingListCapacity();
+                                eventWaitlistCountTextView.setText(waitlistText);
+                            } else {
+                                eventWaitlistCountTextView.setText("Waiting List: 0/" + event.getWaitingListCapacity());
+                            }
+                        }
+                    } else {
+                        Toast.makeText(this, "Event not found.", Toast.LENGTH_SHORT).show();
+                    }
                 })
                 .addOnFailureListener(e -> {
                     Toast.makeText(this, "Error fetching waitlist count: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                     eventWaitlistCountTextView.setText("Waiting List: N/A");
                 });
     }
+
 
     /**
      * Navigates to the EventWaitingListActivity to display the waiting list entrants.

@@ -2,7 +2,9 @@ package com.example.potato1_events;
 
 import com.google.firebase.firestore.ServerTimestamp;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Represents an Event that entrants can sign up for.
@@ -80,25 +82,8 @@ public class Event {
      */
     private String qrCodeHash;
 
-    /**
-     * List of entrant IDs in the waiting list.
-     */
-    private List<String> waitingList;
+    private Map<String, String> entrants; // Map of entrant IDs to their status
 
-    /**
-     * List of entrant IDs who have been selected.
-     */
-    private List<String> selectedEntrants;
-
-    /**
-     * List of entrant IDs who have confirmed their participation.
-     */
-    private List<String> confirmedEntrants;
-
-    /**
-     * List of entrant IDs who have declined the invitation.
-     */
-    private List<String> declinedEntrants;
 
     /**
      * Timestamp of when the event was created.
@@ -127,6 +112,7 @@ public class Event {
      */
     public Event() {
         // Default constructor
+        this.entrants = new HashMap<>();
     }
 
     /**
@@ -146,19 +132,16 @@ public class Event {
      * @param waitingListCapacity   Maximum entrants in the waiting list
      * @param posterImageUrl   URL of the poster image.
      * @param qrCodeHash       Hashed QR code data.
-     * @param waitingList      List of entrant IDs in waiting.
-     * @param selectedEntrants List of selected entrant IDs.
-     * @param confirmedEntrants List of confirmed entrant IDs.
-     * @param declinedEntrants List of declined entrant IDs.
+     * @param entrants       hashmap of entrants with field describing relation to event
      * @param createdAt        Creation timestamp.
      * @param status           Status of the event.
      * @param geolocationRequired  Switch enabling geolocation requirement.
      * @param eventLocation     Events location
      */
     public Event(String id, String facilityId, String name, String description, Date startDate, Date endDate,
-                 Date registrationStart, Date registrationEnd, double price, int capacity, int currentEntrantsNumber, int waitingListCapacity, String posterImageUrl,
-                 String qrCodeHash, List<String> waitingList, List<String> selectedEntrants,
-                 List<String> confirmedEntrants, List<String> declinedEntrants, Date createdAt, String status, boolean geolocationRequired, String eventLocation) {
+                 Date registrationStart, Date registrationEnd, double price, int capacity, int currentEntrantsNumber,
+                 int waitingListCapacity, String posterImageUrl, String qrCodeHash, Map<String, String> entrants,
+                 Date createdAt, String status, boolean geolocationRequired, String eventLocation) {
         this.id = id;
         this.facilityId = facilityId;
         this.name = name;
@@ -169,18 +152,17 @@ public class Event {
         this.registrationEnd = registrationEnd;
         this.price = price;
         this.capacity = capacity;
+        this.currentEntrantsNumber = currentEntrantsNumber;
         this.waitingListCapacity = waitingListCapacity;
         this.posterImageUrl = posterImageUrl;
         this.qrCodeHash = qrCodeHash;
-        this.waitingList = waitingList;
-        this.selectedEntrants = selectedEntrants;
-        this.confirmedEntrants = confirmedEntrants;
-        this.declinedEntrants = declinedEntrants;
+        this.entrants = entrants != null ? entrants : new HashMap<>();
         this.createdAt = createdAt;
         this.status = status;
         this.geolocationRequired = geolocationRequired;
         this.eventLocation = eventLocation;
     }
+
 
     // Getters and Setters
 
@@ -400,76 +382,42 @@ public class Event {
         this.qrCodeHash = qrCodeHash;
     }
 
+
     /**
-     * Gets the waiting list of entrant IDs.
+     * gets entrants hashmap.
      *
-     * @return Waiting list.
+     * @return entrants  hashmap of entrants with field describing relation to event
      */
-    public List<String> getWaitingList() {
-        return waitingList;
+    public Map<String, String> getEntrants() {
+        return entrants;
     }
 
     /**
-     * Sets the waiting list of entrant IDs.
+     * sets entrants hashmap.
      *
-     * @param waitingList Waiting list.
+     * @param entrants hashmap of entrants with field describing relation to event
      */
-    public void setWaitingList(List<String> waitingList) {
-        this.waitingList = waitingList;
+    public void setEntrants(Map<String, String> entrants) {
+        this.entrants = entrants;
     }
 
     /**
-     * Gets the list of selected entrant IDs.
+     * Adds or updates an entrant's status.
      *
-     * @return Selected entrants.
+     * @param entrantId The ID of the entrant.
+     * @param status    The status of the entrant (e.g., "enrolled", "selected", "confirmed", "declined").
      */
-    public List<String> getSelectedEntrants() {
-        return selectedEntrants;
+    public void updateEntrantStatus(String entrantId, String status) {
+        this.entrants.put(entrantId, status);
     }
 
     /**
-     * Sets the list of selected entrant IDs.
+     * Removes an entrant from the entrants map.
      *
-     * @param selectedEntrants Selected entrants.
+     * @param entrantId The ID of the entrant to remove.
      */
-    public void setSelectedEntrants(List<String> selectedEntrants) {
-        this.selectedEntrants = selectedEntrants;
-    }
-
-    /**
-     * Gets the list of confirmed entrant IDs.
-     *
-     * @return Confirmed entrants.
-     */
-    public List<String> getConfirmedEntrants() {
-        return confirmedEntrants;
-    }
-
-    /**
-     * Sets the list of confirmed entrant IDs.
-     *
-     * @param confirmedEntrants Confirmed entrants.
-     */
-    public void setConfirmedEntrants(List<String> confirmedEntrants) {
-        this.confirmedEntrants = confirmedEntrants;
-    }
-
-    /**
-     * Gets the list of declined entrant IDs.
-     *
-     * @return Declined entrants.
-     */
-    public List<String> getDeclinedEntrants() {
-        return declinedEntrants;
-    }
-
-    /**
-     * Sets the list of declined entrant IDs.
-     *
-     * @param declinedEntrants Declined entrants.
-     */
-    public void setDeclinedEntrants(List<String> declinedEntrants) {
-        this.declinedEntrants = declinedEntrants;
+    public void removeEntrant(String entrantId) {
+        this.entrants.remove(entrantId);
     }
 
     /**
@@ -508,50 +456,7 @@ public class Event {
         this.status = status;
     }
 
-    /**
-     * Adds an entrant ID to the waiting list.
-     *
-     * @param entrantId Entrant ID to add.
-     */
-    public void addToWaitingList(String entrantId) {
-        this.waitingList.add(entrantId);
-    }
 
-    /**
-     * Removes an entrant ID from the waiting list.
-     *
-     * @param entrantId Entrant ID to remove.
-     */
-    public void removeFromWaitingList(String entrantId) {
-        this.waitingList.remove(entrantId);
-    }
-
-    /**
-     * Adds an entrant ID to the selected entrants list.
-     *
-     * @param entrantId Entrant ID to add.
-     */
-    public void addSelectedEntrant(String entrantId) {
-        this.selectedEntrants.add(entrantId);
-    }
-
-    /**
-     * Adds an entrant ID to the confirmed entrants list.
-     *
-     * @param entrantId Entrant ID to add.
-     */
-    public void addConfirmedEntrant(String entrantId) {
-        this.confirmedEntrants.add(entrantId);
-    }
-
-    /**
-     * Adds an entrant ID to the declined entrants list.
-     *
-     * @param entrantId Entrant ID to add.
-     */
-    public void addDeclinedEntrant(String entrantId) {
-        this.declinedEntrants.add(entrantId);
-    }
 
     /**
      * Updates the event status.

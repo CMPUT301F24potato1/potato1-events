@@ -35,6 +35,7 @@ import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 
 import java.io.ByteArrayOutputStream;
+import java.util.ArrayList;
 import java.util.UUID;
 
 /**
@@ -331,7 +332,7 @@ public class UserInfoActivity extends AppCompatActivity {
     }
 
     /**
-     * Updates the user's information in Firestore.
+     * Updates the user's information in Firestore without altering the eventsJoined list.
      *
      * @param name        The user's name.
      * @param email       The user's email address.
@@ -339,24 +340,41 @@ public class UserInfoActivity extends AppCompatActivity {
      * @param imagePath   The image path to save (can be null).
      */
     private void updateUserInFirestore(String name, String email, String phoneNumber, String imagePath) {
-        User updatedUser = new User(); // Assuming you have a default constructor
-        updatedUser.setName(name);
-        updatedUser.setEmail(email);
-        updatedUser.setPhoneNumber(phoneNumber);
-        updatedUser.setImagePath(imagePath);
+        firestore.collection(userType + "s").document(deviceId).get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        User user = documentSnapshot.toObject(User.class);
+                        if (user != null) {
 
-        // Update Firestore document
-        firestore.collection(userType + "s").document(deviceId).set(updatedUser)
-                .addOnSuccessListener(aVoid -> {
-                    Toast.makeText(UserInfoActivity.this, "Profile updated successfully", Toast.LENGTH_SHORT).show();
-                    navigateToHomePage();
+                            // Update fields with new values
+                            user.setName(name);
+                            user.setEmail(email);
+                            user.setPhoneNumber(phoneNumber);
+                            user.setImagePath(imagePath);
+
+                            // Save back to Firestore
+                            firestore.collection(userType + "s").document(deviceId)
+                                    .set(user)
+                                    .addOnSuccessListener(aVoid -> {
+                                        Toast.makeText(UserInfoActivity.this, "Profile updated successfully", Toast.LENGTH_SHORT).show();
+                                        navigateToHomePage();
+                                    })
+                                    .addOnFailureListener(e -> {
+                                        Toast.makeText(UserInfoActivity.this, "Error updating profile: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                                        Log.e(TAG, "Error updating profile", e);
+                                        saveButton.setEnabled(true);
+                                    });
+                        }
+                    } else {
+                        Toast.makeText(UserInfoActivity.this, "User data not found.", Toast.LENGTH_SHORT).show();
+                    }
                 })
                 .addOnFailureListener(e -> {
-                    Toast.makeText(UserInfoActivity.this, "Error updating profile: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    Log.e(TAG, "Error updating profile", e);
-                    saveButton.setEnabled(true);
+                    Toast.makeText(UserInfoActivity.this, "Error loading user data: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    Log.e(TAG, "Error loading user data", e);
                 });
     }
+
 
     /**
      * Generates a default avatar, uploads it to Firebase Storage, and updates Firestore.
