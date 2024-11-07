@@ -31,98 +31,86 @@
             android:layout_weight="1"
             android:padding="16dp">
 
-            <!-- CardView for white background and rounded corners -->
-            <androidx.cardview.widget.CardView
+            <LinearLayout
+                android:id="@+id/eventDetailsLinearLayout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_margin="16dp"
-                android:background="@drawable/white_square_background"
-                app:cardCornerRadius="8dp"
-                app:cardElevation="4dp">
+                android:orientation="vertical">
 
-                <LinearLayout
-                    android:id="@+id/eventDetailsLinearLayout"
+                <!-- Event Poster -->
+                <ImageView
+                    android:id="@+id/eventPosterImageView"
                     android:layout_width="match_parent"
+                    android:layout_height="200dp"
+                    android:scaleType="centerCrop"
+                    android:contentDescription="@string/event_poster"
+                    android:src="@drawable/ic_placeholder_image" />
+
+                <!-- Event Name -->
+                <TextView
+                    android:id="@+id/eventNameTextView"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
+                    android:text="Event Name"
+                    android:textAppearance="?attr/textAppearanceHeadline6"
+                    android:textStyle="bold"
+                    android:layout_marginTop="16dp" />
 
-                    <!-- Event Poster -->
-                    <ImageView
-                        android:id="@+id/eventPosterImageView"
-                        android:layout_width="match_parent"
-                        android:layout_height="200dp"
-                        android:scaleType="centerCrop"
-                        android:contentDescription="@string/event_poster"
-                        android:src="@drawable/ic_placeholder_image"
-                        android:layout_marginBottom="16dp" />
+                <!-- Event Description -->
+                <TextView
+                    android:id="@+id/eventDescriptionTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Event Description"
+                    android:textAppearance="?attr/textAppearanceBody1"
+                    android:layout_marginTop="8dp" />
 
-                    <!-- Event Name -->
-                    <TextView
-                        android:id="@+id/eventNameTextView"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Event Name"
-                        android:textAppearance="?attr/textAppearanceHeadline6"
-                        android:textStyle="bold"
-                        android:layout_marginTop="16dp" />
+                <!-- Event Location -->
+                <TextView
+                    android:id="@+id/eventLocationTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Location: Event Location"
+                    android:textAppearance="?attr/textAppearanceBody2"
+                    android:layout_marginTop="8dp" />
 
-                    <!-- Event Description -->
-                    <TextView
-                        android:id="@+id/eventDescriptionTextView"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Event Description"
-                        android:textAppearance="?attr/textAppearanceBody1"
-                        android:layout_marginTop="8dp" />
+                <!-- Event Dates -->
+                <TextView
+                    android:id="@+id/eventDatesTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Dates: Start Date - End Date"
+                    android:textAppearance="?attr/textAppearanceBody2"
+                    android:layout_marginTop="8dp" />
 
-                    <!-- Event Location -->
-                    <TextView
-                        android:id="@+id/eventLocationTextView"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Location: Event Location"
-                        android:textAppearance="?attr/textAppearanceBody2"
-                        android:layout_marginTop="8dp" />
+                <!-- Event Capacity -->
+                <TextView
+                    android:id="@+id/eventCapacityTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Capacity: Available Spots / Waiting List Spots"
+                    android:textAppearance="?attr/textAppearanceBody2"
+                    android:layout_marginTop="8dp" />
 
-                    <!-- Event Dates -->
-                    <TextView
-                        android:id="@+id/eventDatesTextView"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Dates: Start Date - End Date"
-                        android:textAppearance="?attr/textAppearanceBody2"
-                        android:layout_marginTop="8dp" />
+                <!-- Geolocation Requirement -->
+                <TextView
+                    android:id="@+id/eventGeolocationTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Geolocation Required: Yes/No"
+                    android:textAppearance="?attr/textAppearanceBody2"
+                    android:layout_marginTop="8dp" />
 
-                    <!-- Event Capacity -->
-                    <TextView
-                        android:id="@+id/eventCapacityTextView"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Capacity: Available Spots / Waiting List Spots"
-                        android:textAppearance="?attr/textAppearanceBody2"
-                        android:layout_marginTop="8dp" />
+                <!-- Event Status -->
+                <TextView
+                    android:id="@+id/eventStatusTextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Status: Open/Closed"
+                    android:textAppearance="?attr/textAppearanceBody2"
+                    android:layout_marginTop="8dp" />
 
-                    <!-- Geolocation Requirement -->
-                    <TextView
-                        android:id="@+id/eventGeolocationTextView"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Geolocation Required: Yes/No"
-                        android:textAppearance="?attr/textAppearanceBody2"
-                        android:layout_marginTop="8dp" />
-
-                    <!-- Event Status -->
-                    <TextView
-                        android:id="@+id/eventStatusTextView"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Status: Open/Closed"
-                        android:textAppearance="?attr/textAppearanceBody2"
-                        android:layout_marginTop="8dp" />
-
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
+            </LinearLayout>
         </ScrollView>
 
         <!-- Action Buttons -->
@@ -132,8 +120,7 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:padding="16dp"
-            android:gravity="center_horizontal"
-            android:layout_marginTop="24dp">
+            android:gravity="end">
 
             <!-- Edit Button -->
             <Button
@@ -152,5 +139,14 @@
 
         </LinearLayout>
     </LinearLayout>
+
+    <!-- Navigation Drawer -->
+    <com.google.android.material.navigation.NavigationView
+        android:id="@+id/nav_view"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        app:menu="@menu/drawer_menu_organizer" />
+
 
 </androidx.drawerlayout.widget.DrawerLayout>
