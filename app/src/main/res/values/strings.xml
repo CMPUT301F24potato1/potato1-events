@@ -13,6 +13,8 @@
     <string name="open_navigation_drawer">Open Navigation Drawer</string>
     <string name="edit_event">Edit Event</string>
     <string name="delete_event">Delete Event</string>
+    <string name="media_image">Media Image</string>
+    <string name="delete_image">Delete Image</string>
 
 
 </resources>
