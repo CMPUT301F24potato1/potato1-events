@@ -19,6 +19,11 @@
         android:visible="false"
         android:title="Manage Users"
         android:icon="@drawable/ic_profile_placeholder" />
+
+    <item
+        android:id="@+id/action_scan_qr"
+        android:icon="@drawable/baseline_qr_code_scanner_24"
+        android:title="Scan QR Code"/>
 </menu>
 
 <!-- todo: change color of manage media icon to black -->

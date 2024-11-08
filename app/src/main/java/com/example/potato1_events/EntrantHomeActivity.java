@@ -6,7 +6,8 @@ import android.os.Bundle;
 import android.provider.Settings;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
-import android.view.MenuItem;
+import android.view.Menu;
+import android.view.MenuItem;  // Added import
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -25,6 +26,8 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import com.google.android.material.navigation.NavigationView;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.zxing.integration.android.IntentIntegrator;  // Added import
+import com.google.zxing.integration.android.IntentResult;      // Added import
 import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
@@ -204,16 +207,17 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
             Intent intent = new Intent(EntrantHomeActivity.this, ManageMediaActivity.class);
             startActivity(intent);
         } else if (id == R.id.nav_manage_users) {
-            // Navigate to ManageMediaActivity (visible only to admins)
+            // Navigate to ManageUsersActivity (visible only to admins)
             Intent intent = new Intent(EntrantHomeActivity.this, ManageUsersActivity.class);
             startActivity(intent);
+        } else if (id == R.id.action_scan_qr) {
+            // Handle QR code scanning
+            scanQRCode();
         }
 
         drawerLayout.closeDrawer(GravityCompat.START);
         return true;
     }
-
-
 
     /**
      * Handles the back button press to close the drawer if open.
@@ -225,5 +229,56 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
         } else {
             super.onBackPressed();
         }
+    }
+
+    /**
+     * Initiates the QR code scanning using ZXing library.
+     */
+    private void scanQRCode() {
+        IntentIntegrator integrator = new IntentIntegrator(this);
+        integrator.setDesiredBarcodeFormats(IntentIntegrator.QR_CODE);
+        integrator.setPrompt("Scan a QR Code");
+//        integrator.setCameraId(0);  // Use a specific camera of the device
+        integrator.setOrientationLocked(true);  // Lock orientation to portrait
+        integrator.setCaptureActivity(PortraitCaptureActivity.class);
+        integrator.setBeepEnabled(true);
+        integrator.setBarcodeImageEnabled(true);
+        integrator.initiateScan();
+    }
+
+
+    /**
+     /**
+     * Handles the result from the QR code scanning activity.
+     */
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        IntentResult result = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
+        if(result != null) {
+            if(result.getContents() == null) {
+                Toast.makeText(this, "Cancelled", Toast.LENGTH_LONG).show();
+            } else {
+                String scannedData = result.getContents();
+                // Handle the scanned data
+                handleScannedData(scannedData);
+            }
+        } else {
+            super.onActivityResult(requestCode, resultCode, data);
+        }
+    }
+
+    /**
+     * Handles the scanned QR code data.
+     *
+     * @param scannedData The data obtained from scanning the QR code.
+     */
+    private void handleScannedData(String scannedData) {
+        // Assuming the scannedData contains the event ID
+        String eventId = scannedData;
+
+        // Start the EventDetailsEntrantActivity with the event ID
+        Intent intent = new Intent(EntrantHomeActivity.this, EventDetailsEntrantActivity.class);
+        intent.putExtra("EVENT_ID", eventId);
+        startActivity(intent);
     }
 }
