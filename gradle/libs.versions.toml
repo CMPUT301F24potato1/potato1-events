@@ -21,6 +21,7 @@ espressoIntents = "3.6.1"
 testRunner = "1.5.0"
 
 workRuntime = "2.10.0"
+espressoIntentsVersion = "3.6.1"
 
 [libraries]
 concurrent-futures = { module = "androidx.concurrent:concurrent-futures", version.ref = "concurrentFutures" }
@@ -42,6 +43,7 @@ firebase-storage = { group = "com.google.firebase", name = "firebase-storage", v
 work-runtime = { module = "androidx.work:work-runtime", version.ref = "workRuntime" }
 rules = { module = "androidx.test:rules", version.ref = "rules" }
 test-runner = { module = "androidx.test:runner", version.ref = "testRunner" }
+espresso-intents = { group = "androidx.test.espresso", name = "espresso-intents", version.ref = "espressoIntentsVersion" }
 
 
 
