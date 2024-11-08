@@ -16,10 +16,25 @@ import com.squareup.picasso.Picasso;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Adapter class for managing and displaying a list of users in a RecyclerView.
+ * Handles binding user data to the UI components and loading profile images from Firebase Storage.
+ */
 public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder> {
 
+    /**
+     * List of users to be displayed in the RecyclerView.
+     */
     private List<User> userList;
-    private Map<String, String> userStatusMap; // Map of user statuses keyed by userId
+
+    /**
+     * Map containing user statuses keyed by userId.
+     */
+    private Map<String, String> userStatusMap;
+
+    /**
+     * Context from the Activity for accessing resources and layout inflaters.
+     */
     private Context context;
 
     /**
@@ -45,6 +60,13 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
         return userStatusMap.get(userId);
     }
 
+    /**
+     * Called when RecyclerView needs a new {@link UserViewHolder} of the given type to represent an item.
+     *
+     * @param parent   The ViewGroup into which the new View will be added after it is bound to an adapter position.
+     * @param viewType The view type of the new View.
+     * @return A new UserViewHolder that holds a View for each user item.
+     */
     @NonNull
     @Override
     public UserViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -52,22 +74,54 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
         return new UserViewHolder(userView);
     }
 
+    /**
+     * Called by RecyclerView to display the data at the specified position.
+     * This method updates the contents of the {@link UserViewHolder} to reflect the user at the given position.
+     *
+     * @param holder   The UserViewHolder which should be updated to represent the contents of the item.
+     * @param position The position of the item within the adapter's data set.
+     */
     @Override
     public void onBindViewHolder(@NonNull UserViewHolder holder, int position) {
         User user = userList.get(position);
         holder.bind(user);
     }
 
+    /**
+     * Returns the total number of items in the data set held by the adapter.
+     *
+     * @return The total number of users.
+     */
     @Override
     public int getItemCount() {
         return userList.size();
     }
 
+    /**
+     * ViewHolder class for representing each user item in the RecyclerView.
+     * Handles binding user data to UI components and loading profile images.
+     */
     class UserViewHolder extends RecyclerView.ViewHolder {
+        /**
+         * ImageView for displaying the entrant's profile image.
+         */
         ImageView entrantProfileImageView;
+
+        /**
+         * TextView for displaying the entrant's name.
+         */
         TextView entrantNameTextView;
+
+        /**
+         * TextView for displaying the entrant's status.
+         */
         TextView entrantStatusTextView;
 
+        /**
+         * Constructor for UserViewHolder.
+         *
+         * @param itemView The view representing a single user item.
+         */
         public UserViewHolder(@NonNull View itemView) {
             super(itemView);
             entrantProfileImageView = itemView.findViewById(R.id.entrantProfileImageView);
@@ -75,6 +129,12 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
             entrantStatusTextView = itemView.findViewById(R.id.entrantStatusTextView);
         }
 
+        /**
+         * Binds the user data to the UI components.
+         * Loads the profile image from Firebase Storage and sets the entrant's name and status.
+         *
+         * @param user The user object containing data to bind.
+         */
         public void bind(User user) {
             // Load profile image
             if (!TextUtils.isEmpty(user.getImagePath())) {

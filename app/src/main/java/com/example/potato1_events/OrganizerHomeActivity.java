@@ -35,16 +35,44 @@ import com.squareup.picasso.Picasso;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Activity representing the Organizer's Home screen.
+ * Allows organizers to view and manage events associated with their facility.
+ * Provides navigation to profile editing, event creation, facility editing, media management, and user management.
+ */
 public class OrganizerHomeActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
+    // UI Components
+
+    /**
+     * DrawerLayout for the navigation drawer.
+     */
     private DrawerLayout drawerLayout;
+
+    /**
+     * LinearLayout to display the list of events.
+     */
     private LinearLayout eventsLinearLayout;
+
+    /**
+     * FirebaseFirestore instance for database interactions.
+     */
     private FirebaseFirestore firestore;
 
+    /**
+     * Unique device ID used to identify the organizer's facility.
+     */
     private String deviceId;
+
+    /**
+     * List holding all Event objects associated with the organizer's facility.
+     */
     private OrgEventsRepository eventRepository;
     private ArrayList<Event> eventList = new ArrayList<>(); // To store events
 
+    /**
+     * Button to switch between Organizer and Entrant modes.
+     */
     private Button switchModeButton;
 
     /**
@@ -57,6 +85,12 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
         this.firestore = firestore;
     }
 
+    /**
+     * Called when the activity is first created.
+     * Initializes UI components, Firebase instances, and loads events associated with the organizer's facility.
+     *
+     * @param savedInstanceState If the activity is being re-initialized after previously being shut down then this Bundle contains the data it most recently supplied.
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -73,7 +107,7 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
 
         final boolean isAdmin = getIntent().getBooleanExtra("IS_ADMIN", false);
 
-        // Initialize views
+        // Initialize UI Components
         drawerLayout = findViewById(R.id.drawer_organizer_layout);
         NavigationView navigationView = findViewById(R.id.nav_view);
         eventsLinearLayout = findViewById(R.id.eventsLinearLayout);
@@ -116,6 +150,7 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
 
     /**
      * Navigates back to LandingActivity when Switch Mode button is clicked.
+     * Clears the current activity stack to prevent returning to this activity.
      */
     private void switchMode() {
         // Create an Intent to navigate to LandingActivity
@@ -132,7 +167,8 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
     }
 
     /**
-     * Loads all events associated with the organizer's facility.
+     * Loads all events associated with the organizer's facility from Firestore.
+     * Populates the eventsLinearLayout with the fetched events.
      */
 
 //    public void loadEventsForOrganizerFacility() {
@@ -193,40 +229,30 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
                                             }
                                             // Case if your facility has no events
                                             if (eventList.isEmpty()) {
-                                                Toast.makeText(OrganizerHomeActivity.this,
-                                                        "No events found for your facility.",
-                                                        Toast.LENGTH_SHORT).show();
+                                                Toast.makeText(OrganizerHomeActivity.this, "No events found for your facility.", Toast.LENGTH_SHORT).show();
                                             }
                                         })
                                         // Case if there was a failure when loading events
                                         .addOnFailureListener(e -> {
-                                            Toast.makeText(OrganizerHomeActivity.this,
-                                                    "Error loading events: " + e.getMessage(),
-                                                    Toast.LENGTH_SHORT).show();
+                                            Toast.makeText(OrganizerHomeActivity.this, "Error loading events: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                                         });
                             } else {
-                                Toast.makeText(OrganizerHomeActivity.this,
-                                        "No events associated with your facility.",
-                                        Toast.LENGTH_SHORT).show();
+                                Toast.makeText(OrganizerHomeActivity.this, "No events associated with your facility.", Toast.LENGTH_SHORT).show();
                             }
                         }
                     } else {
                         // Facility does not exist; prompt the organizer to create one
-                        Toast.makeText(OrganizerHomeActivity.this,
-                                "No facility found. Please create a facility first.",
-                                Toast.LENGTH_SHORT).show();
+                        Toast.makeText(OrganizerHomeActivity.this, "No facility found. Please create a facility first.", Toast.LENGTH_SHORT).show();
                         navigateToCreateFacility();
                     }
                 })
                 .addOnFailureListener(e -> {
-                    Toast.makeText(OrganizerHomeActivity.this,
-                            "Error loading facility data: " + e.getMessage(),
-                            Toast.LENGTH_SHORT).show();
+                    Toast.makeText(OrganizerHomeActivity.this, "Error loading facility data: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 });
     }
 
     /**
-     * Adds an event view to the LinearLayout for the added event.
+     * Adds an event view to the eventsLinearLayout for the specified event.
      *
      * @param event The Event object to display.
      */
@@ -241,34 +267,36 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
         TextView eventLocationTextView = eventView.findViewById(R.id.eventLocationTextView);
         CardView eventCardView = eventView.findViewById(R.id.eventCardView);
 
-        // Adding the information desired to the event view (Need to add deadline for waitlist too)
+        // Set event information
         eventNameTextView.setText(event.getName());
         eventLocationTextView.setText(event.getEventLocation());
 
+        // Load event poster image using Picasso
         if (!TextUtils.isEmpty(event.getPosterImageUrl())) {
             Picasso.get()
                     .load(event.getPosterImageUrl())
-                    .placeholder(R.drawable.ic_placeholder_image)
-                    .error(R.drawable.ic_error_image)
+                    .placeholder(R.drawable.ic_placeholder_image) // Placeholder image while loading
+                    .error(R.drawable.ic_error_image)             // Image to display on error
                     .into(eventPosterImageView);
         } else {
+            // Set a default placeholder image if poster URL is empty
             eventPosterImageView.setImageResource(R.drawable.ic_placeholder_image);
         }
 
-        // Listener to switch to event details if clicked
+        // Listener to navigate to EventDetailsOrganizerActivity if clicked
         eventCardView.setOnClickListener(v -> {
             Intent intent = new Intent(OrganizerHomeActivity.this, EventDetailsOrganizerActivity.class);
             intent.putExtra("EVENT_ID", event.getId());
             startActivity(intent);
         });
 
-        // Finally add the new view to the linear view
+        // Finally add the new view to the linear layout
         eventsLinearLayout.addView(eventView);
     }
 
     /**
      * Navigates the organizer to the Create/Edit Facility Activity to create a new facility.
-     * This is for when an organizer is first chosen (Will probably be removed if we combine organizer and entrant, instead having a warning for creating an event)
+     * This is used when an organizer has no associated facility.
      */
     private void navigateToCreateFacility() {
         Intent intent = new Intent(OrganizerHomeActivity.this, CreateEditFacilityActivity.class);
@@ -277,9 +305,11 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
     }
 
     /**
-     * Used to control changing between different pages in the side bar
+     * Handles navigation menu item selections.
+     * Navigates to the corresponding activity based on the selected menu item.
      *
-     * @param item The option clicked on by the user in the side bar
+     * @param item The selected menu item.
+     * @return True if the event was handled, false otherwise.
      */
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
@@ -309,13 +339,14 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
             startActivity(intent);
         }
 
+        // Close the navigation drawer after handling the selection
         drawerLayout.closeDrawer(GravityCompat.START);
         return true;
     }
 
     /**
-     * If back button is pressed and side bar is opened, then return to the page.
-     * If done on the page itself, then default back to the normal back press action
+     * Handles the back button press to close the navigation drawer if it's open.
+     * If the drawer is not open, it performs the default back action.
      */
     private void handleBackPressed() {
         OnBackPressedCallback callback = new OnBackPressedCallback(true /* enabled */) {

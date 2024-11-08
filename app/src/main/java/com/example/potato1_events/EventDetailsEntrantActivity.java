@@ -25,7 +25,7 @@ import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.squareup.picasso.Picasso;
 
 import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
@@ -36,27 +36,96 @@ import java.util.Map;
 public class EventDetailsEntrantActivity extends AppCompatActivity {
 
     // UI Components
+
+    /**
+     * ImageView to display the event poster.
+     */
     private ImageView eventPosterImageView;
+
+    /**
+     * TextView to display the event name.
+     */
     private TextView eventNameTextView;
+
+    /**
+     * TextView to display the event description.
+     */
     private TextView eventDescriptionTextView;
+
+    /**
+     * TextView to display the event location.
+     */
     private TextView eventLocationTextView;
+
+    /**
+     * TextView to display the event dates.
+     */
     private TextView eventDatesTextView;
+
+    /**
+     * TextView to display the event capacity details.
+     */
     private TextView eventCapacityTextView;
+
+    /**
+     * TextView to display whether geolocation is required for the event.
+     */
     private TextView eventGeolocationTextView;
+
+    /**
+     * TextView to display the current status of the event.
+     */
     private TextView eventStatusTextView;
+
+    /**
+     * Button to allow the entrant to join the waiting list.
+     */
     private Button joinButton;
+
+    /**
+     * Button to allow the entrant to leave the waiting list.
+     */
     private Button leaveButton;
 
+    // Firebase Firestore
+
+    /**
+     * FirebaseFirestore instance for database interactions.
+     */
+    private FirebaseFirestore firestore;
     // Repository
     private EntEventsRepository entEventsRepository;
 
     // Event Data
+
+    /**
+     * The unique identifier of the event.
+     */
     private String eventId;
+
+    /**
+     * Event object containing all details of the event.
+     */
     private Event event;
 
     // Entrant Data
-    private String deviceId; // Used as the unique identifier for the entrant
 
+    /**
+     * The unique device ID of the entrant, used as the identifier.
+     */
+    private String deviceId;
+
+    /**
+     * The type of user, set to "Entrant".
+     */
+    private String userType = "Entrant";
+
+    /**
+     * Called when the activity is first created.
+     * Initializes UI components, Firebase instances, and retrieves event details.
+     *
+     * @param savedInstanceState If the activity is being re-initialized after previously being shut down then this Bundle contains the data it most recently supplied.
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

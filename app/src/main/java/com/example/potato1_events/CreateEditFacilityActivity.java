@@ -32,7 +32,8 @@ import com.squareup.picasso.Picasso;
 import java.util.*;
 
 /**
- * Activity to create or edit a facility.
+ * Activity to create or edit a facility within the application.
+ * Handles user input, data validation, image uploads, and interaction with Firebase services.
  */
 public class CreateEditFacilityActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
@@ -67,6 +68,11 @@ public class CreateEditFacilityActivity extends AppCompatActivity implements Nav
     // Placeholder Image URL (Set this to your actual placeholder image URL)
     private static final String PLACEHOLDER_IMAGE_URL = "https://firebasestorage.googleapis.com/v0/b/your-app-id.appspot.com/o/facility_photos%2Fplaceholder_facility.jpg?alt=media&token=your-token";
 
+    /**
+     * Initializes the activity, sets up UI components, Firebase instances, and event listeners.
+     *
+     * @param savedInstanceState The previously saved state of the activity.
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -306,7 +312,7 @@ public class CreateEditFacilityActivity extends AppCompatActivity implements Nav
     }
 
     /**
-     * Handles navigation item selections.
+     * Handles navigation item selections from the navigation drawer.
      *
      * @param item The selected menu item.
      * @return True if the event was handled, false otherwise.
@@ -336,8 +342,7 @@ public class CreateEditFacilityActivity extends AppCompatActivity implements Nav
     }
 
     /**
-     * If back button is pressed and side bar is opened, then return to the page.
-     * If done on the page itself, then default back to the normal back press action
+     * Handles the back button press to close the navigation drawer if it's open.
      */
     private void handleBackPressed() {
         OnBackPressedCallback callback = new OnBackPressedCallback(true /* enabled */) {

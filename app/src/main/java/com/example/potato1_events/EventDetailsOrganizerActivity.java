@@ -25,7 +25,6 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import com.google.android.material.navigation.NavigationView;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
@@ -43,41 +42,134 @@ import java.util.Map;
 
 /**
  * Activity to display the details of an event for organizers.
+ * Allows organizers to view event details, share QR codes, edit or delete events, and manage entrants.
  */
 public class EventDetailsOrganizerActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
     // UI Components
+
+    /**
+     * DrawerLayout for the navigation drawer.
+     */
     private DrawerLayout drawerLayout;
+
+    /**
+     * NavigationView for handling navigation menu items.
+     */
     private NavigationView navigationView;
+
+    /**
+     * Toolbar for the activity.
+     */
     private Toolbar toolbar;
 
+    /**
+     * ImageView to display the event poster.
+     */
     private ImageView eventPosterImageView;
+
+    /**
+     * TextView to display the event name.
+     */
     private TextView eventNameTextView;
+
+    /**
+     * TextView to display the event description.
+     */
     private TextView eventDescriptionTextView;
+
+    /**
+     * TextView to display the event location.
+     */
     private TextView eventLocationTextView;
+
+    /**
+     * TextView to display the event dates.
+     */
     private TextView eventDatesTextView;
+
+    /**
+     * TextView to display the event capacity details.
+     */
     private TextView eventCapacityTextView;
+
+    /**
+     * TextView to display whether geolocation is required for the event.
+     */
     private TextView eventGeolocationTextView;
+
+    /**
+     * TextView to display the current status of the event.
+     */
     private TextView eventStatusTextView;
+
+    /**
+     * TextView to display the current waitlist count.
+     */
     private TextView eventWaitlistCountTextView; // New TextView for Waitlist Count
+
+    /**
+     * ImageView to display the generated QR code for the event.
+     */
     private ImageView qrCodeImageView; // ImageView for QR Code
+
+    /**
+     * Button to share the QR code image via other applications.
+     */
     private Button shareQRCodeButton; // Button to share QR Code
+
+    /**
+     * Button to navigate to the edit event activity.
+     */
     private Button editButton;
+
+    /**
+     * Button to delete the event.
+     */
     private Button deleteButton;
+
+    /**
+     * Button to view the list of entrants on the waiting list.
+     */
     private Button entrantsListButton;
 
     // Repository
     private OrgEventsRepository orgEventsRepository;
+    // Firebase Firestore
+
+    /**
+     * FirebaseFirestore instance for database interactions.
+     */
+    private FirebaseFirestore firestore;
 
     // Event Data
+
+    /**
+     * The unique identifier of the event.
+     */
     private String eventId;
+
+    /**
+     * Event object containing all details of the event.
+     */
     private Event event;
 
+    /**
+     * Sets the FirebaseFirestore instance for testing purposes.
+     *
+     * @param firestore The mocked FirebaseFirestore instance.
+     */
     @VisibleForTesting
     public void setOrgEventsRepository(OrgEventsRepository repository) {
         this.orgEventsRepository = repository;
     }
 
+    /**
+     * Called when the activity is first created.
+     * Initializes UI components, Firebase instances, and retrieves event details.
+     *
+     * @param savedInstanceState If the activity is being re-initialized after previously being shut down then this Bundle contains the data it most recently supplied.
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -86,7 +178,7 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
         // Initialize Repository
         orgEventsRepository = new OrgEventsRepository(FirebaseFirestore.getInstance());
 
-        // Initialize UI
+        // Initialize UI Components
         drawerLayout = findViewById(R.id.drawer_event_details_layout);
         navigationView = findViewById(R.id.nav_view);
         toolbar = findViewById(R.id.toolbar);
@@ -405,7 +497,7 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
      * Handles navigation menu item selections.
      *
      * @param item The selected menu item.
-     * @return True if handled, else false.
+     * @return True if the event was handled, false otherwise.
      */
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
