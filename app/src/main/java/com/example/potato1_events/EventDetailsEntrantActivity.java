@@ -1,3 +1,4 @@
+// File: EventDetailsEntrantActivity.java
 package com.example.potato1_events;
 
 import androidx.annotation.NonNull;
@@ -21,6 +22,7 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
+import com.google.firebase.firestore.SetOptions;
 import com.google.firebase.firestore.Transaction;
 import com.squareup.picasso.Picasso;
 
@@ -309,8 +311,10 @@ public class EventDetailsEntrantActivity extends AppCompatActivity {
             // Increment currentEntrantsNumber
             transaction.update(eventRef, "currentEntrantsNumber", FieldValue.increment(1));
 
-            // Add eventId to the user's eventsJoined list
-            transaction.update(userRef, "eventsJoined", FieldValue.arrayUnion(eventId));
+            // Add eventId to the user's eventsJoined list using set with merge
+            Map<String, Object> userData = new HashMap<>();
+            userData.put("eventsJoined", FieldValue.arrayUnion(eventId));
+            transaction.set(userRef, userData, SetOptions.merge());
 
             return null;
         }).addOnSuccessListener(aVoid -> {

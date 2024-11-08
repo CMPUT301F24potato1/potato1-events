@@ -6,7 +6,6 @@ import android.os.Bundle;
 import android.provider.Settings;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
-import android.view.Menu;
 import android.view.MenuItem;  // Added import
 import android.view.View;
 import android.widget.Button;
@@ -23,18 +22,26 @@ import androidx.cardview.widget.CardView;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
 import com.google.android.material.navigation.NavigationView;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FieldPath;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.firestore.SetOptions;
 import com.google.zxing.integration.android.IntentIntegrator;  // Added import
 import com.google.zxing.integration.android.IntentResult;      // Added import
 import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
- * Activity to display all events for entrants.
- * Entrants can view event details and join or leave waiting lists.
+ * Activity to display all events that the entrant has joined.
+ * Entrants can view event details and manage their participation.
  */
 public class EntrantHomeActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
@@ -88,8 +95,18 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
         // Set Click Listener for Switch Mode Button
         switchModeButton.setOnClickListener(v -> switchMode());
 
-        // Load all events
-        loadAllEvents();
+        // Load events the entrant has joined
+        loadJoinedEvents();
+    }
+
+    /**
+     * Override onResume to refresh the event list when the activity resumes.
+     */
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Refresh the list of joined events
+        loadJoinedEvents();
     }
 
     /**
@@ -110,34 +127,75 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
     }
 
     /**
-     * Loads all events from the "Events" collection in Firestore.
+     * Loads events that the entrant has joined from Firestore.
      */
-    private void loadAllEvents() {
+    private void loadJoinedEvents() {
         // Clear existing views and list
         eventsLinearLayout.removeAllViews();
         eventList.clear();
 
-        firestore.collection("Events")
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    if (!queryDocumentSnapshots.isEmpty()) {
-                        for (QueryDocumentSnapshot eventDoc : queryDocumentSnapshots) {
-                            Event event = eventDoc.toObject(Event.class);
-                            event.setId(eventDoc.getId());
-                            eventList.add(event);
-                            addEventView(event);
-                        }
+        // Reference to the entrant's user document
+        DocumentReference userRef = firestore.collection("Entrants").document(deviceId);
+
+        userRef.get().addOnCompleteListener(task -> {
+            if(task.isSuccessful()){
+                DocumentSnapshot document = task.getResult();
+                if(document.exists()){
+                    List<String> eventsJoined = (List<String>) document.get("eventsJoined");
+                    if(eventsJoined != null && !eventsJoined.isEmpty()){
+                        fetchEvents(eventsJoined);
                     } else {
-                        Toast.makeText(EntrantHomeActivity.this,
-                                "No events available at the moment.",
-                                Toast.LENGTH_SHORT).show();
+                        Toast.makeText(EntrantHomeActivity.this, "You haven't joined any events yet.", Toast.LENGTH_SHORT).show();
                     }
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(EntrantHomeActivity.this,
-                            "Error loading events: " + e.getMessage(),
-                            Toast.LENGTH_SHORT).show();
-                });
+                } else {
+                    Toast.makeText(EntrantHomeActivity.this, "User profile not found.", Toast.LENGTH_SHORT).show();
+                }
+            } else {
+                Toast.makeText(EntrantHomeActivity.this, "Error fetching user data: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    /**
+     * Fetches events from Firestore based on a list of event IDs.
+     *
+     * @param eventsJoined List of event IDs the entrant has joined.
+     */
+    private void fetchEvents(List<String> eventsJoined) {
+        if(eventsJoined.isEmpty()){
+            Toast.makeText(this, "You haven't joined any events yet.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Firestore allows up to 10 items in an 'in' query
+        int batchSize = 10;
+        int totalEvents = eventsJoined.size();
+        int batches = (int) Math.ceil((double) totalEvents / batchSize);
+
+        for(int i = 0; i < batches; i++){
+            int start = i * batchSize;
+            int end = Math.min(start + batchSize, totalEvents);
+            List<String> batch = eventsJoined.subList(start, end);
+
+            firestore.collection("Events")
+                    .whereIn(FieldPath.documentId(), batch)
+                    .get()
+                    .addOnCompleteListener(task -> {
+                        if(task.isSuccessful()){
+                            QuerySnapshot querySnapshot = task.getResult();
+                            if(querySnapshot != null && !querySnapshot.isEmpty()){
+                                for(QueryDocumentSnapshot eventDoc : querySnapshot){
+                                    Event event = eventDoc.toObject(Event.class);
+                                    event.setId(eventDoc.getId());
+                                    eventList.add(event);
+                                    addEventView(event);
+                                }
+                            }
+                        } else {
+                            Toast.makeText(EntrantHomeActivity.this, "Error fetching events: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    });
+        }
     }
 
     /**
@@ -238,7 +296,6 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
         IntentIntegrator integrator = new IntentIntegrator(this);
         integrator.setDesiredBarcodeFormats(IntentIntegrator.QR_CODE);
         integrator.setPrompt("Scan a QR Code");
-//        integrator.setCameraId(0);  // Use a specific camera of the device
         integrator.setOrientationLocked(true);  // Lock orientation to portrait
         integrator.setCaptureActivity(PortraitCaptureActivity.class);
         integrator.setBeepEnabled(true);
@@ -246,9 +303,7 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
         integrator.initiateScan();
     }
 
-
     /**
-     /**
      * Handles the result from the QR code scanning activity.
      */
     @Override
