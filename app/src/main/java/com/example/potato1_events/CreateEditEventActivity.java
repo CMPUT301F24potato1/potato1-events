@@ -6,6 +6,8 @@ import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
@@ -25,12 +27,16 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.ContextCompat;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
+
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.material.navigation.NavigationView;
 import com.google.firebase.firestore.*;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.WriterException;
+import com.google.zxing.qrcode.QRCodeWriter;
 import com.squareup.picasso.Picasso;
 
 import java.util.*;
@@ -39,37 +45,31 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
 
     // UI Components
     private EditText eventNameEditText, eventDescriptionEditText, recCentreEditText, eventLocationEditText, availableSpotsEditText, waitingListSpotsEditText;
-    private Button startDateButton, endDateButton, uploadPosterButton, saveEventButton, deleteEventButton;
+    private Button startDateButton, endDateButton, uploadPosterButton, saveEventButton, deleteEventButton, generateQRCodeButton;
     private CheckBox geolocationCheckBox;
-    private ImageView eventPosterImageView;
+    private ImageView eventPosterImageView, qrCodeImageView; // QR Code ImageView
     private Button waitingListDeadlineButton;
-
-    // Firebase Instances
     private FirebaseFirestore firestore;
     private FirebaseStorage storage;
-
-    // Navigation Components
     private DrawerLayout drawerLayout;
     private NavigationView navigationView;
 
-    // URIs and Paths
     private Uri selectedPosterUri = null;
-    private String posterImagePath = null;
-
-    // Event Identification
+    private String posterImageUrl = null; // Store the download URL of the poster image
     private String eventId = null; // If editing an existing event
-    private String existingQrCodeHash = null; // To store existing QR code hash when editing
 
-    // Activity Result Launchers
+    // ActivityResultLauncher for selecting image
     private ActivityResultLauncher<String> selectImageLauncher;
+
+    // ActivityResultLauncher for requesting permissions
     private ActivityResultLauncher<String> requestPermissionLauncher;
 
-    // Date and Time Variables
+    // Variables to store selected dates and times
     private Calendar startDateTime = Calendar.getInstance();
     private Calendar endDateTime = Calendar.getInstance();
     private Calendar registrationEndDateTime = Calendar.getInstance();
 
-    // Organizer's Device ID Acting as Facility ID
+    // Organizer's deviceId acting as facilityId
     private String deviceId;
 
     @Override
@@ -99,6 +99,8 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
         saveEventButton = findViewById(R.id.saveEventButton);
         deleteEventButton = findViewById(R.id.deleteEventButton);
         waitingListDeadlineButton = findViewById(R.id.waitingListDeadlineButton);
+        qrCodeImageView = findViewById(R.id.qrCodeImageView); // Initialize QR Code ImageView
+        generateQRCodeButton = findViewById(R.id.generateQRCodeButton); // Initialize Generate QR Code Button
 
         // Initialize Toolbar
         Toolbar toolbar = findViewById(R.id.toolbar);
@@ -153,8 +155,9 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
                 requestPermissionLauncher.launch(getReadPermission());
             }
         });
-        saveEventButton.setOnClickListener(v -> saveEvent());
+        saveEventButton.setOnClickListener(v -> saveEvent()); // Updated to handle QR code generation internally
         deleteEventButton.setOnClickListener(v -> confirmDeleteEvent());
+        generateQRCodeButton.setOnClickListener(v -> generateQRCode()); // Set up Generate QR Code button listener
 
         // Check if editing an existing event
         Intent intent = getIntent();
@@ -162,15 +165,17 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
             eventId = intent.getStringExtra("EVENT_ID");
             loadEventData(eventId);
             deleteEventButton.setVisibility(View.VISIBLE); // Show delete button in edit mode
+            generateQRCodeButton.setVisibility(View.GONE); // Hide generate QR code button in edit mode
         } else {
             deleteEventButton.setVisibility(View.GONE); // Hide delete button in create mode
+            generateQRCodeButton.setVisibility(View.VISIBLE); // Show generate QR code button in create mode
             recCentreEditText.setText(deviceId); // Automatically set facilityId to deviceId
             recCentreEditText.setEnabled(false); // Disable editing of facilityId
         }
 
         // Verify that the organizer has a facility before allowing event creation
-        if (!isEditingExistingEvent() && !hasFacility()) {
-            promptCreateFacility();
+        if (!isEditingExistingEvent()) {
+            checkFacilityExists();
         }
 
         handleBackPressed();
@@ -265,14 +270,24 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
     }
 
     /**
-     * Checks if the organizer has an existing facility (Placeholder for now).
-     *
-     * @return True if a facility exists, false otherwise.
+     * Checks if the organizer has an existing facility.
+     * This method verifies the existence of a facility document with the deviceId as its ID.
+     * If no such document exists, it prompts the user to create one.
      */
-    private boolean hasFacility() {
-        // TODO: Implement actual logic to check if the organizer has a facility
-        // For now, returning true as a placeholder
-        return true;
+    private void checkFacilityExists() {
+        firestore.collection("Facilities").document(deviceId).get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        // Facility exists; no action needed
+                    } else {
+                        // Facility does not exist; prompt the user to create one
+                        promptCreateFacility();
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this, "Failed to verify facility: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    // Optionally, handle the failure (e.g., retry or exit)
+                });
     }
 
     /**
@@ -298,11 +313,12 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
 
     /**
      * Saves the event to Firebase Firestore, handling both creation and updating.
+     * If creating a new event, it generates a QR code hash based on the event ID.
      */
     private void saveEvent() {
         String name = eventNameEditText.getText().toString().trim();
         String description = eventDescriptionEditText.getText().toString().trim();
-        String recCentre = recCentreEditText.getText().toString().trim(); // This should be deviceId
+        String recCentre = recCentreEditText.getText().toString().trim(); // Should be deviceId
         String location = eventLocationEditText.getText().toString().trim();
         String availableSpotsStr = availableSpotsEditText.getText().toString().trim();
         String waitingListSpotsStr = waitingListSpotsEditText.getText().toString().trim();
@@ -351,17 +367,17 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
         } else {
             // If editing and no new image is selected, keep the last image
             if (isEditingExistingEvent()) {
-                // **Preserve existing posterImagePath and QR code hash**
-                saveEventToFirestore(name, description, recCentre, location, availableSpots, waitingListSpots, isGeolocationEnabled, posterImagePath, existingQrCodeHash);
+                // Preserve existing posterImageUrl and QR code hash
+                saveEventToFirestore(name, description, recCentre, location, availableSpots, waitingListSpots, isGeolocationEnabled, posterImageUrl, null);
             } else {
-                // Generate a QR code even without a poster
-                generateQRCodeAndSaveEvent(name, description, recCentre, location, availableSpots, waitingListSpots, isGeolocationEnabled, null);
+                // Proceed to save event without poster image
+                saveEventToFirestore(name, description, recCentre, location, availableSpots, waitingListSpots, isGeolocationEnabled, null, null);
             }
         }
     }
 
     /**
-     * Uploads the selected poster image to Firebase Storage and retrieves its storage path.
+     * Uploads the selected poster image to Firebase Storage and retrieves its download URL.
      *
      * @param name                 Event name.
      * @param description          Event description.
@@ -382,9 +398,9 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
                 .addOnSuccessListener(taskSnapshot -> {
                     // Get the download URL
                     storageRef.getDownloadUrl().addOnSuccessListener(uri -> {
-                        posterImagePath = uri.toString();
+                        posterImageUrl = uri.toString();
                         // Proceed to save the event with the poster URL
-                        generateQRCodeAndSaveEvent(name, description, recCentre, location, availableSpots, waitingListSpots, isGeolocationEnabled, posterImagePath);
+                        generateQRCodeAndSaveEvent(name, description, recCentre, location, availableSpots, waitingListSpots, isGeolocationEnabled, posterImageUrl);
                     }).addOnFailureListener(e -> {
                         Toast.makeText(CreateEditEventActivity.this, "Failed to get poster URL: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                         saveEventButton.setEnabled(true);
@@ -414,7 +430,8 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
 
         if (isEditingExistingEvent()) {
             // **Editing Existing Event: Use Existing QR Code Hash**
-            saveEventToFirestore(name, description, recCentre, location, availableSpots, waitingListSpots, isGeolocationEnabled, posterUrl, existingQrCodeHash);
+            // No need to regenerate QR code; proceed to save updates
+            saveEventToFirestore(name, description, recCentre, location, availableSpots, waitingListSpots, isGeolocationEnabled, posterUrl, null);
         } else {
             // **Creating New Event: Generate QR Code After Event Creation**
             // Since QR code generation requires the event ID, proceed to create the event first.
@@ -470,42 +487,44 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
             // **Creating a New Event**
 
             // Create an Event object with all necessary fields
-            Event event = new Event();
-            event.setName(name);
-            event.setDescription(description);
-            event.setFacilityId(deviceId); // Associate with the organizer's facility
-            event.setEventLocation(location);
-            event.setCapacity(availableSpots);
-            event.setWaitingListCapacity(waitingListSpots);
-            event.setCurrentEntrantsNumber(0); // Initialize to 0
-            event.setGeolocationRequired(isGeolocationEnabled);
-            event.setPosterImageUrl(posterUrl);
-            event.setStatus("Open");
-            event.setCreatedAt(new Date());
-            event.setEntrants(new HashMap<>()); // Initialize with empty entrants map
-            event.setStartDate(startDateTime.getTime());
-            event.setEndDate(endDateTime.getTime());
-            event.setRegistrationEnd(registrationEndDateTime.getTime());
-            event.setRandomDrawPerformed(false); // Ensure this is set to false during creation
+            Map<String, Object> eventData = new HashMap<>();
+            eventData.put("name", name);
+            eventData.put("description", description);
+            eventData.put("facilityId", recCentre); // Should be deviceId
+            eventData.put("eventLocation", location);
+            eventData.put("capacity", availableSpots);
+            eventData.put("waitingListCapacity", waitingListSpots);
+            eventData.put("currentEntrantsNumber", 0); // Initialize to 0
+            eventData.put("geolocationRequired", isGeolocationEnabled);
+            eventData.put("posterImageUrl", posterUrl);
+            eventData.put("status", "Open");
+            eventData.put("createdAt", new Date());
+            eventData.put("entrants", new HashMap<>()); // Initialize with empty entrants map
+            eventData.put("startDate", startDateTime.getTime());
+            eventData.put("endDate", endDateTime.getTime());
+            eventData.put("registrationEnd", registrationEndDateTime.getTime());
+            eventData.put("randomDrawPerformed", false); // Ensure this is set to false during creation
 
             // Create a new event document
-            firestore.collection("Events").add(event)
+            firestore.collection("Events").add(eventData)
                     .addOnSuccessListener(documentReference -> {
                         String eventIdCreated = documentReference.getId();
 
                         if (qrCodeHash == null) {
-                            // Generate the QR code URL using the event ID
-                            String qrUrl = "https://yourapp.com/joinEvent?eventId=" + eventIdCreated;
+                            // Generate the QR code hash using the event ID
+                            String qrHash = eventIdCreated; // Simple approach: use eventId as QR hash
 
-                            // Update the event with the QR code URL
-                            firestore.collection("Events").document(eventIdCreated).update("qrCodeHash", qrUrl)
+                            // Update the event with the QR code hash
+                            firestore.collection("Events").document(eventIdCreated).update("qrCodeHash", qrHash)
                                     .addOnSuccessListener(aVoid -> {
-                                        Toast.makeText(CreateEditEventActivity.this, "Event created with QR code!", Toast.LENGTH_SHORT).show();
+                                        Toast.makeText(CreateEditEventActivity.this, "Event created successfully!", Toast.LENGTH_SHORT).show();
                                         // Add eventId to the facility's eventIds list
                                         addEventToFacility(eventIdCreated);
+                                        // Optionally, generate and display the QR code
+                                        generateQRCodeAndDisplay(qrHash);
                                     })
                                     .addOnFailureListener(e -> {
-                                        Toast.makeText(CreateEditEventActivity.this, "Failed to update QR code data: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                                        Toast.makeText(CreateEditEventActivity.this, "Failed to set QR code hash: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                                         saveEventButton.setEnabled(true);
                                     });
                         } else {
@@ -518,6 +537,42 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
                         saveEventButton.setEnabled(true);
                     });
         }
+    }
+
+    /**
+     * Generates a QR code based on the provided hash and displays it in the UI.
+     *
+     * @param qrHash The data to encode in the QR code (typically the event ID).
+     */
+    private void generateQRCodeAndDisplay(String qrHash) {
+        // Define the data to be encoded in the QR code (using qrHash)
+        String qrData = qrHash;
+
+        // Generate QR code bitmap
+        QRCodeWriter qrCodeWriter = new QRCodeWriter();
+        int size = 512; // Size of the QR code image
+
+        Bitmap qrBitmap;
+        try {
+            com.google.zxing.common.BitMatrix bitMatrix = qrCodeWriter.encode(qrData, BarcodeFormat.QR_CODE, size, size);
+            qrBitmap = Bitmap.createBitmap(size, size, Bitmap.Config.RGB_565);
+
+            for (int x = 0; x < size; x++) {
+                for (int y = 0; y < size; y++) {
+                    qrBitmap.setPixel(x, y, bitMatrix.get(x, y) ? Color.BLACK : Color.WHITE);
+                }
+            }
+        } catch (WriterException e) {
+            Toast.makeText(this, "Failed to generate QR code: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            saveEventButton.setEnabled(true);
+            return;
+        }
+
+        // Display the QR code in the UI
+        qrCodeImageView.setImageBitmap(qrBitmap);
+        qrCodeImageView.setVisibility(View.VISIBLE); // Make the QR code visible
+
+        Toast.makeText(this, "QR code generated!", Toast.LENGTH_SHORT).show();
     }
 
     /**
@@ -545,7 +600,7 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
      */
     private void navigateBackToEventDetails() {
         Intent intent = new Intent(CreateEditEventActivity.this, EventDetailsOrganizerActivity.class);
-        intent.putExtra("EVENT_ID", eventId); // Pass the event ID if needed
+        intent.putExtra("EVENT_ID", eventId);
         startActivity(intent);
         finish();
     }
@@ -568,40 +623,63 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
         firestore.collection("Events").document(eventId).get()
                 .addOnSuccessListener(documentSnapshot -> {
                     if (documentSnapshot.exists()) {
-                        Event event = documentSnapshot.toObject(Event.class);
-                        if (event != null) {
-                            eventNameEditText.setText(event.getName());
-                            eventDescriptionEditText.setText(event.getDescription());
-                            recCentreEditText.setText(event.getFacilityId());
-                            eventLocationEditText.setText(event.getEventLocation());
-                            availableSpotsEditText.setText(String.valueOf(event.getCapacity()));
-                            waitingListSpotsEditText.setText(String.valueOf(event.getWaitingListCapacity()));
-                            geolocationCheckBox.setChecked(event.isGeolocationRequired());
+                        // Extract the event data
+                        String name = documentSnapshot.getString("name");
+                        String description = documentSnapshot.getString("description");
+                        String facilityId = documentSnapshot.getString("facilityId");
+                        String location = documentSnapshot.getString("eventLocation");
+                        Long capacityLong = documentSnapshot.getLong("capacity");
+                        Long waitingListCapacityLong = documentSnapshot.getLong("waitingListCapacity");
+                        Boolean geolocationRequired = documentSnapshot.getBoolean("geolocationRequired");
+                        String posterUrl = documentSnapshot.getString("posterImageUrl");
+                        Date startDate = documentSnapshot.getDate("startDate");
+                        Date endDate = documentSnapshot.getDate("endDate");
+                        Date registrationEnd = documentSnapshot.getDate("registrationEnd");
+                        String qrCodeHashFetched = documentSnapshot.getString("qrCodeHash");
 
-                            // Set start and end dates
-                            if (event.getStartDate() != null) {
-                                startDateTime.setTime(event.getStartDate());
-                                startDateButton.setText(formatDateTime(startDateTime));
-                            }
-                            if (event.getEndDate() != null) {
-                                endDateTime.setTime(event.getEndDate());
-                                endDateButton.setText(formatDateTime(endDateTime));
-                            }
-                            if (event.getRegistrationEnd() != null) {
-                                registrationEndDateTime.setTime(event.getRegistrationEnd());
-                                waitingListDeadlineButton.setText("Deadline: " + formatDateTime(registrationEndDateTime));
-                            }
-
-                            // Load poster image if available
-                            if (!TextUtils.isEmpty(event.getPosterImageUrl())) {
-                                posterImagePath = event.getPosterImageUrl();
-                                Picasso.get().load(event.getPosterImageUrl()).into(eventPosterImageView);
-                                uploadPosterButton.setText("Change Poster Image"); // Update button text
-                            }
-
-                            // Store existing QR code hash
-                            existingQrCodeHash = event.getQrCodeHash();
+                        // Populate the UI fields
+                        eventNameEditText.setText(name);
+                        eventDescriptionEditText.setText(description);
+                        recCentreEditText.setText(facilityId);
+                        eventLocationEditText.setText(location);
+                        if (capacityLong != null) {
+                            availableSpotsEditText.setText(String.valueOf(capacityLong.intValue()));
                         }
+                        if (waitingListCapacityLong != null) {
+                            waitingListSpotsEditText.setText(String.valueOf(waitingListCapacityLong.intValue()));
+                        }
+                        if (geolocationRequired != null) {
+                            geolocationCheckBox.setChecked(geolocationRequired);
+                        }
+
+                        // Set start and end dates
+                        if (startDate != null) {
+                            startDateTime.setTime(startDate);
+                            startDateButton.setText(formatDateTime(startDateTime));
+                        }
+                        if (endDate != null) {
+                            endDateTime.setTime(endDate);
+                            endDateButton.setText(formatDateTime(endDateTime));
+                        }
+                        if (registrationEnd != null) {
+                            registrationEndDateTime.setTime(registrationEnd);
+                            waitingListDeadlineButton.setText("Deadline: " + formatDateTime(registrationEndDateTime));
+                        }
+
+                        // Load poster image if available
+                        if (!TextUtils.isEmpty(posterUrl)) {
+                            posterImageUrl = posterUrl;
+                            Picasso.get().load(posterUrl).into(eventPosterImageView);
+                            uploadPosterButton.setText("Change Poster Image"); // Update button text
+                        }
+
+                        // Store existing QR code hash
+                        // In this implementation, qrCodeHash is the event ID
+                        if (!TextUtils.isEmpty(qrCodeHashFetched)) {
+                            // Optionally, display the QR code if desired
+                            generateQRCodeAndDisplay(qrCodeHashFetched);
+                        }
+
                     } else {
                         Toast.makeText(this, "Event not found.", Toast.LENGTH_SHORT).show();
                         finish();
@@ -611,6 +689,16 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
                     Toast.makeText(this, "Failed to load event data: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                     finish();
                 });
+    }
+
+    /**
+     * Generates QR code when the button is clicked.
+     */
+    private void generateQRCode() {
+        // In this implementation, QR code is generated after event creation
+        // So, when the user clicks "Generate QR Code", it saves the event first
+        // and then generates the QR code based on the event ID
+        saveEvent();
     }
 
     /**
@@ -692,8 +780,7 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
     }
 
     /**
-     * If back button is pressed and side bar is opened, then return to the page.
-     * If done on the page itself, then default back to the normal back press action
+     * Handles the back button press to close the navigation drawer if it's open.
      */
     private void handleBackPressed() {
         OnBackPressedCallback callback = new OnBackPressedCallback(true /* enabled */) {

@@ -5,7 +5,6 @@ import androidx.annotation.Nullable;
 import com.google.firebase.firestore.ServerTimestamp;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -65,7 +64,7 @@ public class Event {
     private int capacity;
 
     /**
-     * current number of Entrants
+     * Current number of entrants.
      */
     private int currentEntrantsNumber;
 
@@ -80,12 +79,14 @@ public class Event {
     private String posterImageUrl;
 
     /**
-     * Hashed QR code data for the event.
+     * QR code hash representing the event ID.
      */
     private String qrCodeHash;
 
-    private Map<String, String> entrants; // Map of entrant IDs to their status
-
+    /**
+     * Map of entrant IDs to their status.
+     */
+    private Map<String, String> entrants;
 
     /**
      * Timestamp of when the event was created.
@@ -99,21 +100,19 @@ public class Event {
     private String status;
 
     /**
-     * Switch to let organizers set geolocation status
+     * Switch to let organizers set geolocation status.
      */
     private boolean geolocationRequired;
 
     /**
-     * Switch to let organizers set geolocation status
+     * Flag indicating if a random draw has been performed.
      */
     private boolean randomDrawPerformed;
 
-
     /**
-     * Events location
+     * Event's location.
      */
     private String eventLocation;
-
 
     /**
      * Default constructor required for Firebase deserialization.
@@ -126,30 +125,31 @@ public class Event {
     /**
      * Parameterized constructor to create an Event instance.
      *
-     * @param id               Unique identifier for the event.
-     * @param facilityId       Identifier of the hosting facility.
-     * @param name             Name of the event.
-     * @param description      Description of the event.
-     * @param startDate        Start date and time.
-     * @param endDate          End date and time.
-     * @param registrationStart Registration start date and time.
-     * @param registrationEnd   Registration end date and time.
-     * @param price            Price for attending.
-     * @param capacity         Maximum number of attendees.
-     * @param currentEntrantsNumber Current number of entrants
-     * @param waitingListCapacity   Maximum entrants in the waiting list
-     * @param posterImageUrl   URL of the poster image.
-     * @param qrCodeHash       Hashed QR code data.
-     * @param entrants       hashmap of entrants with field describing relation to event
-     * @param createdAt        Creation timestamp.
-     * @param status           Status of the event.
-     * @param geolocationRequired  Switch enabling geolocation requirement.
-     * @param eventLocation     Events location
+     * @param id                    Unique identifier for the event.
+     * @param facilityId            Identifier of the hosting facility.
+     * @param name                  Name of the event.
+     * @param description           Description of the event.
+     * @param startDate             Start date and time.
+     * @param endDate               End date and time.
+     * @param registrationStart     Registration start date and time.
+     * @param registrationEnd       Registration end date and time.
+     * @param price                 Price for attending.
+     * @param capacity              Maximum number of attendees.
+     * @param currentEntrantsNumber Current number of entrants.
+     * @param waitingListCapacity   Maximum entrants in the waiting list.
+     * @param posterImageUrl        URL of the poster image.
+     * @param qrCodeHash            QR code hash representing the event ID.
+     * @param entrants              Map of entrants with their status.
+     * @param createdAt             Creation timestamp.
+     * @param status                Status of the event.
+     * @param geolocationRequired   Switch enabling geolocation requirement.
+     * @param eventLocation         Event's location.
      */
     public Event(String id, String facilityId, String name, String description, Date startDate, Date endDate,
                  Date registrationStart, Date registrationEnd, double price, int capacity, int currentEntrantsNumber,
-                 int waitingListCapacity, String posterImageUrl, String qrCodeHash, Map<String, String> entrants,
-                 Date createdAt, String status, boolean geolocationRequired, String eventLocation) {
+                 int waitingListCapacity, String posterImageUrl, String qrCodeHash,
+                 Map<String, String> entrants, Date createdAt, String status, boolean geolocationRequired,
+                 String eventLocation) {
         this.id = id;
         this.facilityId = facilityId;
         this.name = name;
@@ -360,6 +360,42 @@ public class Event {
 
 
     /**
+     * Gets the current number of entrants in the event.
+     *
+     * @return Current number of entrants.
+     */
+    public int getCurrentEntrantsNumber() {
+        return currentEntrantsNumber;
+    }
+
+    /**
+     * Sets the current number of entrants in the event.
+     *
+     * @param currentEntrantsNumber Current number of entrants.
+     */
+    public void setCurrentEntrantsNumber(int currentEntrantsNumber) {
+        this.currentEntrantsNumber = currentEntrantsNumber;
+    }
+
+    /**
+     * Gets the maximum capacity of the waiting list.
+     *
+     * @return Waiting list capacity.
+     */
+    public int getWaitingListCapacity() {
+        return waitingListCapacity;
+    }
+
+    /**
+     * Sets the maximum capacity of the waiting list.
+     *
+     * @param waitingListCapacity Waiting list capacity.
+     */
+    public void setWaitingListCapacity(int waitingListCapacity) {
+        this.waitingListCapacity = waitingListCapacity;
+    }
+
+    /**
      * Gets the URL of the event poster image.
      *
      * @return Poster image URL.
@@ -378,7 +414,7 @@ public class Event {
     }
 
     /**
-     * Gets the hashed QR code data.
+     * Gets the QR code hash representing the event ID.
      *
      * @return QR code hash.
      */
@@ -387,7 +423,7 @@ public class Event {
     }
 
     /**
-     * Sets the hashed QR code data.
+     * Sets the QR code hash representing the event ID.
      *
      * @param qrCodeHash QR code hash.
      */
@@ -395,20 +431,19 @@ public class Event {
         this.qrCodeHash = qrCodeHash;
     }
 
-
     /**
-     * gets entrants hashmap.
+     * Gets the entrants map.
      *
-     * @return entrants  hashmap of entrants with field describing relation to event
+     * @return Map of entrant IDs to their status.
      */
     public Map<String, String> getEntrants() {
         return entrants;
     }
 
     /**
-     * sets entrants hashmap.
+     * Sets the entrants map.
      *
-     * @param entrants hashmap of entrants with field describing relation to event
+     * @param entrants Map of entrant IDs to their status.
      */
     public void setEntrants(Map<String, String> entrants) {
         this.entrants = entrants;
@@ -469,8 +504,6 @@ public class Event {
         this.status = status;
     }
 
-
-
     /**
      * Updates the event status.
      *
@@ -481,88 +514,56 @@ public class Event {
     }
 
     /**
-     * Grabs the Event Location.
+     * Gets the geolocation requirement status.
      *
-     */
-    public String getEventLocation() {
-        return eventLocation;
-    }
-
-    /**
-     * Sets new location of event
-     *
-     * @param eventLocation new eventLocation
-     */
-    public void setEventLocation(String eventLocation) {
-        this.eventLocation = eventLocation;
-    }
-
-
-    /**
-     * Grabs the gelocation requirement status.
-     *
+     * @return True if geolocation is required, false otherwise.
      */
     public boolean isGeolocationRequired() {
         return geolocationRequired;
     }
 
     /**
-     * Sets geolocation reqiurements status
+     * Sets the geolocation requirement status.
      *
-     * @param geolocationRequired changes geolocation requirement
+     * @param geolocationRequired True to require geolocation, false otherwise.
      */
     public void setGeolocationRequired(boolean geolocationRequired) {
         this.geolocationRequired = geolocationRequired;
     }
 
     /**
-     * Grabs capacity number for the waiting list
+     * Gets whether a random draw has been performed.
      *
+     * @return True if a random draw has been performed, false otherwise.
      */
-    public int getWaitingListCapacity() {
-        return waitingListCapacity;
+    public boolean isRandomDrawPerformed() {
+        return randomDrawPerformed;
     }
 
     /**
-     * Sets geolocation reqiurements status
+     * Sets whether a random draw has been performed.
      *
-     * @param waitingListCapacity changes the capcity of the waiting list
-     */
-    public void setWaitingListCapacity(int waitingListCapacity) {
-        this.waitingListCapacity = waitingListCapacity;
-    }
-
-    /**
-     * Grabs current number of entrants in the event
-     *
-     */
-    public int getCurrentEntrantsNumber() {
-        return currentEntrantsNumber;
-    }
-
-    /**
-     * Sets the current number of entrants in the event
-     *
-     * @param currentEntrantsNumber changes the current number of entrants
-     */
-    public void setCurrentEntrantsNumber(int currentEntrantsNumber) {
-        this.currentEntrantsNumber = currentEntrantsNumber;
-    }
-
-    /**
-     * Grabs this
-     *
-     */
-    public boolean getRandomDrawPerformed() {
-        return this.randomDrawPerformed;
-    }
-
-    /**
-     * Sets this
-     *
-     * @param randomDrawPerformed changes this
+     * @param randomDrawPerformed True if a random draw has been performed, false otherwise.
      */
     public void setRandomDrawPerformed(boolean randomDrawPerformed) {
         this.randomDrawPerformed = randomDrawPerformed;
+    }
+
+    /**
+     * Gets the event location.
+     *
+     * @return Event location.
+     */
+    public String getEventLocation() {
+        return eventLocation;
+    }
+
+    /**
+     * Sets the event location.
+     *
+     * @param eventLocation Event location.
+     */
+    public void setEventLocation(String eventLocation) {
+        this.eventLocation = eventLocation;
     }
 }

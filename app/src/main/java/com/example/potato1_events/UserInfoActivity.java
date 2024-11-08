@@ -23,6 +23,7 @@ import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.annotation.VisibleForTesting;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -86,6 +87,16 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
 
     // ActionBarDrawerToggle
     private ActionBarDrawerToggle toggle;
+
+    @VisibleForTesting
+    public void setFirestore(FirebaseFirestore firestore) {
+        this.firestore = firestore;
+    }
+
+    @VisibleForTesting
+    public void setStorage(FirebaseStorage storage) {
+        this.storage = storage;
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
