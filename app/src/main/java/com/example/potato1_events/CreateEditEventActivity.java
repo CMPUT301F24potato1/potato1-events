@@ -1,4 +1,3 @@
-// File: CreateEditEventActivity.java
 package com.example.potato1_events;
 
 import android.Manifest;
@@ -315,6 +314,10 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
      * Saves the event to Firebase Firestore, handling both creation and updating.
      * If creating a new event, it generates a QR code hash based on the event ID.
      */
+    /**
+     * Saves the event to Firebase Firestore, handling both creation and updating.
+     * If creating a new event, it generates a QR code hash based on the event ID.
+     */
     private void saveEvent() {
         String name = eventNameEditText.getText().toString().trim();
         String description = eventDescriptionEditText.getText().toString().trim();
@@ -338,16 +341,20 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
             return;
         }
 
-        // Ensure registration end date is before event start date
-        if (registrationEndDateTime.after(startDateTime.getTime())) {
-            Toast.makeText(this, "Waiting list deadline must be before event start date.", Toast.LENGTH_SHORT).show();
+
+
+        if (!startDateTime.before(endDateTime)) {
+            Toast.makeText(this, "Start date must be before end date.", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        if (TextUtils.isEmpty(waitingListSpotsStr)) {
-            waitingListSpotsStr = "10000";
+
+        if (!registrationEndDateTime.before(startDateTime)) {
+            Toast.makeText(this, "Waiting List deadline must be before event starting date..", Toast.LENGTH_SHORT).show();
+            return;
         }
 
+        // Ensure waitingListSpots > availableSpots
         int availableSpots;
         int waitingListSpots;
 
@@ -356,6 +363,14 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
             waitingListSpots = Integer.parseInt(waitingListSpotsStr);
         } catch (NumberFormatException e) {
             Toast.makeText(this, "Please enter valid numbers for spots.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+
+
+
+        if (waitingListSpots < availableSpots) {
+            Toast.makeText(this, "Waiting list spots must be greater than available spots.", Toast.LENGTH_SHORT).show();
             return;
         }
 

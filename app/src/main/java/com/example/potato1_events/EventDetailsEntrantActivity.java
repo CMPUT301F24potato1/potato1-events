@@ -21,6 +21,7 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
+import com.google.firebase.firestore.SetOptions;
 import com.google.firebase.firestore.Transaction;
 import com.squareup.picasso.Picasso;
 
@@ -269,18 +270,70 @@ public class EventDetailsEntrantActivity extends AppCompatActivity {
      * Adds the entrant to the event's entrants map in Firestore and updates the user's eventsJoined list.
      */
     private void joinWaitingList() {
-        entEventRepo.joinWaitingList(eventId, deviceId, new EntEventsRepository.ActionCallback() {
-            @Override
-            public void onSuccess() {
-                Toast.makeText(EventDetailsEntrantActivity.this, "Successfully joined the waiting list.", Toast.LENGTH_SHORT).show();
-                event.setCurrentEntrantsNumber(event.getCurrentEntrantsNumber() + 1);
-                updateButtonStates();
-                populateEventDetails(event);
+        final DocumentReference eventRef = firestore.collection("Events").document(eventId);
+        final DocumentReference userRef = firestore.collection("Entrants").document(deviceId);
+
+        firestore.runTransaction((Transaction.Function<Void>) transaction -> {
+            // Fetch the latest event data
+            DocumentSnapshot eventSnapshot = transaction.get(eventRef);
+            if (!eventSnapshot.exists()) {
+                throw new FirebaseFirestoreException("Event does not exist.",
+                        FirebaseFirestoreException.Code.ABORTED, null);
             }
 
-            @Override
-            public void onFailure(Exception e) {
-                Toast.makeText(EventDetailsEntrantActivity.this, "Error joining waiting list: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            Event event = eventSnapshot.toObject(Event.class);
+            if (event == null) {
+                throw new FirebaseFirestoreException("Invalid event data.",
+                        FirebaseFirestoreException.Code.ABORTED, null);
+            }
+
+            Map<String, String> entrantsMap = event.getEntrants();
+            if (entrantsMap == null) {
+                entrantsMap = new HashMap<>();
+            }
+
+            // Check if entrant is already in the entrants map
+            if (entrantsMap.containsKey(deviceId)) {
+                throw new FirebaseFirestoreException("Already on the waiting list.",
+                        FirebaseFirestoreException.Code.ABORTED, null);
+            }
+
+            // Check if waiting list is full
+            Long currentEntrants = (long) event.getCurrentEntrantsNumber();
+            Long capacity = Long.valueOf(event.getWaitingListCapacity());
+            if (currentEntrants >= capacity) {
+                throw new FirebaseFirestoreException("Waiting list is full.",
+                        FirebaseFirestoreException.Code.ABORTED, null);
+            }
+
+            // Add entrant to entrants map with status "waitlist"
+            transaction.update(eventRef, "entrants." + deviceId, "waitlist");
+
+            // Increment currentEntrantsNumber
+            transaction.update(eventRef, "currentEntrantsNumber", FieldValue.increment(1));
+
+            // Add eventId to the user's eventsJoined list using set with merge
+            Map<String, Object> userData = new HashMap<>();
+            userData.put("eventsJoined", FieldValue.arrayUnion(eventId));
+            transaction.set(userRef, userData, SetOptions.merge());
+
+            return null;
+        }).addOnSuccessListener(aVoid -> {
+            Toast.makeText(this, "Successfully joined the waiting list.", Toast.LENGTH_SHORT).show();
+            event.setCurrentEntrantsNumber(event.getCurrentEntrantsNumber() + 1);
+            updateButtonStates();
+            populateEventDetails(event);
+        }).addOnFailureListener(e -> {
+            if (e instanceof FirebaseFirestoreException) {
+                FirebaseFirestoreException firestoreException = (FirebaseFirestoreException) e;
+                String message = firestoreException.getMessage();
+                if (firestoreException.getCode() == FirebaseFirestoreException.Code.ABORTED) {
+                    Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(this, "Error joining waiting list: " + message, Toast.LENGTH_SHORT).show();
+                }
+            } else {
+                Toast.makeText(this, "Error joining waiting list: " + e.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
