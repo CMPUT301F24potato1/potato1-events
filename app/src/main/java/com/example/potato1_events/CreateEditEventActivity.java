@@ -49,6 +49,7 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
     private DrawerLayout drawerLayout;
     private NavigationView navigationView;
 
+
     private Uri selectedPosterUri = null;
     private String posterImagePath = null;
     private String eventId = null; // If editing an existing event

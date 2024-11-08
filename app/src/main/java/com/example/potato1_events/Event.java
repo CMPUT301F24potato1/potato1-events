@@ -1,5 +1,7 @@
 package com.example.potato1_events;
 
+import androidx.annotation.Nullable;
+
 import com.google.firebase.firestore.ServerTimestamp;
 import java.util.Date;
 import java.util.HashMap;
@@ -102,6 +104,12 @@ public class Event {
     private boolean geolocationRequired;
 
     /**
+     * Switch to let organizers set geolocation status
+     */
+    private boolean randomDrawPerformed;
+
+
+    /**
      * Events location
      */
     private String eventLocation;
@@ -161,6 +169,7 @@ public class Event {
         this.status = status;
         this.geolocationRequired = geolocationRequired;
         this.eventLocation = eventLocation;
+        this.randomDrawPerformed = false;
     }
 
 
