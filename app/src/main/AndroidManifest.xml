@@ -6,6 +6,7 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.CAMERA" />
     <application
         android:name=".MyApplication"
         android:allowBackup="true"
@@ -48,6 +49,18 @@
             android:exported="false"/>
         <activity android:name=".ManageMediaActivity" />
         <activity android:name=".ManageUsersActivity" />
+        <activity
+            android:name=".ScanQRCodeActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
+
+        <!-- Declare the PortraitCaptureActivity if still used -->
+        <activity
+            android:name=".PortraitCaptureActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
+
+
 
 
         <activity
