@@ -27,8 +27,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.material.navigation.NavigationView;
-import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.squareup.picasso.Picasso;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.WriterException;
@@ -66,16 +66,16 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
     private Button deleteButton;
     private Button entrantsListButton;
 
-    // Firebase Firestore
-    private FirebaseFirestore firestore;
+    // Repository
+    private OrgEventsRepository orgEventsRepository;
 
     // Event Data
     private String eventId;
     private Event event;
 
     @VisibleForTesting
-    public void setFirestore(FirebaseFirestore firestore) {
-        this.firestore = firestore;
+    public void setOrgEventsRepository(OrgEventsRepository repository) {
+        this.orgEventsRepository = repository;
     }
 
     @Override
@@ -83,8 +83,8 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_event_details_organizer);
 
-        // Initialize Firestore
-        firestore = FirebaseFirestore.getInstance();
+        // Initialize Repository
+        orgEventsRepository = new OrgEventsRepository(FirebaseFirestore.getInstance());
 
         // Initialize UI
         drawerLayout = findViewById(R.id.drawer_event_details_layout);
@@ -109,8 +109,8 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
         eventGeolocationTextView = findViewById(R.id.eventGeolocationTextView);
         eventStatusTextView = findViewById(R.id.eventStatusTextView);
         eventWaitlistCountTextView = findViewById(R.id.eventWaitlistCountTextView);
-        qrCodeImageView = findViewById(R.id.qrCodeImageView); // Initialize QR Code ImageView
-        shareQRCodeButton = findViewById(R.id.shareQRCodeButton); // Initialize Share QR Code Button
+        qrCodeImageView = findViewById(R.id.qrCodeImageView);
+        shareQRCodeButton = findViewById(R.id.shareQRCodeButton);
         editButton = findViewById(R.id.editButton);
         deleteButton = findViewById(R.id.deleteButton);
         entrantsListButton = findViewById(R.id.entrantsListButton);
@@ -135,31 +135,29 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
     }
 
     /**
-     * Loads event details from Firestore based on eventId.
+     * Loads event details using OrgEventsRepository based on eventId.
      *
      * @param eventId The ID of the event to load.
      */
-    private void loadEventDetails(String eventId) {
-        firestore.collection("Events").document(eventId).get()
-                .addOnSuccessListener(documentSnapshot -> {
-                    if (documentSnapshot.exists()) {
-                        event = documentSnapshot.toObject(Event.class);
-                        if (event != null) {
-                            event.setId(documentSnapshot.getId());
-                            populateEventDetails(event);
-                        } else {
-                            Toast.makeText(EventDetailsOrganizerActivity.this, "Error parsing event data.", Toast.LENGTH_SHORT).show();
-                            finish();
-                        }
-                    } else {
-                        Toast.makeText(EventDetailsOrganizerActivity.this, "Event not found.", Toast.LENGTH_SHORT).show();
-                        finish();
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(EventDetailsOrganizerActivity.this, "Error loading event: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+    public void loadEventDetails(String eventId) {
+        if (orgEventsRepository == null) {
+            Toast.makeText(this, "Repository not initialized.", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
+
+        orgEventsRepository.getEventById(eventId, new OrgEventsRepository.EventCallback() {
+            @Override
+            public void onEventLoaded(Event loadedEvent) {
+                if (loadedEvent != null) {
+                    event = loadedEvent;
+                    populateEventDetails(event);
+                } else {
+                    Toast.makeText(EventDetailsOrganizerActivity.this, "Event not found.", Toast.LENGTH_SHORT).show();
                     finish();
-                });
+                }
+            }
+        });
     }
 
     /**
@@ -229,34 +227,29 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
      * @param eventId The ID of the event.
      */
     private void fetchWaitlistCount(String eventId) {
-        firestore.collection("Events")
-                .document(eventId)
-                .get()
-                .addOnSuccessListener(documentSnapshot -> {
-                    if (documentSnapshot.exists()) {
-                        Event event = documentSnapshot.toObject(Event.class);
-                        if (event != null) {
-                            Map<String, String> entrantsMap = event.getEntrants();
-                            if (entrantsMap != null) {
-                                // Count the number of entrants with the "waitlist" status
-                                long waitlistCount = entrantsMap.values().stream()
-                                        .filter(status -> "waitlist".equalsIgnoreCase(status))
-                                        .count();
+        if (orgEventsRepository == null) {
+            Toast.makeText(this, "Repository not initialized.", Toast.LENGTH_SHORT).show();
+            eventWaitlistCountTextView.setText("Waiting List: N/A");
+            return;
+        }
 
-                                String waitlistText = "Waiting List: " + waitlistCount + "/" + event.getWaitingListCapacity();
-                                eventWaitlistCountTextView.setText(waitlistText);
-                            } else {
-                                eventWaitlistCountTextView.setText("Waiting List: 0/" + event.getWaitingListCapacity());
-                            }
-                        }
-                    } else {
-                        Toast.makeText(this, "Event not found.", Toast.LENGTH_SHORT).show();
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Error fetching waitlist count: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    eventWaitlistCountTextView.setText("Waiting List: N/A");
-                });
+        orgEventsRepository.getEventById(eventId, new OrgEventsRepository.EventCallback() {
+            @Override
+            public void onEventLoaded(Event loadedEvent) {
+                if (loadedEvent != null && loadedEvent.getEntrants() != null) {
+                    Map<String, String> entrantsMap = loadedEvent.getEntrants();
+                    // Count the number of entrants with the "waitlist" status
+                    long waitlistCount = entrantsMap.values().stream()
+                            .filter(status -> "waitlist".equalsIgnoreCase(status))
+                            .count();
+
+                    String waitlistText = "Waiting List: " + waitlistCount + "/" + loadedEvent.getWaitingListCapacity();
+                    eventWaitlistCountTextView.setText(waitlistText);
+                } else {
+                    eventWaitlistCountTextView.setText("Waiting List: 0/" + (event != null ? event.getWaitingListCapacity() : "N/A"));
+                }
+            }
+        });
     }
 
     /**
@@ -291,7 +284,6 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
         qrCodeImageView.setImageBitmap(qrBitmap);
         qrCodeImageView.setVisibility(View.VISIBLE); // Make the QR code visible
         shareQRCodeButton.setVisibility(View.VISIBLE);
-
     }
 
     /**
@@ -367,38 +359,46 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
     }
 
     /**
-     * Deletes the event from Firestore and removes it from the facility's event list.
+     * Deletes the event using OrgEventsRepository.
      */
     private void deleteEvent() {
-        firestore.collection("Events").document(eventId).delete()
-                .addOnSuccessListener(aVoid -> {
-                    Toast.makeText(this, "Event deleted successfully.", Toast.LENGTH_SHORT).show();
-                    // Remove eventId from the facility's eventIds list
-                    removeEventFromFacility(event.getFacilityId(), eventId);
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Error deleting event: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                });
-    }
+        if (orgEventsRepository == null) {
+            Toast.makeText(this, "Repository not initialized.", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
-    /**
-     * Removes the event ID from the facility's eventIds array in Firestore.
-     *
-     * @param facilityId The ID of the facility.
-     * @param eventId    The ID of the event to remove.
-     */
-    private void removeEventFromFacility(String facilityId, String eventId) {
-        firestore.collection("Facilities").document(facilityId)
-                .update("eventIds", FieldValue.arrayRemove(eventId))
-                .addOnSuccessListener(aVoid -> {
-                    Toast.makeText(EventDetailsOrganizerActivity.this, "Event removed from facility.", Toast.LENGTH_SHORT).show();
-                    Intent intent = new Intent(EventDetailsOrganizerActivity.this, OrganizerHomeActivity.class);
-                    startActivity(intent);
-                    finish();
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(EventDetailsOrganizerActivity.this, "Error updating facility: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                });
+        // Assume the Facility ID is part of the Event object
+        String facilityId = event.getFacilityId();
+        if (TextUtils.isEmpty(facilityId)) {
+            Toast.makeText(this, "Facility ID not available.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        orgEventsRepository.deleteEvent(eventId, facilityId, new OrgEventsRepository.ActionCallback() {
+            @Override
+            public void onSuccess() {
+                Toast.makeText(EventDetailsOrganizerActivity.this, "Event deleted successfully.", Toast.LENGTH_SHORT).show();
+                // Navigate back to OrganizerHomeActivity
+                Intent intent = new Intent(EventDetailsOrganizerActivity.this, OrganizerHomeActivity.class);
+                startActivity(intent);
+                finish();
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                if (e instanceof FirebaseFirestoreException) {
+                    FirebaseFirestoreException firestoreException = (FirebaseFirestoreException) e;
+                    String message = firestoreException.getMessage();
+                    if (firestoreException.getCode() == FirebaseFirestoreException.Code.ABORTED) {
+                        Toast.makeText(EventDetailsOrganizerActivity.this, message, Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(EventDetailsOrganizerActivity.this, "Error deleting event: " + message, Toast.LENGTH_SHORT).show();
+                    }
+                } else {
+                    Toast.makeText(EventDetailsOrganizerActivity.this, "Error deleting event: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
     }
 
     /**
@@ -437,7 +437,7 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
     }
 
     /**
-     * Handles the back button press to close the navigation drawer if it's open.
+     * Handles back button presses, ensuring that the navigation drawer is closed if open.
      */
     private void handleBackPressed() {
         OnBackPressedCallback callback = new OnBackPressedCallback(true /* enabled */) {

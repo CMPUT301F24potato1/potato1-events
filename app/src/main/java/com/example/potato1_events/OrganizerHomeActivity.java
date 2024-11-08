@@ -42,6 +42,7 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
     private FirebaseFirestore firestore;
 
     private String deviceId;
+    private OrgEventsRepository eventRepository;
     private ArrayList<Event> eventList = new ArrayList<>(); // To store events
 
     private Button switchModeButton;
@@ -66,6 +67,9 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
 
         // Initialize Firestore
         firestore = FirebaseFirestore.getInstance();
+
+        eventRepository = new OrgEventsRepository(FirebaseFirestore.getInstance());
+
 
         final boolean isAdmin = getIntent().getBooleanExtra("IS_ADMIN", false);
 
@@ -102,6 +106,15 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
     }
 
     /**
+     * Sets the EventRepository instance (used for testing).
+     *
+     * @param repository The EventRepository instance.
+     */
+    public void setOrgEventsRepository(OrgEventsRepository repository) {
+        this.eventRepository = repository;
+    }
+
+    /**
      * Navigates back to LandingActivity when Switch Mode button is clicked.
      */
     private void switchMode() {
@@ -121,6 +134,34 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
     /**
      * Loads all events associated with the organizer's facility.
      */
+
+//    public void loadEventsForOrganizerFacility() {
+//        // Clear existing views and list
+//        CollectionReference facilitiesRef = firestore.collection("Facilities");
+//        eventsLinearLayout.removeAllViews();
+//        eventList.clear();
+//
+//        // Use facilityId (e.g., retrieved from deviceId or user session)
+//        String currentFacilityId = facilityId; // Replace with actual retrieval logic
+//
+//        eventRepository.getEventsForOrganizerFacility(currentFacilityId, new OrgEventsRepository.EventListCallback() {
+//            @Override
+//            public void onEventListLoaded(List<Event> events) {
+//                if (events != null && !events.isEmpty()) {
+//                    eventList.addAll(events);
+//                    eventsLinearLayout.removeAllViews(); // Clear existing views
+//                    // Update UI with eventList
+//                    for (Event event : eventList) {
+//                        addEventView(event);
+//                    }
+//                } else {
+//                    Toast.makeText(OrganizerHomeActivity.this,
+//                            "No events found for your facility.",
+//                            Toast.LENGTH_SHORT).show();
+//                }
+//            }
+//        });
+//    }
     public void loadEventsForOrganizerFacility() {
         // Clear existing views and list
         eventsLinearLayout.removeAllViews();
