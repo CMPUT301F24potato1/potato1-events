@@ -536,7 +536,7 @@ public class Event {
      *
      * @return True if a random draw has been performed, false otherwise.
      */
-    public boolean isRandomDrawPerformed() {
+    public boolean getRandomDrawPerformed() {
         return randomDrawPerformed;
     }
 
