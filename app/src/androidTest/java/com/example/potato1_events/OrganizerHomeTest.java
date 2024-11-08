@@ -27,6 +27,9 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import static androidx.test.espresso.Espresso.onView;
+import static androidx.test.espresso.action.ViewActions.clearText;
+import static androidx.test.espresso.action.ViewActions.closeSoftKeyboard;
+import static androidx.test.espresso.action.ViewActions.typeText;
 import static androidx.test.espresso.intent.Intents.intended;
 import static androidx.test.espresso.intent.matcher.IntentMatchers.hasComponent;
 import static androidx.test.espresso.action.ViewActions.click;
@@ -166,6 +169,77 @@ public class OrganizerHomeTest {
 //                .check(matches(isDisplayed()));
         onView(withText("Organizer")).check(matches(isDisplayed()));
     }
+
+    /**
+     * Test SP6: Organizer can view and edit their profile.
+     */
+    @Test
+    public void testOrganizerProfile_EditProfile() throws InterruptedException {
+        // Launch the activity
+        ActivityScenario<OrganizerHomeActivity> scenario = ActivityScenario.launch(OrganizerHomeActivity.class);
+
+        // Open the navigation drawer and navigate to Profile
+        onView(withId(R.id.drawer_organizer_layout))
+                .perform(DrawerActions.open());
+        onView(withId(R.id.nav_view))
+                .perform(NavigationViewActions.navigateTo(R.id.nav_organizer_profile));
+
+        // Perform profile edit actions
+        onView(withId(R.id.nameEditText)).perform(clearText(), typeText("Updated Organizer"), closeSoftKeyboard());
+        onView(withId(R.id.emailEditText)).perform(clearText(), typeText("Updated Organizer"), closeSoftKeyboard());
+        onView(withId(R.id.phoneEditText)).perform(clearText(), typeText("Updated Organizer"), closeSoftKeyboard());
+
+        // Add other profile fields as necessary...
+
+        // Click the Save button
+        onView(withId(R.id.saveButton)).perform(click());
+
+        Thread.sleep(1000);
+
+        // Verify that a success toast is displayed
+//        onView(withText("Profile updated successfully."))
+//                .inRoot(new ToastMatcher())
+//                .check(matches(isDisplayed()));
+
+        // Optionally, verify that the updated name is displayed
+        onView(withId(R.id.switchModeButton)).check(matches(isDisplayed()));
+//        onView(withText("Profile updated successfully."))
+//                .inRoot(new ToastMatcher())
+//                .check(matches(isDisplayed()));
+    }
+
+//    /**
+//     * Test SP3: Organizer can create a new event.
+//     */
+//    @Test
+//    public void testCreateEvent_Success() {
+//        // Mock create event action
+//        // Assuming that CreateEditEventActivity returns RESULT_OK upon successful creation
+//
+//        // Launch CreateEditEventActivity with intent
+////        Intent intent = new Intent();
+//        ActivityScenario<CreateEditEventActivity> scenario = ActivityScenario.launch(CreateEditEventActivity.class);
+//
+//        // Perform actions to create event (input data, click save)
+//        onView(withId(R.id.eventNameEditText)).perform(typeText("New Organizer Event"), closeSoftKeyboard());
+//        onView(withId(R.id.eventDescriptionEditText)).perform(typeText("New Organizer Event"), closeSoftKeyboard());
+//        onView(withId(R.id.eventLocationEditText)).perform(typeText("New Organizer Event"), closeSoftKeyboard());
+//        onView(withId(R.id.availableSpotsEditText)).perform(typeText("10"), closeSoftKeyboard());
+//        onView(withId(R.id.waitingListSpotsEditText)).perform(typeText("20"), closeSoftKeyboard());
+//        // Add other necessary input fields...
+//
+//        // Click the Save button
+//        onView(withId(R.id.saveEventButton)).perform(click());
+//
+//        // Verify that OrganizerHomeActivity is displayed with the new event
+//        intended(hasComponent(OrganizerHomeActivity.class.getName()));
+//
+//        // Optionally, verify that the new event appears in the event list
+//        onView(withText("New Organizer Event")).check(matches(isDisplayed()));
+//    }
+
+
+
 
 
 

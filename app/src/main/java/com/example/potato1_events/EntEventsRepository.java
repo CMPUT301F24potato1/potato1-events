@@ -253,6 +253,8 @@ public class EntEventsRepository {
                     return null;
                 }).addOnSuccessListener(aVoid -> callback.onSuccess())
                 .addOnFailureListener(callback::onFailure);
+
+
     }
 
     /**

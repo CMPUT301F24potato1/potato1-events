@@ -1,17 +1,23 @@
+// File: OrgEventsRepository.java
 package com.example.potato1_events;
 
+import android.text.TextUtils;
+
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.FieldPath;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
-import com.google.firebase.firestore.Transaction;
+import com.google.firebase.firestore.QuerySnapshot;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Repository class to handle event-related Firestore interactions.
+ * Repository class to handle organizer event-related Firestore interactions.
  */
 public class OrgEventsRepository {
     private final FirebaseFirestore firestore;
@@ -58,7 +64,7 @@ public class OrgEventsRepository {
     }
 
     /**
-     * Constructs an EventRepository with the given Firestore instance.
+     * Constructs an OrgEventsRepository with the given Firestore instance.
      *
      * @param firestore FirebaseFirestore instance.
      */
@@ -67,25 +73,47 @@ public class OrgEventsRepository {
     }
 
     /**
-     * Retrieves all events associated with a specific facility.
+     * Retrieves all events associated with a specific facility by fetching the facility's eventIds
+     * and then querying the Events collection.
      *
      * @param facilityId The ID of the facility.
      * @param callback   Callback to handle the list of events.
      */
-    public void getEventsForOrganizerFacility(String facilityId, EventListCallback callback) {
-        CollectionReference eventsCollection = firestore.collection("Events");
-        eventsCollection.whereEqualTo("facilityId", facilityId)
+    public void getEventsForFacility(String facilityId, EventListCallback callback) {
+        // Fetch the Facility document
+        firestore.collection("Facilities").document(facilityId)
                 .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    List<Event> eventList = new ArrayList<>();
-                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
-                        Event event = doc.toObject(Event.class);
-                        if (event != null) {
-                            event.setId(doc.getId());
-                            eventList.add(event);
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        Facility facility = documentSnapshot.toObject(Facility.class);
+                        if (facility != null && facility.getEventIds() != null && !facility.getEventIds().isEmpty()) {
+                            List<String> eventIds = facility.getEventIds();
+                            // Firestore 'whereIn' can handle up to 10 elements
+                            // If more, you need to batch the queries
+                            List<String> limitedEventIds = eventIds.size() > 10 ? eventIds.subList(0, 10) : eventIds;
+                            firestore.collection("Events")
+                                    .whereIn(FieldPath.documentId(), limitedEventIds)
+                                    .get()
+                                    .addOnSuccessListener(queryDocumentSnapshots -> {
+                                        List<Event> eventList = new ArrayList<>();
+                                        for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+                                            Event event = doc.toObject(Event.class);
+                                            if (event != null) {
+                                                event.setId(doc.getId());
+                                                eventList.add(event);
+                                            }
+                                        }
+                                        callback.onEventListLoaded(eventList);
+                                    })
+                                    .addOnFailureListener(e -> callback.onEventListLoaded(null));
+                        } else {
+                            // No events associated with the facility
+                            callback.onEventListLoaded(new ArrayList<>());
                         }
+                    } else {
+                        // Facility does not exist
+                        callback.onEventListLoaded(null);
                     }
-                    callback.onEventListLoaded(eventList);
                 })
                 .addOnFailureListener(e -> callback.onEventListLoaded(null));
     }
@@ -110,57 +138,20 @@ public class OrgEventsRepository {
     }
 
     /**
-     * Adds the entrant to the event's waiting list.
+     * Deletes an event by its ID and removes its reference from the associated facility.
      *
-     * @param eventId   The ID of the event.
-     * @param deviceId  The entrant's device ID.
-     * @param callback  Callback to handle the result.
+     * @param eventId  The ID of the event to delete.
+     * @param facilityId The ID of the facility associated with the event.
+     * @param callback Callback to handle the result.
      */
-    public void joinWaitingList(String eventId, String deviceId, ActionCallback callback) {
-        final CollectionReference eventsCollection = firestore.collection("Events");
-        final CollectionReference entrantsCollection = firestore.collection("Entrants");
+    public void deleteEvent(String eventId, String facilityId, ActionCallback callback) {
+        // Begin a batch operation to delete the event and update the facility
+        firestore.runTransaction(transaction -> {
+                    // Delete the event document
+                    transaction.delete(firestore.collection("Events").document(eventId));
 
-        firestore.runTransaction((Transaction.Function<Void>) transaction -> {
-                    // Fetch event
-                    Event event = transaction.get(eventsCollection.document(eventId)).toObject(Event.class);
-
-                    if (event == null) {
-                        try {
-                            throw new Exception("Event does not exist.");
-                        } catch (Exception e) {
-                            throw new RuntimeException(e);
-                        }
-                    }
-
-                    Map<String, String> entrantsMap = event.getEntrants();
-
-                    // Check if entrant is already in the entrants map
-                    if (entrantsMap.containsKey(deviceId)) {
-                        try {
-                            throw new Exception("Already on the waiting list.");
-                        } catch (Exception e) {
-                            throw new RuntimeException(e);
-                        }
-                    }
-
-                    // Check if waiting list is full
-                    if (event.getCurrentEntrantsNumber() >= event.getWaitingListCapacity()) {
-                        try {
-                            throw new Exception("Waiting list is full.");
-                        } catch (Exception e) {
-                            throw new RuntimeException(e);
-                        }
-                    }
-
-                    // Update event data
-                    entrantsMap.put(deviceId, "waitlist");
-                    event.setCurrentEntrantsNumber(event.getCurrentEntrantsNumber() + 1);
-
-                    // Commit updates
-                    transaction.set(eventsCollection.document(eventId), event);
-
-                    // Update entrant's eventsJoined list
-                    transaction.update(entrantsCollection.document(deviceId), "eventsJoined", FieldValue.arrayUnion(eventId));
+                    // Remove the eventId from the facility's eventIds array
+                    transaction.update(firestore.collection("Facilities").document(facilityId), "eventIds", FieldValue.arrayRemove(eventId));
 
                     return null;
                 }).addOnSuccessListener(aVoid -> callback.onSuccess())
@@ -168,52 +159,46 @@ public class OrgEventsRepository {
     }
 
     /**
-     * Removes the entrant from the event's waiting list.
+     * Updates an event's details.
      *
-     * @param eventId   The ID of the event.
-     * @param deviceId  The entrant's device ID.
-     * @param callback  Callback to handle the result.
+     * @param event    The Event object with updated details.
+     * @param callback Callback to handle the result.
      */
-    public void leaveWaitingList(String eventId, String deviceId, ActionCallback callback) {
-        final CollectionReference eventsCollection = firestore.collection("Events");
-        final CollectionReference entrantsCollection = firestore.collection("Entrants");
-
-        firestore.runTransaction((Transaction.Function<Void>) transaction -> {
-                    // Fetch event
-                    Event event = transaction.get(eventsCollection.document(eventId)).toObject(Event.class);
-
-                    if (event == null) {
-                        try {
-                            throw new Exception("Event does not exist.");
-                        } catch (Exception e) {
-                            throw new RuntimeException(e);
-                        }
-                    }
-
-                    Map<String, String> entrantsMap = event.getEntrants();
-
-                    // Check if entrant is in the entrants map
-                    if (!entrantsMap.containsKey(deviceId)) {
-                        try {
-                            throw new Exception("Not on the waiting list.");
-                        } catch (Exception e) {
-                            throw new RuntimeException(e);
-                        }
-                    }
-
-                    // Update event data
-                    entrantsMap.remove(deviceId);
-                    event.setCurrentEntrantsNumber(event.getCurrentEntrantsNumber() - 1);
-
-                    // Commit updates
-                    transaction.set(eventsCollection.document(eventId), event);
-
-                    // Update entrant's eventsJoined list
-                    transaction.update(entrantsCollection.document(deviceId), "eventsJoined", FieldValue.arrayRemove(eventId));
-
-                    return null;
-                }).addOnSuccessListener(aVoid -> callback.onSuccess())
+    public void updateEvent(Event event, ActionCallback callback) {
+        if (event == null || TextUtils.isEmpty(event.getId())) {
+            callback.onFailure(new IllegalArgumentException("Event or Event ID cannot be null"));
+            return;
+        }
+        firestore.collection("Events").document(event.getId())
+                .set(event)
+                .addOnSuccessListener(aVoid -> callback.onSuccess())
                 .addOnFailureListener(callback::onFailure);
     }
-}
 
+    /**
+     * Adds a new event to the database and updates the facility's eventIds array.
+     *
+     * @param event    The Event object to add.
+     * @param facilityId The ID of the facility to associate with the event.
+     * @param callback Callback to handle the result.
+     */
+    public void addEvent(Event event, String facilityId, ActionCallback callback) {
+        if (event == null || TextUtils.isEmpty(event.getName())) {
+            callback.onFailure(new IllegalArgumentException("Event or Event Name cannot be null"));
+            return;
+        }
+        // Add the event to Firestore
+        firestore.collection("Events").add(event)
+                .addOnSuccessListener(documentReference -> {
+                    String newEventId = documentReference.getId();
+                    // Update the facility's eventIds array
+                    firestore.collection("Facilities").document(facilityId)
+                            .update("eventIds", FieldValue.arrayUnion(newEventId))
+                            .addOnSuccessListener(aVoid -> callback.onSuccess())
+                            .addOnFailureListener(callback::onFailure);
+                })
+                .addOnFailureListener(callback::onFailure);
+    }
+
+    // Add other methods as necessary
+}
