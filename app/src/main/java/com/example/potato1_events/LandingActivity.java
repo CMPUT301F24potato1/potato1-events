@@ -70,6 +70,7 @@ public class LandingActivity extends AppCompatActivity {
                         startActivity(intent);
                     } else if (userType.equals("Organizer")) {
                         Intent intent = new Intent(LandingActivity.this, OrganizerHomeActivity.class);
+                        intent.putExtra("IS_ADMIN", userData.isAdmin());
                         startActivity(intent);
                     }
                 } else {
