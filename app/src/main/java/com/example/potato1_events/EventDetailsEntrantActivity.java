@@ -181,7 +181,6 @@ public class EventDetailsEntrantActivity extends AppCompatActivity {
             eventDatesTextView.setText("Event Dates: Not Available");
         }
 
-
         String capacity = "Waiting List Capacity: " + event.getCurrentEntrantsNumber() + " / " + event.getWaitingListCapacity();
         eventCapacityTextView.setText(capacity);
 
@@ -227,13 +226,35 @@ public class EventDetailsEntrantActivity extends AppCompatActivity {
      * Adds the entrant to the event's entrants map.
      */
     private void handleJoinAction() {
-        // Check if the event has reached its waiting list capacity
-        if (event.getCurrentEntrantsNumber() >= event.getWaitingListCapacity()) {
-            Toast.makeText(this, "Waiting list is full.", Toast.LENGTH_SHORT).show();
-            return;
+        if (event.isGeolocationRequired()) {
+            // **If Geolocation is Enabled, Show Geolocation Alert First**
+            showGeolocationAlert();
+        } else {
+            // **If Geolocation is Not Enabled, Proceed to Join Confirmation**
+            showJoinConfirmationDialog();
         }
+    }
 
-        // Confirm joining
+    /**
+     * Displays a Geolocation Alert Dialog prompting the user about geolocation requirements.
+     * Upon confirmation, proceeds to show the join waiting list confirmation dialog.
+     */
+    private void showGeolocationAlert() {
+        new AlertDialog.Builder(this)
+                .setTitle("Geolocation Required")
+                .setMessage("This event requires geolocation access. Please ensure your location services are enabled to join the waiting list.")
+                .setPositiveButton("OK", (dialog, which) -> {
+                    // After acknowledging, proceed to join confirmation
+                    showJoinConfirmationDialog();
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    /**
+     * Displays the existing Join Waiting List confirmation dialog.
+     */
+    private void showJoinConfirmationDialog() {
         new AlertDialog.Builder(this)
                 .setTitle("Join Waiting List")
                 .setMessage("Are you sure you want to join the waiting list for this event?")
@@ -282,7 +303,7 @@ public class EventDetailsEntrantActivity extends AppCompatActivity {
                         FirebaseFirestoreException.Code.ABORTED, null);
             }
 
-            // Add entrant to entrants map with status "enrolled"
+            // Add entrant to entrants map with status "waitlist"
             transaction.update(eventRef, "entrants." + deviceId, "waitlist");
 
             // Increment currentEntrantsNumber
