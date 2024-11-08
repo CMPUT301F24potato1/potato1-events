@@ -6,7 +6,7 @@ firebaseBom = "33.4.0"
 firebaseDatabase = "21.0.0"
 junit = "4.13.2"
 junitVersion = "1.2.1"
-espressoCore = "3.6.1"
+espressoCore = "3.5.1"
 appcompat = "1.7.0"
 material = "1.12.0"
 constraintlayout = "2.1.4"
@@ -16,7 +16,12 @@ activity = "1.9.3"
 firebaseFirestore = "25.1.0"
 playServicesLocation = "21.3.0"
 firebaseStorage = "21.0.1"
+rules = "1.5.0"
+espressoIntents = "3.6.1"
+testRunner = "1.5.0"
+
 workRuntime = "2.10.0"
+espressoIntentsVersion = "3.6.1"
 
 [libraries]
 concurrent-futures = { module = "androidx.concurrent:concurrent-futures", version.ref = "concurrentFutures" }
@@ -36,6 +41,12 @@ firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore
 play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
 firebase-storage = { group = "com.google.firebase", name = "firebase-storage", version.ref = "firebaseStorage" }
 work-runtime = { module = "androidx.work:work-runtime", version.ref = "workRuntime" }
+rules = { module = "androidx.test:rules", version.ref = "rules" }
+test-runner = { module = "androidx.test:runner", version.ref = "testRunner" }
+espresso-intents = { group = "androidx.test.espresso", name = "espresso-intents", version.ref = "espressoIntentsVersion" }
+
+
+
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
