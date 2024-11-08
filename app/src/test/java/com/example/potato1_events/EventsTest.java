@@ -19,10 +19,12 @@ import org.mockito.MockitoAnnotations;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Date;
+import java.util.Map;
 
 public class EventsTest {
     @Mock
@@ -52,10 +54,9 @@ public class EventsTest {
 
         /*
         String id, String facilityId, String name, String description, Date startDate, Date endDate,
-                 Date registrationStart, Date registrationEnd, double price, int capacity, int currentEntrantsNumber, int waitingListCapacity, String posterImageUrl,
-                 String qrCodeHash, List<String> waitingList, List<String> selectedEntrants,
-                 List<String> confirmedEntrants, List<String> declinedEntrants, Date createdAt, String status, boolean geolocationRequired, String eventLocation
-         */
+                 Date registrationStart, Date registrationEnd, double price, int capacity, int currentEntrantsNumber,
+                 int waitingListCapacity, String posterImageUrl, String qrCodeHash, Map<String, String> entrants,
+                 Date createdAt, String status, boolean geolocationRequired, String eventLocation */
         Event event = new Event(
                 "1",
                 "1",
@@ -71,14 +72,13 @@ public class EventsTest {
                 20,
                 "poster",
                 "QR",
-                new ArrayList<>(),
-                new ArrayList<>(),
-                new ArrayList<>(),
-                new ArrayList<>(),
-                new Date(System.currentTimeMillis()),
+
+                new HashMap<String, String>(),
+        new Date(System.currentTimeMillis()),
                 "OK",
                 true,
-                "Laurent");
+                "Laurent"
+        );
 
 
         // Call the method under test
