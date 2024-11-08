@@ -6,7 +6,7 @@ import android.os.Bundle;
 import android.provider.Settings;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
-import android.view.MenuItem;  // Added import
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -31,9 +31,8 @@ import com.google.firebase.firestore.FieldPath;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
-import com.google.firebase.firestore.SetOptions;
-import com.google.zxing.integration.android.IntentIntegrator;  // Added import
-import com.google.zxing.integration.android.IntentResult;      // Added import
+import com.google.zxing.integration.android.IntentIntegrator;
+import com.google.zxing.integration.android.IntentResult;
 import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
@@ -47,18 +46,17 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
 
     private DrawerLayout drawerLayout;
     private LinearLayout eventsLinearLayout;
-    private FirebaseFirestore firestore;
     private EntEventsRepository entEventRepo;
-
-//    private Repository eventRepository;
     private List<Event> eventList = new ArrayList<>();
 
     private String deviceId;
-//    private ArrayList<Event> eventList = new ArrayList<>(); // To store events
-
-    // Declare the Switch Mode button
     private Button switchModeButton;
 
+    /**
+     * Initializes the activity, sets up the navigation drawer, and loads all joined events.
+     *
+     * @param savedInstanceState Previously saved instance state.
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -70,10 +68,10 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
         deviceId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
 
         // Initialize Firebase Firestore
-        firestore = FirebaseFirestore.getInstance();
+        FirebaseFirestore firestore = FirebaseFirestore.getInstance();
 
-        entEventRepo = new EntEventsRepository(FirebaseFirestore.getInstance());
-
+        // Initialize EntEventsRepository
+        entEventRepo = new EntEventsRepository(firestore);
 
         // Initialize views
         drawerLayout = findViewById(R.id.drawer_layout);
@@ -134,71 +132,60 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
     }
 
     /**
-     * Sets the EntEventRepo instance (used for testing).
+     * Sets the EntEventsRepository instance (used for testing).
      *
-     * @param repository The EntEventRepo instance.
+     * @param repository The EntEventsRepository instance.
      */
     public void setEntEventsRepository(EntEventsRepository repository) {
         this.entEventRepo = repository;
     }
 
     /**
-     * Loads events that the entrant has joined from Firestore.
+     * Sets the device ID (used for testing).
+     *
+     * @param id The device ID.
      */
+    public void setDeviceId(String id) {
+        this.deviceId = id;
+    }
+
     /**
-     * Loads all events using EntEventRepo.
+     * Loads events that the entrant has joined from the repository.
      * Clears existing views and populates the UI with the fetched events.
      */
-
-    private void loadJoinedEvents() {
+    public void loadJoinedEvents() {
         // Clear existing views and list
         eventsLinearLayout.removeAllViews();
         eventList.clear();
 
-        entEventRepo.getAllEvents(new EntEventsRepository.EventListCallback() {
+        // Fetch joined events using the repository
+        entEventRepo.getJoinedEvents(deviceId, new EntEventsRepository.EventListCallback() {
             @Override
             public void onEventListLoaded(List<Event> events) {
                 if (events != null && !events.isEmpty()) {
                     eventList.addAll(events);
-                    eventsLinearLayout.removeAllViews(); // Clear existing views
                     // Update UI with eventList
                     for (Event event : eventList) {
                         addEventView(event);
                     }
+                } else if (events != null && events.isEmpty()) {
+                    // Entrant hasn't joined any events
+                    Toast.makeText(EntrantHomeActivity.this, "You haven't joined any events yet.", Toast.LENGTH_SHORT).show();
                 } else {
-                    Toast.makeText(EntrantHomeActivity.this,
-                            "No events available at the moment.",
-                            Toast.LENGTH_SHORT).show();
+                    // An error occurred while fetching events
+                    Toast.makeText(EntrantHomeActivity.this, "Error fetching events.", Toast.LENGTH_SHORT).show();
                 }
-            }
-        });
-        // Reference to the entrant's user document
-        DocumentReference userRef = firestore.collection("Entrants").document(deviceId);
-
-        userRef.get().addOnCompleteListener(task -> {
-            if(task.isSuccessful()){
-                DocumentSnapshot document = task.getResult();
-                if(document.exists()){
-                    List<String> eventsJoined = (List<String>) document.get("eventsJoined");
-                    if(eventsJoined != null && !eventsJoined.isEmpty()){
-                        fetchEvents(eventsJoined);
-                    } else {
-                        Toast.makeText(EntrantHomeActivity.this, "You haven't joined any events yet.", Toast.LENGTH_SHORT).show();
-                    }
-                } else {
-                    Toast.makeText(EntrantHomeActivity.this, "User profile not found.", Toast.LENGTH_SHORT).show();
-                }
-            } else {
-                Toast.makeText(EntrantHomeActivity.this, "Error fetching user data: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
 
     /**
      * Fetches events from Firestore based on a list of event IDs.
+     * This method is now handled entirely by the repository and is no longer needed.
      *
      * @param eventsJoined List of event IDs the entrant has joined.
      */
+    /*
     private void fetchEvents(List<String> eventsJoined) {
         if(eventsJoined.isEmpty()){
             Toast.makeText(this, "You haven't joined any events yet.", Toast.LENGTH_SHORT).show();
@@ -235,6 +222,7 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
                     });
         }
     }
+    */
 
     /**
      * Adds a custom event view to the LinearLayout.
@@ -343,6 +331,10 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
 
     /**
      * Handles the result from the QR code scanning activity.
+     *
+     * @param requestCode The request code.
+     * @param resultCode  The result code.
+     * @param data        The Intent data.
      */
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
