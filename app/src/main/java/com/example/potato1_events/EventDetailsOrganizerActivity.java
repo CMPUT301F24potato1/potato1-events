@@ -282,7 +282,7 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
         firestore.collection("Events").document(eventId).delete()
                 .addOnSuccessListener(aVoid -> {
                     Toast.makeText(EventDetailsOrganizerActivity.this, "Event deleted successfully.", Toast.LENGTH_SHORT).show();
-                    // Remove event from facility's eventIds
+
                     removeEventFromFacility(event.getFacilityId(), eventId);
                 })
                 .addOnFailureListener(e -> {
@@ -301,7 +301,8 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
                 .update("eventIds", FieldValue.arrayRemove(eventId))
                 .addOnSuccessListener(aVoid -> {
                     Toast.makeText(EventDetailsOrganizerActivity.this, "Event removed from facility.", Toast.LENGTH_SHORT).show();
-                    finish(); // Close activity
+                    Intent intent = new Intent(EventDetailsOrganizerActivity.this, OrganizerHomeActivity.class);
+                    startActivity(intent);
                 })
                 .addOnFailureListener(e -> {
                     Toast.makeText(EventDetailsOrganizerActivity.this, "Error updating facility: " + e.getMessage(), Toast.LENGTH_SHORT).show();

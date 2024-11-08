@@ -38,8 +38,7 @@ public class RandomDrawWorker extends Worker {
         // Query events where random draw needs to be performed
         firestore.collection("Events")
                 .whereLessThanOrEqualTo("registrationEnd", now)
-                //FIXME put this back in after field is there
-                //.whereEqualTo("randomDrawPerformed", false) // Ensure we process only relevant events
+                .whereEqualTo("randomDrawPerformed", false) // Ensure we process only relevant events
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
                     if (queryDocumentSnapshots.isEmpty()) {
@@ -83,16 +82,16 @@ public class RandomDrawWorker extends Worker {
             Map<String, String> entrantsMap = (Map<String, String>) eventData.get("entrants");
             if (entrantsMap == null || entrantsMap.isEmpty()) {
                 Log.d(TAG, "No entrants for event: " + eventId);
+
                 // Mark random draw as performed
-               //FIXME put this back in after field is there
-                // transaction.update(eventRef, "randomDrawPerformed", true);
+                transaction.update(eventRef, "randomDrawPerformed", true);
                 return null;
             }
 
-            // Collect only entrants with status "waitlist"
+            // Collect only entrants with status "On Waiting List"
             List<String> waitlistEntrantIds = new ArrayList<>();
             for (Map.Entry<String, String> entry : entrantsMap.entrySet()) {
-                if ("waitlist".equals(entry.getValue())) {
+                if ("On Waiting List".equalsIgnoreCase(entry.getValue())) {
                     waitlistEntrantIds.add(entry.getKey());
                 }
             }
@@ -100,8 +99,7 @@ public class RandomDrawWorker extends Worker {
             if (waitlistEntrantIds.isEmpty()) {
                 Log.d(TAG, "No waitlist entrants for event: " + eventId);
                 // Mark random draw as performed
-                //FIXME put this back in after field is there
-                //transaction.update(eventRef, "randomDrawPerformed", true);
+                transaction.update(eventRef, "randomDrawPerformed", true);
                 return null;
             }
 
@@ -113,6 +111,14 @@ public class RandomDrawWorker extends Worker {
             int capacity = capacityLong != null ? capacityLong.intValue() : 0;
             int currentEntrantsNumber = currentEntrantsNumberLong != null ? currentEntrantsNumberLong.intValue() : 0;
             int slotsAvailable = capacity - currentEntrantsNumber;
+
+            if (slotsAvailable <= 0) {
+                Log.d(TAG, "No available slots for event: " + eventId);
+                // Mark random draw as performed
+                transaction.update(eventRef, "randomDrawPerformed", true);
+                return null;
+            }
+
             int numberToSelect = Math.min(slotsAvailable, waitlistEntrantIds.size());
 
             List<String> selectedEntrants = waitlistEntrantIds.subList(0, numberToSelect);
@@ -125,19 +131,19 @@ public class RandomDrawWorker extends Worker {
             for (Map.Entry<String, String> entry : entrantsMap.entrySet()) {
                 String entrantId = entry.getKey();
                 String status = entry.getValue();
-                if (!"waitlist".equals(status)) {
+                if (!"On Waiting List".equalsIgnoreCase(status)) {
                     newEntrantsMap.put(entrantId, status);
                 }
             }
 
             // Add selected entrants with updated status
             for (String entrantId : selectedEntrants) {
-                newEntrantsMap.put(entrantId, "Registered");
+                newEntrantsMap.put(entrantId, "Enrolled");
             }
 
-            // Add not selected entrants with updated status
+            // Add not selected entrants with status "On Waiting List"
             for (String entrantId : notSelectedEntrants) {
-                newEntrantsMap.put(entrantId, "Not Selected");
+                newEntrantsMap.put(entrantId, "On Waiting List");
             }
 
             // Update the event's current number of entrants
@@ -147,8 +153,7 @@ public class RandomDrawWorker extends Worker {
             Map<String, Object> eventUpdates = new HashMap<>();
             eventUpdates.put("entrants", newEntrantsMap);
             eventUpdates.put("currentEntrantsNumber", newCurrentEntrantsNumber);
-            //FIXME put this back in after
-            //eventUpdates.put("randomDrawPerformed", true); // Ensure this is included
+            eventUpdates.put("randomDrawPerformed", true);
 
             // Update the event document
             transaction.update(eventRef, eventUpdates);
