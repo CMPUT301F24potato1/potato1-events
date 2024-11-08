@@ -1,5 +1,6 @@
 [versions]
 agp = "8.6.0"
+concurrentFutures = "1.2.0"
 firebaseAuth = "23.0.0"
 firebaseBom = "33.4.0"
 firebaseDatabase = "21.0.0"
@@ -20,6 +21,7 @@ espressoIntents = "3.6.1"
 workRuntime = "2.10.0"
 
 [libraries]
+concurrent-futures = { module = "androidx.concurrent:concurrent-futures", version.ref = "concurrentFutures" }
 firebase-auth = { module = "com.google.firebase:firebase-auth", version.ref = "firebaseAuth" }
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
 firebase-database = { module = "com.google.firebase:firebase-database", version.ref = "firebaseDatabase" }
