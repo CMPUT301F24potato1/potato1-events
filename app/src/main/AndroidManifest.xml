@@ -36,9 +36,9 @@
         <activity
             android:name=".CreateEditFacilityActivity"
             android:exported="false"/>
-        <activity
-            android:name=".EventsAdapter"
-            android:exported="false"/>
+<!--        <activity-->
+<!--            android:name=".EventsAdapter"-->
+<!--            android:exported="false"/>-->
 
         <activity
             android:name=".EventWaitingListActivity"
