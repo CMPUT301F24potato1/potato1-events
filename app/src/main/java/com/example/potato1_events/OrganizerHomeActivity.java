@@ -16,6 +16,7 @@ import android.widget.Toast;
 import androidx.activity.OnBackPressedCallback;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.VisibleForTesting;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -44,6 +45,16 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
     private ArrayList<Event> eventList = new ArrayList<>(); // To store events
 
     private Button switchModeButton;
+
+    /**
+     * Sets the Firestore instance for testing purposes.
+     *
+     * @param firestore The mocked Firestore instance.
+     */
+    @VisibleForTesting
+    public void setFirestore(FirebaseFirestore firestore) {
+        this.firestore = firestore;
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -102,7 +113,7 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
     /**
      * Loads all events associated with the organizer's facility.
      */
-    private void loadEventsForOrganizerFacility() {
+    public void loadEventsForOrganizerFacility() {
         // Clear existing views and list
         eventsLinearLayout.removeAllViews();
         eventList.clear();

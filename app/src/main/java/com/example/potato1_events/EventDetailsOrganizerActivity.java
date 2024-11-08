@@ -2,6 +2,7 @@
 package com.example.potato1_events;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.VisibleForTesting;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -60,6 +61,11 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
     // Event Data
     private String eventId;
     private Event event;
+
+    @VisibleForTesting
+    public void setFirestore(FirebaseFirestore firestore) {
+        this.firestore = firestore;
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

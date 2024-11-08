@@ -1,3 +1,5 @@
+import com.android.build.api.dsl.Packaging
+
 plugins {
     alias(libs.plugins.android.application)
 
@@ -33,20 +35,32 @@ android {
     buildFeatures {
         viewBinding = true
     }
+    fun Packaging.() {
+        resources {
+            excludes += "mockito-extensions/org.mockito.plugins.MockMaker"
+        }
+    }
 
 }
 
 dependencies {
-    implementation ("com.journeyapps:zxing-android-embedded:4.3.0")
-    implementation ("androidx.recyclerview:recyclerview:1.2.1")
-    implementation ("com.google.zxing:core:3.3.3")
+    implementation("com.journeyapps:zxing-android-embedded:4.3.0")
+    implementation("androidx.recyclerview:recyclerview:1.2.1")
+    implementation("com.google.zxing:core:3.3.3")
     implementation("com.squareup.picasso:picasso:2.8")
     implementation("de.hdodenhof:circleimageview:3.1.0")
     implementation(platform("com.google.firebase:firebase-bom:33.4.0"))
-    implementation(platform("com.google.firebase:firebase-storage:20.2.1"))
-    implementation ("com.google.guava:guava:29.0-android")
-    implementation (libs.work.runtime)
-    implementation (libs.firebase.database)
+    // Firebase libraries (version managed by BOM)
+    implementation("com.google.firebase:firebase-firestore")
+    implementation("com.google.firebase:firebase-database")
+    implementation("com.google.firebase:firebase-storage")
+
+//    implementation(platform("com.google.firebase:firebase-storage:20.2.1"))
+    implementation("com.google.guava:guava:31.1-android"){
+        exclude( group= "com.google.protobuf", module= "protobuf-java")
+    }
+    implementation(libs.work.runtime)
+    implementation(libs.firebase.database)
     implementation(libs.appcompat)
     implementation(libs.material)
     implementation(libs.constraintlayout)
@@ -56,6 +70,8 @@ dependencies {
     implementation(libs.firebase.firestore)
     implementation(libs.play.services.location)
     implementation(libs.firebase.storage)
+    implementation(libs.espresso.intents)
+    implementation(libs.espresso.contrib)
 //    implementation(libs.rules)
 //    implementation("androidx.test:rules:1.4.0")
     testImplementation(libs.junit)
@@ -74,5 +90,20 @@ dependencies {
     androidTestImplementation(libs.espresso.core)
     androidTestImplementation(libs.test.runner)
     androidTestImplementation(libs.rules)
-}
+    // Mockito for Android Instrumented Tests
+//    androidTestImplementation("org.mockito:mockito-android:3.12.4")
 
+    // Dexmaker dependencies for mocking final classes
+//    androidTestImplementation("org.mockito:mockito-core:3.12.4") // Add this line
+    androidTestImplementation("com.linkedin.dexmaker:dexmaker-mockito-inline:2.28.1")
+//    androidTestImplementation("com.linkedin.dexmaker:dexmaker-mockito:2.28.1")
+
+//    androidTestImplementation("org.mockito:mockito-core:3.12.4")
+//    androidTestImplementation("org.mockito:mockito-android:3.12.4")
+//    androidTestImplementation("org.mockito:mockito-inline:3.12.4")
+}
+configurations {
+    all {
+        exclude(group= "com.google.protobuf", module= "protobuf-lite")
+    }
+}

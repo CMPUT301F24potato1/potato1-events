@@ -49,10 +49,7 @@
             android:exported="false"/>
         <activity android:name=".ManageMediaActivity" />
         <activity android:name=".ManageUsersActivity" />
-        <activity
-            android:name=".ScanQRCodeActivity"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
+
 
         <!-- Declare the PortraitCaptureActivity if still used -->
         <activity
