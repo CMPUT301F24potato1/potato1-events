@@ -31,6 +31,7 @@ import com.google.zxing.integration.android.IntentResult;      // Added import
 import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Activity to display all events for entrants.
@@ -41,9 +42,13 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
     private DrawerLayout drawerLayout;
     private LinearLayout eventsLinearLayout;
     private FirebaseFirestore firestore;
+    private EntEventsRepository entEventRepo;
+
+//    private Repository eventRepository;
+    private List<Event> eventList = new ArrayList<>();
 
     private String deviceId;
-    private ArrayList<Event> eventList = new ArrayList<>(); // To store events
+//    private ArrayList<Event> eventList = new ArrayList<>(); // To store events
 
     // Declare the Switch Mode button
     private Button switchModeButton;
@@ -60,6 +65,9 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
 
         // Initialize Firebase Firestore
         firestore = FirebaseFirestore.getInstance();
+
+        entEventRepo = new EntEventsRepository(FirebaseFirestore.getInstance());
+
 
         // Initialize views
         drawerLayout = findViewById(R.id.drawer_layout);
@@ -110,34 +118,43 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
     }
 
     /**
+     * Sets the EntEventRepo instance (used for testing).
+     *
+     * @param repository The EntEventRepo instance.
+     */
+    public void setEntEventsRepository(EntEventsRepository repository) {
+        this.entEventRepo = repository;
+    }
+
+    /**
      * Loads all events from the "Events" collection in Firestore.
      */
-    private void loadAllEvents() {
+    /**
+     * Loads all events using EntEventRepo.
+     * Clears existing views and populates the UI with the fetched events.
+     */
+    public void loadAllEvents() {
         // Clear existing views and list
         eventsLinearLayout.removeAllViews();
         eventList.clear();
 
-        firestore.collection("Events")
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    if (!queryDocumentSnapshots.isEmpty()) {
-                        for (QueryDocumentSnapshot eventDoc : queryDocumentSnapshots) {
-                            Event event = eventDoc.toObject(Event.class);
-                            event.setId(eventDoc.getId());
-                            eventList.add(event);
-                            addEventView(event);
-                        }
-                    } else {
-                        Toast.makeText(EntrantHomeActivity.this,
-                                "No events available at the moment.",
-                                Toast.LENGTH_SHORT).show();
+        entEventRepo.getAllEvents(new EntEventsRepository.EventListCallback() {
+            @Override
+            public void onEventListLoaded(List<Event> events) {
+                if (events != null && !events.isEmpty()) {
+                    eventList.addAll(events);
+                    eventsLinearLayout.removeAllViews(); // Clear existing views
+                    // Update UI with eventList
+                    for (Event event : eventList) {
+                        addEventView(event);
                     }
-                })
-                .addOnFailureListener(e -> {
+                } else {
                     Toast.makeText(EntrantHomeActivity.this,
-                            "Error loading events: " + e.getMessage(),
+                            "No events available at the moment.",
                             Toast.LENGTH_SHORT).show();
-                });
+                }
+            }
+        });
     }
 
     /**

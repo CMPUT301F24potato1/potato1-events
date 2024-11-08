@@ -54,6 +54,9 @@ public class EventDetailsEntrantActivity extends AppCompatActivity {
     private String eventId;
     private Event event;
 
+    // EntEventRepo
+    private EntEventsRepository entEventRepo;
+
     // Entrant Data
     private String deviceId; // Used as the unique identifier for the entrant
     private String userType = "Entrant"; // Assuming userType is Entrant
@@ -65,6 +68,9 @@ public class EventDetailsEntrantActivity extends AppCompatActivity {
 
         // Initialize Firestore
         firestore = FirebaseFirestore.getInstance();
+
+        // Initialize EntEventRepo
+        entEventRepo = new EntEventsRepository(FirebaseFirestore.getInstance());
 
         // Initialize UI Components
         eventPosterImageView = findViewById(R.id.eventPosterImageView);
@@ -108,6 +114,14 @@ public class EventDetailsEntrantActivity extends AppCompatActivity {
     }
 
     /**
+     * Sets the EntEventRepo instance (used for testing).
+     *
+     * @param repository The EntEventRepo instance.
+     */
+    public void setEntEventsRepository(EntEventsRepository repository) {
+        this.entEventRepo = repository;
+    }
+    /**
      * Handles the Up button behavior.
      *
      * @param item The selected menu item.
@@ -124,31 +138,23 @@ public class EventDetailsEntrantActivity extends AppCompatActivity {
     }
 
     /**
-     * Loads event details from Firestore based on eventId.
+     * Loads event details using EntEventRepo based on eventId.
      *
      * @param eventId The ID of the event to load.
      */
-    private void loadEventDetails(String eventId) {
-        firestore.collection("Events").document(eventId).get()
-                .addOnSuccessListener(documentSnapshot -> {
-                    if (documentSnapshot.exists()) {
-                        event = documentSnapshot.toObject(Event.class);
-                        if (event != null) {
-                            event.setId(documentSnapshot.getId());
-                            populateEventDetails(event);
-                        } else {
-                            Toast.makeText(EventDetailsEntrantActivity.this, "Error parsing event data.", Toast.LENGTH_SHORT).show();
-                            finish();
-                        }
-                    } else {
-                        Toast.makeText(EventDetailsEntrantActivity.this, "Event not found.", Toast.LENGTH_SHORT).show();
-                        finish();
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(EventDetailsEntrantActivity.this, "Error loading event: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+    public void loadEventDetails(String eventId) {
+        entEventRepo.getEventById(eventId, new EntEventsRepository.EventCallback() {
+            @Override
+            public void onEventLoaded(Event loadedEvent) {
+                if (loadedEvent != null) {
+                    event = loadedEvent;
+                    populateEventDetails(event);
+                } else {
+                    Toast.makeText(EventDetailsEntrantActivity.this, "Event not found.", Toast.LENGTH_SHORT).show();
                     finish();
-                });
+                }
+            }
+        });
     }
 
     /**
@@ -198,27 +204,23 @@ public class EventDetailsEntrantActivity extends AppCompatActivity {
      * Updates the visibility of join and leave buttons based on entrant's status.
      */
     private void updateButtonStates() {
-        firestore.collection("Events").document(eventId).get()
-                .addOnSuccessListener(documentSnapshot -> {
-                    if (documentSnapshot.exists()) {
-                        Event event = documentSnapshot.toObject(Event.class);
-                        if (event != null) {
-                            Map<String, String> entrantsMap = event.getEntrants();
-                            if (entrantsMap != null && entrantsMap.containsKey(deviceId)) {
-                                // Entrant is in the entrants map
-                                joinButton.setVisibility(View.GONE);
-                                leaveButton.setVisibility(View.VISIBLE);
-                            } else {
-                                // Entrant is not in the entrants map
-                                joinButton.setVisibility(View.VISIBLE);
-                                leaveButton.setVisibility(View.GONE);
-                            }
-                        }
+        entEventRepo.getEventById(eventId, new EntEventsRepository.EventCallback() {
+            @Override
+            public void onEventLoaded(Event updatedEvent) {
+                if (updatedEvent != null) {
+                    Map<String, String> entrantsMap = updatedEvent.getEntrants();
+                    if (entrantsMap != null && entrantsMap.containsKey(deviceId)) {
+                        // Entrant is in the entrants map
+                        joinButton.setVisibility(View.GONE);
+                        leaveButton.setVisibility(View.VISIBLE);
+                    } else {
+                        // Entrant is not in the entrants map
+                        joinButton.setVisibility(View.VISIBLE);
+                        leaveButton.setVisibility(View.GONE);
                     }
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Error checking entrant status: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                });
+                }
+            }
+        });
     }
 
     /**
@@ -267,71 +269,22 @@ public class EventDetailsEntrantActivity extends AppCompatActivity {
      * Adds the entrant to the event's entrants map in Firestore and updates the user's eventsJoined list.
      */
     private void joinWaitingList() {
-        final DocumentReference eventRef = firestore.collection("Events").document(eventId);
-        final DocumentReference userRef = firestore.collection("Entrants").document(deviceId);
-
-        firestore.runTransaction((Transaction.Function<Void>) transaction -> {
-            // Fetch the latest event data
-            DocumentSnapshot eventSnapshot = transaction.get(eventRef);
-            if (!eventSnapshot.exists()) {
-                throw new FirebaseFirestoreException("Event does not exist.",
-                        FirebaseFirestoreException.Code.ABORTED, null);
+        entEventRepo.joinWaitingList(eventId, deviceId, new EntEventsRepository.ActionCallback() {
+            @Override
+            public void onSuccess() {
+                Toast.makeText(EventDetailsEntrantActivity.this, "Successfully joined the waiting list.", Toast.LENGTH_SHORT).show();
+                event.setCurrentEntrantsNumber(event.getCurrentEntrantsNumber() + 1);
+                updateButtonStates();
+                populateEventDetails(event);
             }
 
-            Event event = eventSnapshot.toObject(Event.class);
-            if (event == null) {
-                throw new FirebaseFirestoreException("Invalid event data.",
-                        FirebaseFirestoreException.Code.ABORTED, null);
-            }
-
-            Map<String, String> entrantsMap = event.getEntrants();
-            if (entrantsMap == null) {
-                entrantsMap = new HashMap<>();
-            }
-
-            // Check if entrant is already in the entrants map
-            if (entrantsMap.containsKey(deviceId)) {
-                throw new FirebaseFirestoreException("Already on the waiting list.",
-                        FirebaseFirestoreException.Code.ABORTED, null);
-            }
-
-            // Check if waiting list is full
-            Long currentEntrants = (long) event.getCurrentEntrantsNumber();
-            Long capacity = Long.valueOf(event.getWaitingListCapacity());
-            if (currentEntrants >= capacity) {
-                throw new FirebaseFirestoreException("Waiting list is full.",
-                        FirebaseFirestoreException.Code.ABORTED, null);
-            }
-
-            // Add entrant to entrants map with status "waitlist"
-            transaction.update(eventRef, "entrants." + deviceId, "waitlist");
-
-            // Increment currentEntrantsNumber
-            transaction.update(eventRef, "currentEntrantsNumber", FieldValue.increment(1));
-
-            // Add eventId to the user's eventsJoined list
-            transaction.update(userRef, "eventsJoined", FieldValue.arrayUnion(eventId));
-
-            return null;
-        }).addOnSuccessListener(aVoid -> {
-            Toast.makeText(this, "Successfully joined the waiting list.", Toast.LENGTH_SHORT).show();
-            event.setCurrentEntrantsNumber(event.getCurrentEntrantsNumber() + 1);
-            updateButtonStates();
-            populateEventDetails(event);
-        }).addOnFailureListener(e -> {
-            if (e instanceof FirebaseFirestoreException) {
-                FirebaseFirestoreException firestoreException = (FirebaseFirestoreException) e;
-                String message = firestoreException.getMessage();
-                if (firestoreException.getCode() == FirebaseFirestoreException.Code.ABORTED) {
-                    Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
-                } else {
-                    Toast.makeText(this, "Error joining waiting list: " + message, Toast.LENGTH_SHORT).show();
-                }
-            } else {
-                Toast.makeText(this, "Error joining waiting list: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            @Override
+            public void onFailure(Exception e) {
+                Toast.makeText(EventDetailsEntrantActivity.this, "Error joining waiting list: " + e.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
+
 
     /**
      * Handles the leave button action.
@@ -351,55 +304,18 @@ public class EventDetailsEntrantActivity extends AppCompatActivity {
      * Removes the entrant from the event's entrants map in Firestore.
      */
     private void leaveWaitingList() {
-        final DocumentReference eventRef = firestore.collection("Events").document(eventId);
-        final DocumentReference userRef = firestore.collection("Entrants").document(deviceId);
-
-        firestore.runTransaction((Transaction.Function<Void>) transaction -> {
-            // Fetch the latest event data
-            DocumentSnapshot eventSnapshot = transaction.get(eventRef);
-            if (!eventSnapshot.exists()) {
-                throw new FirebaseFirestoreException("Event does not exist.",
-                        FirebaseFirestoreException.Code.ABORTED, null);
+        entEventRepo.leaveWaitingList(eventId, deviceId, new EntEventsRepository.ActionCallback() {
+            @Override
+            public void onSuccess() {
+                Toast.makeText(EventDetailsEntrantActivity.this, "Successfully left the waiting list.", Toast.LENGTH_SHORT).show();
+                event.setCurrentEntrantsNumber(event.getCurrentEntrantsNumber() - 1);
+                updateButtonStates();
+                populateEventDetails(event);
             }
 
-            Event event = eventSnapshot.toObject(Event.class);
-            if (event == null) {
-                throw new FirebaseFirestoreException("Invalid event data.",
-                        FirebaseFirestoreException.Code.ABORTED, null);
-            }
-
-            Map<String, String> entrantsMap = event.getEntrants();
-            if (entrantsMap == null || !entrantsMap.containsKey(deviceId)) {
-                throw new FirebaseFirestoreException("Not on the waiting list.",
-                        FirebaseFirestoreException.Code.ABORTED, null);
-            }
-
-            // Remove entrant from entrants map
-            transaction.update(eventRef, "entrants." + deviceId, FieldValue.delete());
-
-            // Decrement currentEntrantsNumber
-            transaction.update(eventRef, "currentEntrantsNumber", FieldValue.increment(-1));
-
-            // Remove eventId from the user's eventsJoined list
-            transaction.update(userRef, "eventsJoined", FieldValue.arrayRemove(eventId));
-
-            return null;
-        }).addOnSuccessListener(aVoid -> {
-            Toast.makeText(this, "Successfully left the waiting list.", Toast.LENGTH_SHORT).show();
-            event.setCurrentEntrantsNumber(event.getCurrentEntrantsNumber() - 1);
-            updateButtonStates();
-            populateEventDetails(event);
-        }).addOnFailureListener(e -> {
-            if (e instanceof FirebaseFirestoreException) {
-                FirebaseFirestoreException firestoreException = (FirebaseFirestoreException) e;
-                String message = firestoreException.getMessage();
-                if (firestoreException.getCode() == FirebaseFirestoreException.Code.ABORTED) {
-                    Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
-                } else {
-                    Toast.makeText(this, "Error leaving waiting list: " + message, Toast.LENGTH_SHORT).show();
-                }
-            } else {
-                Toast.makeText(this, "Error leaving waiting list: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            @Override
+            public void onFailure(Exception e) {
+                Toast.makeText(EventDetailsEntrantActivity.this, "Error leaving waiting list: " + e.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
