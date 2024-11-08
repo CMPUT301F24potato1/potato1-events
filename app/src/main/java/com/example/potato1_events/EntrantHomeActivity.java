@@ -25,18 +25,15 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.navigation.NavigationView;
-import com.google.firebase.firestore.DocumentReference;
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FieldPath;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
-import com.google.firebase.firestore.QuerySnapshot;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Activity to display all events that the entrant has joined.
@@ -48,10 +45,13 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
     private DrawerLayout drawerLayout;
     private LinearLayout eventsLinearLayout;
     private EntEventsRepository entEventRepo;
-    private List<Event> eventList = new ArrayList<>();
+    private List<Event> eventList;
 
     private String deviceId;
     private Button switchModeButton;
+
+    // To keep track of added event IDs to prevent duplicates
+    private Set<String> addedEventIds = new HashSet<>();
 
     /**
      * Initializes the activity, sets up UI components, Firebase instances, and event listeners.
@@ -100,6 +100,9 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
 
         // Set Click Listener for Switch Mode Button
         switchModeButton.setOnClickListener(v -> switchMode());
+
+        // Initialize event list
+        eventList = new ArrayList<>();
 
         // Load events the entrant has joined
         loadJoinedEvents();
@@ -158,6 +161,7 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
         // Clear existing views and list
         eventsLinearLayout.removeAllViews();
         eventList.clear();
+        addedEventIds.clear();
 
         // Fetch joined events using the repository
         entEventRepo.getJoinedEvents(deviceId, new EntEventsRepository.EventListCallback() {
@@ -167,7 +171,10 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
                     eventList.addAll(events);
                     // Update UI with eventList
                     for (Event event : eventList) {
-                        addEventView(event);
+                        if (!addedEventIds.contains(event.getId())) {
+                            addEventView(event);
+                            addedEventIds.add(event.getId());
+                        }
                     }
                 } else if (events != null && events.isEmpty()) {
                     // Entrant hasn't joined any events
@@ -179,51 +186,6 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
             }
         });
     }
-
-    /**
-     * Fetches events from Firestore based on a list of event IDs.
-     * This method is now handled entirely by the repository and is no longer needed.
-     *
-     * @param eventsJoined List of event IDs the entrant has joined.
-     */
-    /*
-    private void fetchEvents(List<String> eventsJoined) {
-        if(eventsJoined.isEmpty()){
-            Toast.makeText(this, "You haven't joined any events yet.", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        // Firestore allows up to 10 items in an 'in' query
-        int batchSize = 10;
-        int totalEvents = eventsJoined.size();
-        int batches = (int) Math.ceil((double) totalEvents / batchSize);
-
-        for(int i = 0; i < batches; i++){
-            int start = i * batchSize;
-            int end = Math.min(start + batchSize, totalEvents);
-            List<String> batch = eventsJoined.subList(start, end);
-
-            firestore.collection("Events")
-                    .whereIn(FieldPath.documentId(), batch)
-                    .get()
-                    .addOnCompleteListener(task -> {
-                        if(task.isSuccessful()){
-                            QuerySnapshot querySnapshot = task.getResult();
-                            if(querySnapshot != null && !querySnapshot.isEmpty()){
-                                for(QueryDocumentSnapshot eventDoc : querySnapshot){
-                                    Event event = eventDoc.toObject(Event.class);
-                                    event.setId(eventDoc.getId());
-                                    eventList.add(event);
-                                    addEventView(event);
-                                }
-                            }
-                        } else {
-                            Toast.makeText(EntrantHomeActivity.this, "Error fetching events: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
-                        }
-                    });
-        }
-    }
-    */
 
     /**
      * Adds a custom event view to the LinearLayout.
