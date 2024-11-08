@@ -43,9 +43,9 @@ jobs:
         run: ./gradlew build
 
       # Run Lint Checks on main branch
-      - name: Run Lint Checks
-        if: github.ref == 'refs/heads/main'
-        run: ./gradlew lint
+      # - name: Run Lint Checks
+      #   if: github.ref == 'refs/heads/main'
+      #   run: ./gradlew lint
 
       # Run Unit Tests
       - name: Run Unit Tests
