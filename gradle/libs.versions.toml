@@ -16,6 +16,8 @@ activity = "1.9.3"
 firebaseFirestore = "25.1.0"
 playServicesLocation = "21.3.0"
 firebaseStorage = "21.0.1"
+rules = "androidx.test:rules:1.4.0"
+espressoIntents = "3.6.1"
 workRuntime = "2.10.0"
 
 [libraries]
@@ -36,6 +38,7 @@ firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore
 play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
 firebase-storage = { group = "com.google.firebase", name = "firebase-storage", version.ref = "firebaseStorage" }
 work-runtime = { module = "androidx.work:work-runtime", version.ref = "workRuntime" }
+
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
