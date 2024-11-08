@@ -352,8 +352,12 @@ public class Event {
      * @param capacity Capacity.
      */
     public void setCapacity(int capacity) {
+        if (capacity < 0) {
+            throw new IllegalArgumentException("Capacity cannot be negative");
+        }
         this.capacity = capacity;
     }
+
 
     /**
      * Gets the URL of the event poster image.
