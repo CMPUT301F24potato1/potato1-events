@@ -19,6 +19,7 @@ import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.annotation.VisibleForTesting;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -40,6 +41,10 @@ import com.squareup.picasso.Picasso;
 
 import java.util.*;
 
+/**
+ * Activity for creating or editing events within the application.
+ * Handles user input, data validation, image uploads, and interaction with Firebase services.
+ */
 public class CreateEditEventActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
     // UI Components
@@ -71,6 +76,21 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
     // Organizer's deviceId acting as facilityId
     private String deviceId;
 
+    /**
+     * Sets the Firestore instance for testing purposes.
+     *
+     * @param firestore The mocked FirebaseFirestore instance.
+     */
+    @VisibleForTesting
+    public void setFirestore(FirebaseFirestore firestore) {
+        this.firestore = firestore;
+    }
+
+    /**
+     * Initializes the activity, sets up UI components, Firebase instances, and event listeners.
+     *
+     * @param savedInstanceState The previously saved state of the activity.
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -141,7 +161,7 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
                 }
         );
 
-        // Set up listeners
+        // Set up listeners for various UI components
         startDateButton.setOnClickListener(v -> showDateTimePicker(true));
         endDateButton.setOnClickListener(v -> showDateTimePicker(false));
         waitingListDeadlineButton.setOnClickListener(v -> showDateTimePickerForRegistrationEnd());
@@ -177,6 +197,7 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
             checkFacilityExists();
         }
 
+        // Handle back button presses to manage navigation drawer state
         handleBackPressed();
     }
 
@@ -314,10 +335,6 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
      * Saves the event to Firebase Firestore, handling both creation and updating.
      * If creating a new event, it generates a QR code hash based on the event ID.
      */
-    /**
-     * Saves the event to Firebase Firestore, handling both creation and updating.
-     * If creating a new event, it generates a QR code hash based on the event ID.
-     */
     private void saveEvent() {
         String name = eventNameEditText.getText().toString().trim();
         String description = eventDescriptionEditText.getText().toString().trim();
@@ -341,16 +358,13 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
             return;
         }
 
-
-
         if (!startDateTime.before(endDateTime)) {
             Toast.makeText(this, "Start date must be before end date.", Toast.LENGTH_SHORT).show();
             return;
         }
 
-
         if (!registrationEndDateTime.before(startDateTime)) {
-            Toast.makeText(this, "Waiting List deadline must be before event starting date..", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Waiting List deadline must be before event starting date.", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -365,9 +379,6 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
             Toast.makeText(this, "Please enter valid numbers for spots.", Toast.LENGTH_SHORT).show();
             return;
         }
-
-
-
 
         if (waitingListSpots < availableSpots) {
             Toast.makeText(this, "Waiting list spots must be greater than available spots.", Toast.LENGTH_SHORT).show();

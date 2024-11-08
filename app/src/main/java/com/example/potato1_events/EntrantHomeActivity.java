@@ -44,6 +44,7 @@ import java.util.List;
  */
 public class EntrantHomeActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
+    // UI Components
     private DrawerLayout drawerLayout;
     private LinearLayout eventsLinearLayout;
     private EntEventsRepository entEventRepo;
@@ -53,9 +54,9 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
     private Button switchModeButton;
 
     /**
-     * Initializes the activity, sets up the navigation drawer, and loads all joined events.
+     * Initializes the activity, sets up UI components, Firebase instances, and event listeners.
      *
-     * @param savedInstanceState Previously saved instance state.
+     * @param savedInstanceState The previously saved state of the activity.
      */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -269,7 +270,7 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
      * Handles navigation menu item selections.
      *
      * @param item The selected menu item.
-     * @return True if handled, else false.
+     * @return True if the event was handled, false otherwise.
      */
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
@@ -332,9 +333,11 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
     /**
      * Handles the result from the QR code scanning activity.
      *
-     * @param requestCode The request code.
-     * @param resultCode  The result code.
-     * @param data        The Intent data.
+     *
+     * @param requestCode The integer request code originally supplied to startActivityForResult(),
+     *                    allowing you to identify who this result came from.
+     * @param resultCode  The integer result code returned by the child activity through its setResult().
+     * @param data        An Intent, which can return result data to the caller (various data can be attached to Intent "extras").
      */
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {

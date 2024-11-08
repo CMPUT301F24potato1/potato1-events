@@ -1,4 +1,6 @@
 import com.android.build.api.dsl.Packaging
+import org.gradle.external.javadoc.StandardJavadocDocletOptions
+import com.android.build.gradle.AppExtension
 
 plugins {
     alias(libs.plugins.android.application)
@@ -35,7 +37,7 @@ android {
     buildFeatures {
         viewBinding = true
     }
-    fun Packaging.() {
+    packaging {
         resources {
             excludes += "mockito-extensions/org.mockito.plugins.MockMaker"
         }
@@ -86,10 +88,22 @@ dependencies {
     implementation ("androidx.camera:camera-lifecycle:$camerax_version")
     implementation ("androidx.camera:camera-view:$camerax_version") // For PreviewView
     implementation ("androidx.camera:camera-extensions:$camerax_version")
+//    implementation(files("/Users/simon/Library/Android/sdk/platforms/android-35/android.jar"))
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
     androidTestImplementation(libs.test.runner)
     androidTestImplementation(libs.rules)
+
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.mockito:mockito-core:5.5.0")
+    testImplementation("net.bytebuddy:byte-buddy:1.14.6")
+    testImplementation("net.bytebuddy:byte-buddy-agent:1.14.6")
+
+    // Instrumentation Tests (Run on Android devices/emulators)
+    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+    androidTestImplementation("org.mockito:mockito-android:5.5.0")
+
     // Mockito for Android Instrumented Tests
 //    androidTestImplementation("org.mockito:mockito-android:3.12.4")
 
@@ -107,3 +121,27 @@ configurations {
         exclude(group= "com.google.protobuf", module= "protobuf-lite")
     }
 }
+// Access the Android extension
+val android = extensions.getByName("android") as AppExtension
+
+tasks.register("javadoc", Javadoc::class) {
+    // Set the source files for Javadoc generation
+    source = android.sourceSets["main"].java.getSourceFiles()
+
+    // Include the Android SDK and project dependencies in the classpath
+    val bootClasspath = files(android.bootClasspath)
+    val variant = android.applicationVariants.first()
+    val javaCompileProvider = variant.javaCompileProvider
+    dependsOn(javaCompileProvider)
+
+    classpath = bootClasspath + files(javaCompileProvider.get().classpath)
+
+    // Configure Javadoc options
+    (options as StandardJavadocDocletOptions).apply {
+        encoding = "UTF-8"
+        charSet = "UTF-8"
+        memberLevel = JavadocMemberLevel.PUBLIC
+        links("https://developer.android.com/reference/")
+    }
+}
+

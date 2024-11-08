@@ -34,27 +34,72 @@ import java.util.Map;
 
 /**
  * Activity to display the list of entrants on the waiting list for an event with filtering capabilities.
+ * Allows organizers to view and manage entrants based on their status.
  */
 public class EventWaitingListActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
     // UI Components
+
+    /**
+     * DrawerLayout for the navigation drawer.
+     */
     private DrawerLayout drawerLayout;
+
+    /**
+     * NavigationView for handling navigation menu items.
+     */
     private NavigationView navigationView;
+
+    /**
+     * Toolbar for the activity.
+     */
     private Toolbar toolbar;
 
+    /**
+     * RecyclerView to display the list of entrants.
+     */
     private RecyclerView waitingListRecyclerView;
+
+    /**
+     * Adapter for the RecyclerView to manage entrant data.
+     */
     private UserAdapter userAdapter;
+
+    /**
+     * List holding all users fetched from Firestore.
+     */
     private List<User> fullUserList; // Holds all users fetched
+
+    /**
+     * List holding users after applying filters.
+     */
     private List<User> filteredUserList; // Holds users after filtering
 
+    /**
+     * Spinner to filter entrants based on their status.
+     */
     private Spinner statusFilterSpinner;
 
     // Firebase Firestore
+
+    /**
+     * FirebaseFirestore instance for database interactions.
+     */
     private FirebaseFirestore firestore;
 
     // Event Data
+
+    /**
+     * The unique identifier of the event.
+     */
     private String eventId;
 
+    /**
+     * Called when the activity is first created.
+     * Initializes UI components, Firebase instances, and retrieves event details.
+     *
+     * @param savedInstanceState If the activity is being re-initialized after previously being shut down then this Bundle contains the data it most recently supplied.
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -101,6 +146,7 @@ public class EventWaitingListActivity extends AppCompatActivity implements Navig
 
     /**
      * Sets up the Spinner with status options and defines its behavior.
+     * Allows users to filter entrants based on their status.
      */
     private void setupStatusFilterSpinner() {
         // Define status options
@@ -136,6 +182,7 @@ public class EventWaitingListActivity extends AppCompatActivity implements Navig
 
     /**
      * Fetches the list of users from Firestore based on the event ID.
+     * Populates the RecyclerView with entrant data.
      *
      * @param eventId The ID of the event.
      */
@@ -219,7 +266,7 @@ public class EventWaitingListActivity extends AppCompatActivity implements Navig
     /**
      * Filters the list of entrants based on the selected status.
      *
-     * @param status The status to filter by ("All", "Waitlist", "Enrolled").
+     * @param status The status to filter by ("All", "Waitlist", "Enrolled", "Canceled", "Chosen").
      */
     private void filterEntrantsByStatus(String status) {
         if (userAdapter == null) {
@@ -256,9 +303,10 @@ public class EventWaitingListActivity extends AppCompatActivity implements Navig
 
     /**
      * Handles navigation menu item selections.
+     * Navigates to the corresponding activity based on the selected menu item.
      *
      * @param item The selected menu item.
-     * @return True if handled, else false.
+     * @return True if the event was handled, false otherwise.
      */
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
@@ -286,8 +334,8 @@ public class EventWaitingListActivity extends AppCompatActivity implements Navig
     }
 
     /**
-     * If back button is pressed and side bar is opened, then return to the page.
-     * If done on the page itself, then default back to the normal back press action
+     * Handles the back button press to close the navigation drawer if it's open.
+     * If the drawer is not open, it performs the default back action.
      */
     private void handleBackPressed() {
         OnBackPressedCallback callback = new OnBackPressedCallback(true /* enabled */) {

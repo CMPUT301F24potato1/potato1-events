@@ -88,16 +88,38 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
     // ActionBarDrawerToggle
     private ActionBarDrawerToggle toggle;
 
+    /**
+     * Sets the FirebaseFirestore instance.
+     * <p>
+     * This method is primarily used for testing purposes.
+     * </p>
+     *
+     * @param firestore The FirebaseFirestore instance to set.
+     */
     @VisibleForTesting
     public void setFirestore(FirebaseFirestore firestore) {
         this.firestore = firestore;
     }
 
+    /**
+     * Sets the FirebaseStorage instance.
+     * <p>
+     * This method is primarily used for testing purposes.
+     * </p>
+     *
+     * @param storage The FirebaseStorage instance to set.
+     */
     @VisibleForTesting
     public void setStorage(FirebaseStorage storage) {
         this.storage = storage;
     }
 
+    /**
+     * Called when the activity is starting. Initializes the activity, sets up UI components,
+     * and handles mode-specific configurations.
+     *
+     * @param savedInstanceState If the activity is being re-initialized after previously being shut down then this Bundle contains the data it most recently supplied.
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -601,8 +623,6 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
         return Color.rgb(r, g, b);
     }
 
-
-
     /**
      * Handles navigation menu item selections.
      *
@@ -638,7 +658,7 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
 
     /**
      * If back button is pressed and side bar is opened, then return to the page.
-     * If done on the page itself, then default back to the normal back press action
+     * If done on the page itself, then default back to the normal back press action.
      */
     private void handleBackPressed() {
         OnBackPressedCallback callback = new OnBackPressedCallback(true /* enabled */) {

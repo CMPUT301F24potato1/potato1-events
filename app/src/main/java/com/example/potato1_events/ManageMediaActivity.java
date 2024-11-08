@@ -29,12 +29,36 @@ import java.util.List;
  */
 public class ManageMediaActivity extends AppCompatActivity implements MediaAdapter.OnMediaClickListener {
 
+    // UI Components
+
+    /**
+     * RecyclerView to display the list of media files.
+     */
     private RecyclerView mediaRecyclerView;
+
+    /**
+     * Adapter for the RecyclerView to manage media data.
+     */
     private MediaAdapter mediaAdapter;
+
+    /**
+     * List holding all media StorageReferences fetched from Firebase Storage.
+     */
     private List<StorageReference> mediaList;
 
+    // Firebase Firestore
+
+    /**
+     * FirebaseStorage instance for interacting with Firebase Storage.
+     */
     private FirebaseStorage firebaseStorage;
 
+    /**
+     * Called when the activity is first created.
+     * Initializes UI components, Firebase instances, and loads media files.
+     *
+     * @param savedInstanceState If the activity is being re-initialized after previously being shut down then this Bundle contains the data it most recently supplied.
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -47,7 +71,7 @@ public class ManageMediaActivity extends AppCompatActivity implements MediaAdapt
         Toolbar toolbar = findViewById(R.id.toolbar_manage_media);
         setSupportActionBar(toolbar);
 
-        // Enable the Up button
+        // Enable the Up button for navigation
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
             actionBar.setDisplayHomeAsUpEnabled(true);
@@ -67,6 +91,7 @@ public class ManageMediaActivity extends AppCompatActivity implements MediaAdapt
 
     /**
      * Loads all media files from Firebase Storage under the 'images/' directory and its subdirectories.
+     * Populates the RecyclerView with the fetched media.
      */
     private void loadMedia() {
         StorageReference imagesRef = firebaseStorage.getReference().child("images/");
@@ -75,7 +100,7 @@ public class ManageMediaActivity extends AppCompatActivity implements MediaAdapt
         mediaList.clear();
         mediaAdapter.notifyDataSetChanged();
 
-        // Start recursive listing
+        // Start recursive listing of media files
         listAllMedia(imagesRef);
     }
 
@@ -105,10 +130,10 @@ public class ManageMediaActivity extends AppCompatActivity implements MediaAdapt
     }
 
     /**
-     * Handles the Up button behavior.
+     * Handles the selection of menu items in the action bar.
      *
      * @param item The selected menu item.
-     * @return True if handled, else false.
+     * @return True if the event was handled, false otherwise.
      */
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
@@ -121,7 +146,8 @@ public class ManageMediaActivity extends AppCompatActivity implements MediaAdapt
     }
 
     /**
-     * Handles the delete action from MediaAdapter.
+     * Handles the delete action initiated from the MediaAdapter.
+     * Prompts the admin to confirm deletion of the selected media.
      *
      * @param storageRef The StorageReference of the media to delete.
      */
