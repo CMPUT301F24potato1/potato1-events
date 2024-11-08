@@ -1,3 +1,4 @@
+// File: RandomDrawWorker.java
 package com.example.potato1_events; // Replace with your actual package name
 
 import android.content.Context;
@@ -37,7 +38,8 @@ public class RandomDrawWorker extends Worker {
         // Query events where random draw needs to be performed
         firestore.collection("Events")
                 .whereLessThanOrEqualTo("registrationEnd", now)
-                .whereEqualTo("randomDrawPerformed", false)
+                //FIXME put this back in after field is there
+                //.whereEqualTo("randomDrawPerformed", false) // Ensure we process only relevant events
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
                     if (queryDocumentSnapshots.isEmpty()) {
@@ -66,7 +68,7 @@ public class RandomDrawWorker extends Worker {
 
             Boolean randomDrawPerformed = snapshot.getBoolean("randomDrawPerformed");
             if (randomDrawPerformed != null && randomDrawPerformed) {
-                // Random draw already performed by another device
+                // Random draw already performed
                 Log.d(TAG, "Random draw already performed for event: " + eventId);
                 return null;
             }
@@ -82,31 +84,60 @@ public class RandomDrawWorker extends Worker {
             if (entrantsMap == null || entrantsMap.isEmpty()) {
                 Log.d(TAG, "No entrants for event: " + eventId);
                 // Mark random draw as performed
-                transaction.update(eventRef, "randomDrawPerformed", true);
+               //FIXME put this back in after field is there
+                // transaction.update(eventRef, "randomDrawPerformed", true);
                 return null;
             }
 
-            List<String> entrantIds = new ArrayList<>(entrantsMap.keySet());
+            // Collect only entrants with status "waitlist"
+            List<String> waitlistEntrantIds = new ArrayList<>();
+            for (Map.Entry<String, String> entry : entrantsMap.entrySet()) {
+                if ("waitlist".equals(entry.getValue())) {
+                    waitlistEntrantIds.add(entry.getKey());
+                }
+            }
+
+            if (waitlistEntrantIds.isEmpty()) {
+                Log.d(TAG, "No waitlist entrants for event: " + eventId);
+                // Mark random draw as performed
+                //FIXME put this back in after field is there
+                //transaction.update(eventRef, "randomDrawPerformed", true);
+                return null;
+            }
 
             // Shuffle the list randomly
-            Collections.shuffle(entrantIds, new Random());
+            Collections.shuffle(waitlistEntrantIds, new Random());
 
             Long capacityLong = snapshot.getLong("capacity");
             Long currentEntrantsNumberLong = snapshot.getLong("currentEntrantsNumber");
             int capacity = capacityLong != null ? capacityLong.intValue() : 0;
             int currentEntrantsNumber = currentEntrantsNumberLong != null ? currentEntrantsNumberLong.intValue() : 0;
             int slotsAvailable = capacity - currentEntrantsNumber;
-            int numberToSelect = Math.min(slotsAvailable, entrantIds.size());
+            int numberToSelect = Math.min(slotsAvailable, waitlistEntrantIds.size());
 
-            List<String> selectedEntrants = entrantIds.subList(0, numberToSelect);
-            List<String> canceledEntrants = entrantIds.subList(numberToSelect, entrantIds.size());
+            List<String> selectedEntrants = waitlistEntrantIds.subList(0, numberToSelect);
+            List<String> notSelectedEntrants = waitlistEntrantIds.subList(numberToSelect, waitlistEntrantIds.size());
 
-            // Update entrants' statuses in the event document
-            for (String entrantId : selectedEntrants) {
-                entrantsMap.put(entrantId, "Selected to Enroll");
+            // Create a new entrants map
+            Map<String, String> newEntrantsMap = new HashMap<>();
+
+            // Copy over entrants who are not on the waitlist
+            for (Map.Entry<String, String> entry : entrantsMap.entrySet()) {
+                String entrantId = entry.getKey();
+                String status = entry.getValue();
+                if (!"waitlist".equals(status)) {
+                    newEntrantsMap.put(entrantId, status);
+                }
             }
-            for (String entrantId : canceledEntrants) {
-                entrantsMap.put(entrantId, "Canceled to Enroll");
+
+            // Add selected entrants with updated status
+            for (String entrantId : selectedEntrants) {
+                newEntrantsMap.put(entrantId, "Registered");
+            }
+
+            // Add not selected entrants with updated status
+            for (String entrantId : notSelectedEntrants) {
+                newEntrantsMap.put(entrantId, "Not Selected");
             }
 
             // Update the event's current number of entrants
@@ -114,23 +145,13 @@ public class RandomDrawWorker extends Worker {
 
             // Prepare event update
             Map<String, Object> eventUpdates = new HashMap<>();
-            eventUpdates.put("entrants", entrantsMap);
+            eventUpdates.put("entrants", newEntrantsMap);
             eventUpdates.put("currentEntrantsNumber", newCurrentEntrantsNumber);
-            eventUpdates.put("randomDrawPerformed", true);
+            //FIXME put this back in after
+            //eventUpdates.put("randomDrawPerformed", true); // Ensure this is included
 
             // Update the event document
             transaction.update(eventRef, eventUpdates);
-
-            // Update users' statuses
-            for (String entrantId : selectedEntrants) {
-                DocumentReference userRef = firestore.collection("Users").document(entrantId);
-                transaction.update(userRef, "eventsJoined." + eventId, "Selected to Enroll");
-            }
-
-            for (String entrantId : canceledEntrants) {
-                DocumentReference userRef = firestore.collection("Users").document(entrantId);
-                transaction.update(userRef, "eventsJoined." + eventId, "Canceled to Enroll");
-            }
 
             Log.d(TAG, "Random draw performed for event: " + eventId);
             return null;
