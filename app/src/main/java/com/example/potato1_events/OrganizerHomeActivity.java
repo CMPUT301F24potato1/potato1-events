@@ -67,6 +67,8 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
         // Initialize Firestore
         firestore = FirebaseFirestore.getInstance();
 
+        final boolean isAdmin = getIntent().getBooleanExtra("IS_ADMIN", false);
+
         // Initialize views
         drawerLayout = findViewById(R.id.drawer_organizer_layout);
         NavigationView navigationView = findViewById(R.id.nav_view);
@@ -87,6 +89,12 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
 
         // Set Click Listener for Switch Mode Button
         switchModeButton.setOnClickListener(v -> switchMode());
+
+        // Make admin options available
+        if (isAdmin) {
+            navigationView.getMenu().findItem(R.id.nav_manage_media).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_manage_users).setVisible(true);
+        }
 
         // Load events associated with the organizer's facility
         loadEventsForOrganizerFacility();
@@ -250,6 +258,14 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
             startActivity(intent);
         } else if (id == R.id.nav_my_events) {
             Toast.makeText(this, "Already on this page.", Toast.LENGTH_SHORT).show();
+        } else if (id == R.id.nav_manage_media) {
+            // Navigate to ManageMediaActivity (visible only to admins)
+            Intent intent = new Intent(OrganizerHomeActivity.this, ManageMediaActivity.class);
+            startActivity(intent);
+        } else if (id == R.id.nav_manage_users) {
+            // Navigate to ManageUsersActivity (visible only to admins)
+            Intent intent = new Intent(OrganizerHomeActivity.this, ManageUsersActivity.class);
+            startActivity(intent);
         }
 
         drawerLayout.closeDrawer(GravityCompat.START);
