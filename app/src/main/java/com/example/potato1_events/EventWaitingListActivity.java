@@ -1,5 +1,7 @@
+// File: EventWaitingListActivity.java
 package com.example.potato1_events;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
@@ -12,20 +14,26 @@ import androidx.recyclerview.widget.RecyclerView;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.Spinner;
 import android.widget.Toast;
 
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
 import com.google.android.material.navigation.NavigationView;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Activity to display the list of entrants on the waiting list for an event.
+ * Activity to display the list of entrants on the waiting list for an event with filtering capabilities.
  */
 public class EventWaitingListActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
@@ -36,7 +44,10 @@ public class EventWaitingListActivity extends AppCompatActivity implements Navig
 
     private RecyclerView waitingListRecyclerView;
     private UserAdapter userAdapter;
-    private List<User> userList;
+    private List<User> fullUserList; // Holds all users fetched
+    private List<User> filteredUserList; // Holds users after filtering
+
+    private Spinner statusFilterSpinner;
 
     // Firebase Firestore
     private FirebaseFirestore firestore;
@@ -68,27 +79,67 @@ public class EventWaitingListActivity extends AppCompatActivity implements Navig
         // Initialize RecyclerView
         waitingListRecyclerView = findViewById(R.id.waitingListRecyclerView);
         waitingListRecyclerView.setLayoutManager(new LinearLayoutManager(this));
-        userList = new ArrayList<>();
+        fullUserList = new ArrayList<>();
+        filteredUserList = new ArrayList<>();
 
-
+        // Initialize Spinner
+        statusFilterSpinner = findViewById(R.id.statusFilterSpinner);
+        setupStatusFilterSpinner();
 
         // Retrieve EVENT_ID from Intent
         Intent intent = getIntent();
         if (intent != null && intent.hasExtra("EVENT_ID")) {
             eventId = intent.getStringExtra("EVENT_ID");
-            fetchWaitingListUsers(eventId);
+            fetchEntrants(eventId);
         } else {
             Toast.makeText(this, "No Event ID provided.", Toast.LENGTH_SHORT).show();
             finish();
         }
+
+        handleBackPressed();
     }
 
     /**
-     * Fetches the list of users on the waiting list from Firestore.
+     * Sets up the Spinner with status options and defines its behavior.
+     */
+    private void setupStatusFilterSpinner() {
+        // Define status options
+        String[] statusOptions = {"All", "Waitlist", "Enrolled"};
+
+        // Create an ArrayAdapter using the string array and a default spinner layout
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, statusOptions);
+
+        // Specify the layout to use when the list of choices appears
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+
+        // Apply the adapter to the spinner
+        statusFilterSpinner.setAdapter(adapter);
+
+        // Set the default selection to "All"
+        statusFilterSpinner.setSelection(0);
+
+        // Set up the listener for selection changes
+        statusFilterSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                String selectedStatus = statusOptions[position];
+                filterEntrantsByStatus(selectedStatus);
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+                // Default behavior when nothing is selected
+                filterEntrantsByStatus("All");
+            }
+        });
+    }
+
+    /**
+     * Fetches the list of users from Firestore based on the event ID.
      *
      * @param eventId The ID of the event.
      */
-    private void fetchWaitingListUsers(String eventId) {
+    private void fetchEntrants(String eventId) {
         firestore.collection("Events")
                 .document(eventId)
                 .get()
@@ -98,8 +149,9 @@ public class EventWaitingListActivity extends AppCompatActivity implements Navig
                         if (event != null) {
                             Map<String, String> entrantsMap = event.getEntrants();
                             if (entrantsMap == null || entrantsMap.isEmpty()) {
-                                Toast.makeText(this, "No entrants on the waiting list.", Toast.LENGTH_SHORT).show();
-                                userList.clear();
+                                Toast.makeText(this, "No entrants found.", Toast.LENGTH_SHORT).show();
+                                fullUserList.clear();
+                                filteredUserList.clear();
                                 if (userAdapter != null) {
                                     userAdapter.notifyDataSetChanged();
                                 }
@@ -112,47 +164,40 @@ public class EventWaitingListActivity extends AppCompatActivity implements Navig
                                 String entrantId = entry.getKey();
                                 String status = entry.getValue();
 
-                                // Only include entrants with the desired status
-                                if ("waitlist".equals(status)) {
-                                    Task<DocumentSnapshot> userTask = firestore.collection("Entrants").document(entrantId).get();
-                                    userTasks.add(userTask);
-                                }
-                            }
-
-                            if (userTasks.isEmpty()) {
-                                Toast.makeText(this, "No entrants on the waiting list.", Toast.LENGTH_SHORT).show();
-                                userList.clear();
-                                if (userAdapter != null) {
-                                    userAdapter.notifyDataSetChanged();
-                                }
-                                return;
+                                // Fetch all entrants regardless of status
+                                Task<DocumentSnapshot> userTask = firestore.collection("Entrants").document(entrantId).get();
+                                userTasks.add(userTask);
                             }
 
                             // Wait for all user fetch tasks to complete
                             Tasks.whenAllSuccess(userTasks)
                                     .addOnSuccessListener(results -> {
-                                        userList.clear();
+                                        fullUserList.clear();
                                         for (Object result : results) {
                                             if (result instanceof DocumentSnapshot) {
                                                 DocumentSnapshot userSnapshot = (DocumentSnapshot) result;
                                                 User user = userSnapshot.toObject(User.class);
                                                 if (user != null) {
                                                     user.setUserId(userSnapshot.getId());
-                                                    userList.add(user);
+                                                    fullUserList.add(user);
                                                 }
                                             }
                                         }
 
-                                        // Initialize or update the UserAdapter with entrantsMap
-                                        userAdapter = new UserAdapter(userList, entrantsMap, this);
+                                        // Initially, set filtered list to full list
+                                        filteredUserList.clear();
+                                        filteredUserList.addAll(fullUserList);
+
+                                        // Initialize the UserAdapter
+                                        userAdapter = new UserAdapter(filteredUserList, entrantsMap, this);
                                         waitingListRecyclerView.setAdapter(userAdapter);
 
                                         userAdapter.notifyDataSetChanged();
 
-                                        if (userList.isEmpty()) {
+                                        if (fullUserList.isEmpty()) {
                                             Toast.makeText(EventWaitingListActivity.this, "No users found.", Toast.LENGTH_SHORT).show();
                                         } else {
-                                            Toast.makeText(EventWaitingListActivity.this, "Loaded Users: " + userList.size(), Toast.LENGTH_SHORT).show();
+                                            Toast.makeText(EventWaitingListActivity.this, "Loaded Users: " + fullUserList.size(), Toast.LENGTH_SHORT).show();
                                         }
                                     })
                                     .addOnFailureListener(e -> {
@@ -170,6 +215,38 @@ public class EventWaitingListActivity extends AppCompatActivity implements Navig
                 });
     }
 
+
+    /**
+     * Filters the list of entrants based on the selected status.
+     *
+     * @param status The status to filter by ("All", "Waitlist", "Enrolled").
+     */
+    private void filterEntrantsByStatus(String status) {
+        if (userAdapter == null) {
+            return;
+        }
+
+        filteredUserList.clear();
+
+        if ("All".equalsIgnoreCase(status)) {
+            filteredUserList.addAll(fullUserList);
+        } else {
+            for (User user : fullUserList) {
+                // Retrieve the entrant's status from the entrants map
+                String entrantStatus = userAdapter.getEntrantStatus(user.getUserId());
+
+                if (status.equalsIgnoreCase("Waitlist") && "waitlist".equalsIgnoreCase(entrantStatus)) {
+                    filteredUserList.add(user);
+                } else if (status.equalsIgnoreCase("Enrolled") && "enrolled".equalsIgnoreCase(entrantStatus)) {
+                    filteredUserList.add(user);
+                }
+            }
+        }
+
+        userAdapter.notifyDataSetChanged();
+
+        Toast.makeText(this, "Filtered Users: " + filteredUserList.size(), Toast.LENGTH_SHORT).show();
+    }
 
     /**
      * Handles navigation menu item selections.
@@ -203,14 +280,21 @@ public class EventWaitingListActivity extends AppCompatActivity implements Navig
     }
 
     /**
-     * Handles the back button press to close the drawer if it's open.
+     * If back button is pressed and side bar is opened, then return to the page.
+     * If done on the page itself, then default back to the normal back press action
      */
-    @Override
-    public void onBackPressed() {
-        if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
-            drawerLayout.closeDrawer(GravityCompat.START);
-        } else {
-            super.onBackPressed();
-        }
+    private void handleBackPressed() {
+        OnBackPressedCallback callback = new OnBackPressedCallback(true /* enabled */) {
+            @Override
+            public void handleOnBackPressed() {
+                if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
+                    drawerLayout.closeDrawer(GravityCompat.START);
+                } else {
+                    setEnabled(false);
+                    getOnBackPressedDispatcher().onBackPressed();
+                }
+            }
+        };
+        getOnBackPressedDispatcher().addCallback(this, callback);
     }
 }

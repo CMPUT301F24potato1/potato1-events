@@ -1,3 +1,4 @@
+// File: UserAdapter.java
 package com.example.potato1_events;
 
 import android.content.Context;
@@ -21,11 +22,27 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
     private Map<String, String> userStatusMap; // Map of user statuses keyed by userId
     private Context context;
 
-    // Updated constructor to accept userStatusMap
+    /**
+     * Constructor for UserAdapter.
+     *
+     * @param userList      List of users to display.
+     * @param userStatusMap Map of userId to status.
+     * @param context       The context from the Activity.
+     */
     public UserAdapter(List<User> userList, Map<String, String> userStatusMap, Context context) {
         this.userList = userList;
         this.userStatusMap = userStatusMap;
         this.context = context;
+    }
+
+    /**
+     * Retrieves the status of an entrant based on userId.
+     *
+     * @param userId The ID of the user.
+     * @return The status string ("waitlist", "enrolled", etc.) or null if not found.
+     */
+    public String getEntrantStatus(String userId) {
+        return userStatusMap.get(userId);
     }
 
     @NonNull
@@ -77,7 +94,20 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
 
             // Retrieve and set entrant status from the map using userId
             String status = userStatusMap.getOrDefault(user.getUserId(), "Unknown");
-            entrantStatusTextView.setText("Status: " + status);
+            entrantStatusTextView.setText("Status: " + capitalizeFirstLetter(status));
         }
+    }
+
+    /**
+     * Capitalizes the first letter of a string.
+     *
+     * @param text The input string.
+     * @return The string with the first letter capitalized.
+     */
+    private String capitalizeFirstLetter(String text) {
+        if (TextUtils.isEmpty(text)) {
+            return text;
+        }
+        return text.substring(0, 1).toUpperCase() + text.substring(1).toLowerCase();
     }
 }
