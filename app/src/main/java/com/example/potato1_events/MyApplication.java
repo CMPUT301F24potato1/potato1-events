@@ -11,7 +11,7 @@ public class MyApplication extends Application {
     public void onCreate() {
         super.onCreate();
 
-       scheduleRandomDrawWorker();
+       //scheduleRandomDrawWorker();
     }
 
     private void scheduleRandomDrawWorker() {
@@ -26,7 +26,7 @@ public class MyApplication extends Application {
         WorkManager.getInstance(this).enqueue(randomDrawWorkRequest);
     }
 //        PeriodicWorkRequest randomDrawWorkRequest =
-//                new PeriodicWorkRequest.Builder(RandomDrawWorker.class, 15, TimeUnit.MINUTES)
+//                new PeriodicWorkRequest.Builder(RandomDrawWorker.class, 1, TimeUnit.MINUTES)
 //                        .setConstraints(constraints)
 //                        .build();
 

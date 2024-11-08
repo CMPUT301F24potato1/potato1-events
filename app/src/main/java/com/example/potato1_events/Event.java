@@ -544,4 +544,21 @@ public class Event {
     public void setCurrentEntrantsNumber(int currentEntrantsNumber) {
         this.currentEntrantsNumber = currentEntrantsNumber;
     }
+
+    /**
+     * Grabs this
+     *
+     */
+    public boolean getRandomDrawPerformed() {
+        return this.randomDrawPerformed;
+    }
+
+    /**
+     * Sets this
+     *
+     * @param randomDrawPerformed changes this
+     */
+    public void setRandomDrawPerformed(boolean randomDrawPerformed) {
+        this.randomDrawPerformed = randomDrawPerformed;
+    }
 }
