@@ -257,12 +257,9 @@ public class EventsTest {
      */
     @Test
     public void testNegativeCapacity() {
-        event.setCapacity(-10);
-        assertEquals(-10, event.getCapacity());
-
-        event.setWaitingListCapacity(-5);
-        assertEquals(-5, event.getWaitingListCapacity());
+        assertThrows(IllegalArgumentException.class, () -> event.setCapacity(-10));
     }
+
 
     /**
      * Tests setting invalid dates.
