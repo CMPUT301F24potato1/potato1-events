@@ -255,8 +255,11 @@ public class EventDetailsEntrantActivity extends AppCompatActivity {
         new AlertDialog.Builder(this)
                 .setTitle("Join Waiting List")
                 .setMessage("Are you sure you want to join the waiting list for this event?")
-                .setPositiveButton("Yes", (dialog, which) -> joinWaitingList())
-                .setNegativeButton("No", null)
+                .setPositiveButton("Yes", (dialog, which) -> {
+                    dialog.dismiss();
+                    joinWaitingList();
+                })
+                .setNegativeButton("No", (dialog, which) -> dialog.dismiss())
                 .show();
     }
 
@@ -327,4 +330,5 @@ public class EventDetailsEntrantActivity extends AppCompatActivity {
             }
         });
     }
+
 }

@@ -96,7 +96,7 @@ dependencies {
     // Dexmaker dependencies for mocking final classes
 //    androidTestImplementation("org.mockito:mockito-core:3.12.4") // Add this line
     androidTestImplementation("com.linkedin.dexmaker:dexmaker-mockito-inline:2.28.1")
-//    androidTestImplementation("com.linkedin.dexmaker:dexmaker-mockito:2.28.1")
+//    androidTestImplementation ("org.mockito:mockito-android:4.11.0")
 
 //    androidTestImplementation("org.mockito:mockito-core:3.12.4")
 //    androidTestImplementation("org.mockito:mockito-android:3.12.4")
