@@ -15,90 +15,94 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Set up JDK 11
+      # Set up JDK
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '22'
+          java-version: '11'
           cache: gradle
 
       # Cache Gradle packages
-      # - name: Cache Gradle packages
-      #   uses: actions/cache@v3
-      #   with:
-      #     path: |
-      #       ~/.gradle/caches
-      #       ~/.gradle/wrapper
-      #     key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-      #     restore-keys: |
-      #       ${{ runner.os }}-gradle-
-
-      # Build the project
-      - name: Build with Gradle
-        run: ./gradlew build
-      
-      # Run Lint Checks on main branch
-      # - name: Run Lint Checks
-      #   if: github.ref == 'refs/heads/main'
-      #   run: ./gradlew lint
-
-      # Run Unit Tests
-      - name: Run tests
-        run: ./gradlew test
+      - name: Cache Gradle packages
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
 
       # Set up Android SDK
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
+      # Build the project
+      - name: Build with Gradle
+        run: ./gradlew build
+
+      # Run Lint Checks on main branch
+      - name: Run Lint Checks
+        if: github.ref == 'refs/heads/main'
+        run: ./gradlew lint
+
+      # Run Unit Tests
+      - name: Run Unit Tests
+        run: ./gradlew test
+
       # Run Instrumentation Tests
       # All tests on main, subset on other branches
-      # - name: Run Instrumentation Tests
-      #   uses: reactivecircus/android-emulator-runner@v2
-      #   with:
-      #     api-level: 30
-      #     target: default
-      #     arch: x86_64
-      #     script: |
-      #       if [ "${{ github.ref }}" == "refs/heads/main" ]; then
-      #         ./gradlew connectedAndroidTest
-      #       else
-      #         ./gradlew connectedAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.package.SubsetInstrumentedTest
-      #       fi
+      - name: Run Instrumentation Tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          target: default
+          arch: x86_64
+          script: |
+            if [ "${{ github.ref }}" == "refs/heads/main" ]; then
+              ./gradlew connectedAndroidTest
+            else
+              ./gradlew connectedAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.package.SubsetInstrumentedTest
+            fi
 
       # Send notification to Discord
       - name: Send notification to Discord
         if: always()
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          STATUS: ${{ job.status }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_SERVER_URL: ${{ github.server_url }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+          AUTHOR_NAME: ${{ github.event.head_commit.author.name }}
         run: |
-          if [ "${{ job.status }}" == "success" ]; then
-            STATUS="Success"
+          if [ "$STATUS" == "success" ]; then
+            STATUS_TEXT="Success"
             COLOR="3066993"
           else
-            STATUS="Failed"
+            STATUS_TEXT="Failed"
             COLOR="15158332"
           fi
-
-          BRANCH_NAME=${GITHUB_REF##*/}
-          COMMIT_MESSAGE=$(git log -1 --pretty=%B)
-          AUTHOR_NAME=$(git log -1 --pretty=%an)
 
           PAYLOAD=$(cat <<EOF
           {
             "username": "GitHub Actions",
             "embeds": [{
-              "title": "Regression $STATUS",
+              "title": "Build $STATUS_TEXT",
               "color": $COLOR,
               "fields": [
                 {
                   "name": "Branch",
-                  "value": "$BRANCH_NAME",
+                  "value": "$GITHUB_REF_NAME",
                   "inline": false
                 },
                 {
                   "name": "Commit",
-                  "value": "${{ github.sha }}",
+                  "value": "$GITHUB_SHA",
                   "inline": false
                 },
                 {
@@ -112,7 +116,7 @@ jobs:
                   "inline": false
                 }
               ],
-              "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+              "url": "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
             }]
           }
           EOF
