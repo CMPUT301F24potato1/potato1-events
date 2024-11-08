@@ -104,7 +104,7 @@ public class EventWaitingListActivity extends AppCompatActivity implements Navig
      */
     private void setupStatusFilterSpinner() {
         // Define status options
-        String[] statusOptions = {"All", "Waitlist", "Enrolled"};
+        String[] statusOptions = {"All", "Waitlist", "Enrolled", "Canceled", "Chosen"};
 
         // Create an ArrayAdapter using the string array and a default spinner layout
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, statusOptions);
@@ -238,6 +238,12 @@ public class EventWaitingListActivity extends AppCompatActivity implements Navig
                 if (status.equalsIgnoreCase("Waitlist") && "waitlist".equalsIgnoreCase(entrantStatus)) {
                     filteredUserList.add(user);
                 } else if (status.equalsIgnoreCase("Enrolled") && "enrolled".equalsIgnoreCase(entrantStatus)) {
+                    filteredUserList.add(user);
+                }
+                else if (status.equalsIgnoreCase("Canceled") && "canceled".equalsIgnoreCase(entrantStatus)) {
+                    filteredUserList.add(user);
+                }
+                else if (status.equalsIgnoreCase("Chosen") && "chosen".equalsIgnoreCase(entrantStatus)) {
                     filteredUserList.add(user);
                 }
             }
