@@ -144,4 +144,3 @@ tasks.register("javadoc", Javadoc::class) {
         links("https://developer.android.com/reference/")
     }
 }
-
