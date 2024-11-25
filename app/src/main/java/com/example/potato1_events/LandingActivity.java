@@ -74,11 +74,9 @@ public class LandingActivity extends AppCompatActivity {
 
         // Initialize buttons
         entrantButton = findViewById(R.id.entrantButton);
-        organizerButton = findViewById(R.id.organizerButton);
 
         // Set onClickListeners for buttons
         entrantButton.setOnClickListener(v -> checkUserExists());
-        organizerButton.setOnClickListener(v -> checkUserExists());
     }
 
     /**
