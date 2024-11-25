@@ -260,6 +260,15 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
         } else if (id == R.id.action_scan_qr) {
             // Handle QR code scanning
             scanQRCode();
+        } else if (id == R.id.nav_create_event) {
+        Intent intent = new Intent(EntrantHomeActivity.this, CreateEditEventActivity.class);
+        startActivity(intent);
+        } else if (id == R.id.nav_edit_facility) {
+            Intent intent = new Intent(EntrantHomeActivity.this, CreateEditFacilityActivity.class);
+            startActivity(intent);
+        } else if (id == R.id.nav_my_events) {
+            Intent intent = new Intent(EntrantHomeActivity.this, OrganizerHomeActivity.class);
+            startActivity(intent);
         }
 
         drawerLayout.closeDrawer(GravityCompat.START);
