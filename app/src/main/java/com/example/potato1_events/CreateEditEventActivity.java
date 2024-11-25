@@ -788,7 +788,6 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
 
         if (id == R.id.nav_organizer_profile) {
             Intent intent = new Intent(CreateEditEventActivity.this, UserInfoActivity.class);
-            intent.putExtra("USER_TYPE", "Organizer"); // or "Organizer"
             intent.putExtra("MODE", "EDIT");
             startActivity(intent);
         } else if (id == R.id.nav_create_event) {
