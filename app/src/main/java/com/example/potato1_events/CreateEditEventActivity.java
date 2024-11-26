@@ -1,3 +1,4 @@
+// File: CreateEditEventActivity.java
 package com.example.potato1_events;
 
 import android.Manifest;
@@ -36,6 +37,7 @@ import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.WriterException;
+import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.qrcode.QRCodeWriter;
 import com.squareup.picasso.Picasso;
 
@@ -76,6 +78,9 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
     // Organizer's deviceId acting as facilityId
     private String deviceId;
 
+    // User Privileges
+    private boolean isAdmin = false; // Retrieved from Intent
+
     /**
      * Sets the Firestore instance for testing purposes.
      *
@@ -95,6 +100,12 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_create_edit_event);
+
+        // Retrieve the isAdmin flag from Intent extras
+        isAdmin = getIntent().getBooleanExtra("IS_ADMIN", false);
+
+        // Optional: Verify isAdmin status
+        Toast.makeText(this, "isAdmin: " + isAdmin, Toast.LENGTH_SHORT).show();
 
         // Initialize Firebase instances
         firestore = FirebaseFirestore.getInstance();
@@ -126,7 +137,7 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
         setSupportActionBar(toolbar);
 
         // Initialize DrawerLayout and NavigationView
-        drawerLayout = findViewById(R.id.drawer_organizer_layout);
+        drawerLayout = findViewById(R.id.drawer_layout);
         navigationView = findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
@@ -135,6 +146,15 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
                 this, drawerLayout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawerLayout.addDrawerListener(toggle);
         toggle.syncState();
+
+        // Make admin options available
+        if (isAdmin) {
+            navigationView.getMenu().findItem(R.id.nav_manage_media).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_manage_users).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_create_event).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_edit_facility).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_my_events).setVisible(true);
+        }
 
         // Initialize ActivityResultLauncher for image selection
         selectImageLauncher = registerForActivityResult(
@@ -174,7 +194,7 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
                 requestPermissionLauncher.launch(getReadPermission());
             }
         });
-        saveEventButton.setOnClickListener(v -> saveEvent()); // Updated to handle QR code generation internally
+        saveEventButton.setOnClickListener(v -> saveEvent()); // Handle QR code generation internally
         deleteEventButton.setOnClickListener(v -> confirmDeleteEvent());
         generateQRCodeButton.setOnClickListener(v -> generateQRCode()); // Set up Generate QR Code button listener
 
@@ -728,6 +748,20 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
     }
 
     /**
+     * Initiates the QR code scanning using ZXing library.
+     */
+    private void scanQRCode() {
+        IntentIntegrator integrator = new IntentIntegrator(this);
+        integrator.setDesiredBarcodeFormats(IntentIntegrator.QR_CODE);
+        integrator.setPrompt("Scan a QR Code");
+        integrator.setOrientationLocked(true);  // Lock orientation to portrait
+        integrator.setCaptureActivity(PortraitCaptureActivity.class);
+        integrator.setBeepEnabled(true);
+        integrator.setBarcodeImageEnabled(true);
+        integrator.initiateScan();
+    }
+
+    /**
      * Confirms with the user before deleting the event.
      */
     private void confirmDeleteEvent() {
@@ -786,12 +820,31 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
         // Handle navigation
         int id = item.getItemId();
 
-        if (id == R.id.nav_organizer_profile) {
+        if (id == R.id.nav_notifications) {
+            // Navigate to NotificationsActivity
+            // Intent intent = new Intent(CreateEditEventActivity.this, NotificationsActivity.class);
+            // startActivity(intent);
+        } else if (id == R.id.nav_edit_profile) {
+            // Navigate to EditProfileActivity
             Intent intent = new Intent(CreateEditEventActivity.this, UserInfoActivity.class);
+            intent.putExtra("USER_TYPE", "Entrant"); // or "Organizer"
             intent.putExtra("MODE", "EDIT");
             startActivity(intent);
+        } else if (id == R.id.nav_manage_media) {
+            // Navigate to ManageMediaActivity (visible only to admins)
+            Intent intent = new Intent(CreateEditEventActivity.this, ManageMediaActivity.class);
+            startActivity(intent);
+        } else if (id == R.id.nav_manage_users) {
+            // Navigate to ManageUsersActivity (visible only to admins)
+            Intent intent = new Intent(CreateEditEventActivity.this, ManageUsersActivity.class);
+            startActivity(intent);
+        } else if (id == R.id.action_scan_qr) {
+            scanQRCode();
         } else if (id == R.id.nav_create_event) {
-            Toast.makeText(this, "Already on this page.", Toast.LENGTH_SHORT).show();
+            Intent intent = new Intent(CreateEditEventActivity.this, CreateEditEventActivity.class);
+            // Pass isAdmin flag if necessary
+            intent.putExtra("IS_ADMIN", isAdmin);
+            startActivity(intent);
         } else if (id == R.id.nav_edit_facility) {
             Intent intent = new Intent(CreateEditEventActivity.this, CreateEditFacilityActivity.class);
             startActivity(intent);

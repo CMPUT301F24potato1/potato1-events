@@ -53,6 +53,9 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
     // To keep track of added event IDs to prevent duplicates
     private Set<String> addedEventIds = new HashSet<>();
 
+    // User Privileges
+    private boolean isAdmin = false; // Class-level variable
+
     /**
      * Initializes the activity, sets up UI components, Firebase instances, and event listeners.
      *
@@ -63,7 +66,11 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_entrant_home);
 
-        final boolean isAdmin = getIntent().getBooleanExtra("IS_ADMIN", false);
+        // Retrieve the isAdmin flag from Intent extras
+        isAdmin = getIntent().getBooleanExtra("IS_ADMIN", false);
+
+        // Optional: Verify isAdmin status
+        Toast.makeText(this, "isAdmin: " + isAdmin, Toast.LENGTH_SHORT).show();
 
         // Get device ID
         deviceId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
@@ -94,6 +101,9 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
         if (isAdmin) {
             navigationView.getMenu().findItem(R.id.nav_manage_media).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_manage_users).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_create_event).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_edit_facility).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_my_events).setVisible(true);
         }
 
         navigationView.setNavigationItemSelectedListener(this);
@@ -241,8 +251,8 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
 
         if (id == R.id.nav_notifications) {
             // Navigate to NotificationsActivity
-//            Intent intent = new Intent(EntrantHomeActivity.this, NotificationsActivity.class);
-//            startActivity(intent);
+            // Intent intent = new Intent(EntrantHomeActivity.this, NotificationsActivity.class);
+            // startActivity(intent);
         } else if (id == R.id.nav_edit_profile) {
             // Navigate to EditProfileActivity
             Intent intent = new Intent(EntrantHomeActivity.this, UserInfoActivity.class);
@@ -261,8 +271,10 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
             // Handle QR code scanning
             scanQRCode();
         } else if (id == R.id.nav_create_event) {
-        Intent intent = new Intent(EntrantHomeActivity.this, CreateEditEventActivity.class);
-        startActivity(intent);
+            // Navigate to CreateEditEventActivity and pass isAdmin flag
+            Intent intent = new Intent(EntrantHomeActivity.this, CreateEditEventActivity.class);
+            intent.putExtra("IS_ADMIN", isAdmin); // Pass the isAdmin flag
+            startActivity(intent);
         } else if (id == R.id.nav_edit_facility) {
             Intent intent = new Intent(EntrantHomeActivity.this, CreateEditFacilityActivity.class);
             startActivity(intent);
