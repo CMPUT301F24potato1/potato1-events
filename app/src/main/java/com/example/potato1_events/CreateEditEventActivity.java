@@ -126,7 +126,7 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
         setSupportActionBar(toolbar);
 
         // Initialize DrawerLayout and NavigationView
-        drawerLayout = findViewById(R.id.drawer_organizer_layout);
+        drawerLayout = findViewById(R.id.drawer_layout);
         navigationView = findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
@@ -416,7 +416,7 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
     private void uploadPosterImage(String name, String description, String recCentre, String location,
                                    int availableSpots, int waitingListSpots, boolean isGeolocationEnabled) {
         // Create a unique filename
-        String fileName = "event_posters/" + UUID.randomUUID() + ".jpg";
+        String fileName = "images/event_posters/" + UUID.randomUUID() + ".jpg";
         StorageReference storageRef = storage.getReference().child(fileName);
 
         // Upload the image

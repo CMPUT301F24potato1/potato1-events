@@ -304,42 +304,43 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
         finish();
     }
 
-    /**
-     * Handles navigation menu item selections.
-     * Navigates to the corresponding activity based on the selected menu item.
-     *
-     * @param item The selected menu item.
-     * @return True if the event was handled, false otherwise.
-     */
-    @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         // Handle navigation
         int id = item.getItemId();
+        Intent intent = null;
 
-        if (id == R.id.nav_organizer_profile) {
-            Intent intent = new Intent(OrganizerHomeActivity.this, UserInfoActivity.class);
-            intent.putExtra("USER_TYPE", "Organizer");
+        if (id == R.id.nav_notifications) {
+            // Navigate to NotificationsActivity
+//            Intent intent = new Intent(EntrantHomeActivity.this, NotificationsActivity.class);
+//            startActivity(intent);
+        } else if (id == R.id.nav_edit_profile) {
+            // Navigate to EditProfileActivity
+            intent = new Intent(OrganizerHomeActivity.this, UserInfoActivity.class);
             intent.putExtra("MODE", "EDIT");
-            startActivity(intent);
-        } else if (id == R.id.nav_create_event) {
-            Intent intent = new Intent(OrganizerHomeActivity.this, CreateEditEventActivity.class);
-            startActivity(intent);
-        } else if (id == R.id.nav_edit_facility) {
-            Intent intent = new Intent(OrganizerHomeActivity.this, CreateEditFacilityActivity.class);
-            startActivity(intent);
-        } else if (id == R.id.nav_my_events) {
-            Toast.makeText(this, "Already on this page.", Toast.LENGTH_SHORT).show();
         } else if (id == R.id.nav_manage_media) {
             // Navigate to ManageMediaActivity (visible only to admins)
-            Intent intent = new Intent(OrganizerHomeActivity.this, ManageMediaActivity.class);
-            startActivity(intent);
+            intent = new Intent(OrganizerHomeActivity.this, ManageMediaActivity.class);
         } else if (id == R.id.nav_manage_users) {
             // Navigate to ManageUsersActivity (visible only to admins)
-            Intent intent = new Intent(OrganizerHomeActivity.this, ManageUsersActivity.class);
-            startActivity(intent);
+            intent = new Intent(OrganizerHomeActivity.this, ManageUsersActivity.class);
+        } else if (id == R.id.action_scan_qr) {
+            // Handle QR code scanning
+            intent = new Intent(OrganizerHomeActivity.this, QRScanActivity.class);
+        } else if (id == R.id.nav_create_event) {
+            intent = new Intent(OrganizerHomeActivity.this, CreateEditEventActivity.class);
+        } else if (id == R.id.nav_edit_facility) {
+            intent = new Intent(OrganizerHomeActivity.this, CreateEditFacilityActivity.class);
+        } else if (id == R.id.nav_my_events) {
+            intent = new Intent(OrganizerHomeActivity.this, OrganizerHomeActivity.class);
         }
 
-        // Close the navigation drawer after handling the selection
+        if (intent != null){
+            startActivity(intent);
+        } else {
+            Toast.makeText(this, "Invalid option selected", Toast.LENGTH_SHORT).show();
+        }
+
+
         drawerLayout.closeDrawer(GravityCompat.START);
         return true;
     }

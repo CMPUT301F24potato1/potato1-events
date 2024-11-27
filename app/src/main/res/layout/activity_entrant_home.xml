@@ -24,7 +24,7 @@
                 android:id="@+id/switchModeButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Entrant"
+                android:text="Joined Events"
                 android:textSize="22dp"/>
 
             <!-- Search Bar -->

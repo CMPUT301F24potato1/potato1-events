@@ -51,13 +51,15 @@
             android:exported="false"/>
         <activity android:name=".ManageMediaActivity" />
         <activity android:name=".ManageUsersActivity" />
-
+        <activity android:name=".QRScanActivity" />
 
         <!-- Declare the PortraitCaptureActivity if still used -->
         <activity
             android:name=".PortraitCaptureActivity"
             android:screenOrientation="portrait"
-            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
+            android:theme="@style/zxing_CaptureTheme"
+            android:exported="false">
+        </activity>
 
 
 
