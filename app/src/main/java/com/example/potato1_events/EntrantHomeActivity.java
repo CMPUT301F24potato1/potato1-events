@@ -277,15 +277,14 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
 
             intent = new Intent(EntrantHomeActivity.this, OrganizerHomeActivity.class);
             intent.putExtra("IS_ADMIN", isAdmin);
+        } else if (id == R.id.nav_view_joined_events) {
+            Toast.makeText(this, "Already on this page.", Toast.LENGTH_SHORT).show();
         }
 
         if (intent != null) {
             startActivity(intent);
-        } else {
-            if (id != R.id.nav_notifications) { // Assuming notifications are handled separately
-                Toast.makeText(this, "Invalid option selected", Toast.LENGTH_SHORT).show();
-            }
         }
+
 
         drawerLayout.closeDrawer(GravityCompat.START);
         return true;

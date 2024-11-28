@@ -85,8 +85,6 @@ public class CreateEditFacilityActivity extends AppCompatActivity implements Nav
         // Retrieve the isAdmin flag from Intent extras
         isAdmin = getIntent().getBooleanExtra("IS_ADMIN", false);
 
-        // Optional: Verify isAdmin status (for debugging purposes)
-        Toast.makeText(this, "isAdmin: " + isAdmin, Toast.LENGTH_SHORT).show();
 
         // Initialize Firebase Instances
         firestore = FirebaseFirestore.getInstance();
@@ -354,48 +352,39 @@ public class CreateEditFacilityActivity extends AppCompatActivity implements Nav
         } else if (id == R.id.nav_edit_profile) {
             // Navigate to UserInfoActivity
             intent = new Intent(CreateEditFacilityActivity.this, UserInfoActivity.class);
-            intent.putExtra("USER_TYPE", "Organizer"); // or "Entrant" based on context
             intent.putExtra("MODE", "EDIT");
-            intent.putExtra("IS_ADMIN", isAdmin); // Pass isAdmin flag
+            intent.putExtra("IS_ADMIN", isAdmin);
         } else if (id == R.id.nav_manage_media) {
-            // Navigate to ManageMediaActivity (visible only to admins)
-            if (isAdmin) {
-                intent = new Intent(CreateEditFacilityActivity.this, ManageMediaActivity.class);
-                intent.putExtra("IS_ADMIN", isAdmin); // Pass isAdmin flag
-            } else {
-                Toast.makeText(this, "Access Denied: Admins Only", Toast.LENGTH_SHORT).show();
-            }
+
+            intent = new Intent(CreateEditFacilityActivity.this, ManageMediaActivity.class);
+
         } else if (id == R.id.nav_manage_users) {
-            // Navigate to ManageUsersActivity (visible only to admins)
-            if (isAdmin) {
-                intent = new Intent(CreateEditFacilityActivity.this, ManageUsersActivity.class);
-                intent.putExtra("IS_ADMIN", isAdmin); // Pass isAdmin flag
-            } else {
-                Toast.makeText(this, "Access Denied: Admins Only", Toast.LENGTH_SHORT).show();
-            }
+
+            intent = new Intent(CreateEditFacilityActivity.this, ManageUsersActivity.class);
+
         } else if (id == R.id.action_scan_qr) {
             // Handle QR code scanning
             intent = new Intent(CreateEditFacilityActivity.this, QRScanActivity.class);
-            intent.putExtra("IS_ADMIN", isAdmin); // Pass isAdmin flag
+            intent.putExtra("IS_ADMIN", isAdmin);
         } else if (id == R.id.nav_create_event) {
-            // Navigate to CreateEditEventActivity and pass isAdmin flag
+            // Navigate to CreateEditEventActivity
             intent = new Intent(CreateEditFacilityActivity.this, CreateEditEventActivity.class);
-            intent.putExtra("IS_ADMIN", isAdmin); // Pass the isAdmin flag
+            intent.putExtra("IS_ADMIN", isAdmin);
         } else if (id == R.id.nav_edit_facility) {
             // Navigate to CreateEditFacilityActivity (current activity)
             Toast.makeText(this, "Already on this page.", Toast.LENGTH_SHORT).show();
         } else if (id == R.id.nav_my_events) {
             // Navigate to OrganizerHomeActivity and pass isAdmin flag
             intent = new Intent(CreateEditFacilityActivity.this, OrganizerHomeActivity.class);
-            intent.putExtra("IS_ADMIN", isAdmin); // Pass the isAdmin flag
+            intent.putExtra("IS_ADMIN", isAdmin);
+        } else if (id == R.id.nav_view_joined_events) {
+            // Navigate to EntrantHomeActivity
+            intent = new Intent(CreateEditFacilityActivity.this, EntrantHomeActivity.class);
+            intent.putExtra("IS_ADMIN", isAdmin);
         }
 
         if (intent != null) {
             startActivity(intent);
-        } else {
-            if (id != R.id.nav_notifications) { // Assuming notifications are handled separately
-                Toast.makeText(this, "Invalid option selected", Toast.LENGTH_SHORT).show();
-            }
         }
 
         drawerLayout.closeDrawer(GravityCompat.START);

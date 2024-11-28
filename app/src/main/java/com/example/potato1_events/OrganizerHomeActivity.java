@@ -292,6 +292,7 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
         eventCardView.setOnClickListener(v -> {
             Intent intent = new Intent(OrganizerHomeActivity.this, EventDetailsOrganizerActivity.class);
             intent.putExtra("EVENT_ID", event.getId());
+            intent.putExtra("IS_ADMIN", isAdmin);
             startActivity(intent);
         });
 
@@ -354,7 +355,7 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
             intent = new Intent(OrganizerHomeActivity.this, QRScanActivity.class);
             intent.putExtra("IS_ADMIN", isAdmin); // Pass isAdmin flag
         } else if (id == R.id.nav_create_event) {
-            // Navigate to CreateEditEventActivity and pass isAdmin flag
+            // Navigate to CreateEditEventActivity
             intent = new Intent(OrganizerHomeActivity.this, CreateEditEventActivity.class);
             intent.putExtra("IS_ADMIN", isAdmin); // Pass the isAdmin flag
         } else if (id == R.id.nav_edit_facility) {
@@ -362,21 +363,15 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
             intent = new Intent(OrganizerHomeActivity.this, CreateEditFacilityActivity.class);
             intent.putExtra("IS_ADMIN", isAdmin); // Pass isAdmin flag
         } else if (id == R.id.nav_my_events) {
-            // Navigate to OrganizerHomeActivity and pass isAdmin flag
-            intent = new Intent(OrganizerHomeActivity.this, OrganizerHomeActivity.class);
-            intent.putExtra("IS_ADMIN", isAdmin); // Pass isAdmin flag
+            Toast.makeText(this, "Already on this page.", Toast.LENGTH_SHORT).show();
         } else if (id == R.id.nav_view_joined_events) {
             // Navigate to EntrantHomeActivity and pass isAdmin flag
             intent = new Intent(OrganizerHomeActivity.this, EntrantHomeActivity.class);
-            intent.putExtra("IS_ADMIN", isAdmin); // Pass isAdmin flag
+            intent.putExtra("IS_ADMIN", isAdmin);
         }
 
         if (intent != null) {
             startActivity(intent);
-        } else {
-            if (id != R.id.nav_notifications) { // Assuming notifications are handled separately
-                Toast.makeText(this, "Invalid option selected", Toast.LENGTH_SHORT).show();
-            }
         }
 
         drawerLayout.closeDrawer(GravityCompat.START);

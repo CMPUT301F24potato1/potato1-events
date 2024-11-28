@@ -94,6 +94,10 @@ public class EventWaitingListActivity extends AppCompatActivity implements Navig
      */
     private String eventId;
 
+
+    private boolean isAdmin = false;
+
+
     /**
      * Called when the activity is first created.
      * Initializes UI components, Firebase instances, and retrieves event details.
@@ -139,6 +143,16 @@ public class EventWaitingListActivity extends AppCompatActivity implements Navig
         } else {
             Toast.makeText(this, "No Event ID provided.", Toast.LENGTH_SHORT).show();
             finish();
+        }
+
+        isAdmin = getIntent().getBooleanExtra("IS_ADMIN", false);
+        // Adjust Navigation Drawer Menu Items Based on isAdmin
+        if (isAdmin) {
+            navigationView.getMenu().findItem(R.id.nav_manage_media).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_manage_users).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_create_event).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_edit_facility).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_my_events).setVisible(true);
         }
 
         handleBackPressed();
@@ -302,8 +316,7 @@ public class EventWaitingListActivity extends AppCompatActivity implements Navig
     }
 
     /**
-     * Handles navigation menu item selections.
-     * Navigates to the corresponding activity based on the selected menu item.
+     * Handles navigation item selections from the navigation drawer.
      *
      * @param item The selected menu item.
      * @return True if the event was handled, false otherwise.
@@ -312,20 +325,47 @@ public class EventWaitingListActivity extends AppCompatActivity implements Navig
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         // Handle navigation
         int id = item.getItemId();
+        Intent intent = null;
 
-        if (id == R.id.nav_organizer_profile) {
-            Intent intent = new Intent(EventWaitingListActivity.this, UserInfoActivity.class);
-            intent.putExtra("USER_TYPE", "Organizer");
+        if (id == R.id.nav_notifications) {
+            // Navigate to NotificationsActivity
+            // Uncomment and implement if NotificationsActivity exists
+            // intent = new Intent(CreateEditFacilityActivity.this, NotificationsActivity.class);
+        } else if (id == R.id.nav_edit_profile) {
+            // Navigate to UserInfoActivity
+            intent = new Intent(EventWaitingListActivity.this, UserInfoActivity.class);
             intent.putExtra("MODE", "EDIT");
-            startActivity(intent);
+            intent.putExtra("IS_ADMIN", isAdmin);
+        } else if (id == R.id.nav_manage_media) {
+
+            intent = new Intent(EventWaitingListActivity.this, ManageMediaActivity.class);
+
+        } else if (id == R.id.nav_manage_users) {
+
+            intent = new Intent(EventWaitingListActivity.this, ManageUsersActivity.class);
+
+        } else if (id == R.id.action_scan_qr) {
+            // Handle QR code scanning
+            intent = new Intent(EventWaitingListActivity.this, QRScanActivity.class);
+            intent.putExtra("IS_ADMIN", isAdmin);
         } else if (id == R.id.nav_create_event) {
-            Intent intent = new Intent(EventWaitingListActivity.this, CreateEditEventActivity.class);
-            startActivity(intent);
+            // Navigate to CreateEditEventActivity
+            intent = new Intent(EventWaitingListActivity.this, CreateEditEventActivity.class);
+            intent.putExtra("IS_ADMIN", isAdmin);
         } else if (id == R.id.nav_edit_facility) {
-            Intent intent = new Intent(EventWaitingListActivity.this, CreateEditFacilityActivity.class);
-            startActivity(intent);
+            intent = new Intent(EventWaitingListActivity.this, CreateEditFacilityActivity.class);
+            intent.putExtra("IS_ADMIN", isAdmin);
         } else if (id == R.id.nav_my_events) {
-            Intent intent = new Intent(EventWaitingListActivity.this, OrganizerHomeActivity.class);
+            // Navigate to OrganizerHomeActivity and pass isAdmin flag
+            intent = new Intent(EventWaitingListActivity.this, OrganizerHomeActivity.class);
+            intent.putExtra("IS_ADMIN", isAdmin);
+        } else if (id == R.id.nav_view_joined_events) {
+            // Navigate to EntrantHomeActivity and pass isAdmin flag
+            intent = new Intent(EventWaitingListActivity.this, EntrantHomeActivity.class);
+            intent.putExtra("IS_ADMIN", isAdmin);
+        }
+
+        if (intent != null) {
             startActivity(intent);
         }
 

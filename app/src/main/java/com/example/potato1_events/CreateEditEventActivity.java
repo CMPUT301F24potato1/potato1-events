@@ -832,7 +832,7 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
             intent.putExtra("MODE", "EDIT");
             intent.putExtra("IS_ADMIN", isAdmin);
         } else if (id == R.id.nav_manage_media) {
-            // Navigate to ManageMediaActivity (visible only to admins)
+            // Navigate to ManageMediaActivity
             intent = new Intent(CreateEditEventActivity.this, ManageMediaActivity.class);
 
         } else if (id == R.id.nav_manage_users) {
@@ -841,31 +841,26 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
         } else if (id == R.id.action_scan_qr) {
             // Handle QR code scanning
             intent = new Intent(CreateEditEventActivity.this, QRScanActivity.class);
-            intent.putExtra("IS_ADMIN", isAdmin);
+
         } else if (id == R.id.nav_create_event) {
-            // Navigate to CreateEditEventActivity
-            intent = new Intent(CreateEditEventActivity.this, CreateEditEventActivity.class);
-            intent.putExtra("IS_ADMIN", isAdmin);
+
+        Toast.makeText(this, "Already on this page.", Toast.LENGTH_SHORT).show();
         } else if (id == R.id.nav_edit_facility) {
-            // Navigate to CreateEditFacilityActivity
+
             intent = new Intent(CreateEditEventActivity.this, CreateEditFacilityActivity.class);
             intent.putExtra("IS_ADMIN", isAdmin);
         } else if (id == R.id.nav_my_events) {
-            // Navigate to OrganizerHomeActivity and pass isAdmin flag
+            // Navigate to OrganizerHomeActivity
             intent = new Intent(CreateEditEventActivity.this, OrganizerHomeActivity.class);
-            intent.putExtra("IS_ADMIN", isAdmin); // Pass isAdmin flag
+            intent.putExtra("IS_ADMIN", isAdmin);
         } else if (id == R.id.nav_view_joined_events) {
-            // Navigate to EntrantHomeActivity and pass isAdmin flag
+            // Navigate to EntrantHomeActivity
             intent = new Intent(CreateEditEventActivity.this, EntrantHomeActivity.class);
-            intent.putExtra("IS_ADMIN", isAdmin); // Pass isAdmin flag
+            intent.putExtra("IS_ADMIN", isAdmin);
         }
 
         if (intent != null) {
             startActivity(intent);
-        } else {
-            if (id != R.id.nav_notifications) { // Assuming notifications are handled separately
-                Toast.makeText(this, "Invalid option selected", Toast.LENGTH_SHORT).show();
-            }
         }
 
         drawerLayout.closeDrawer(GravityCompat.START);
