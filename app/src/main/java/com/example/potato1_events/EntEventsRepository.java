@@ -202,6 +202,7 @@ public class EntEventsRepository {
 
     /**
      * Adds the entrant to the event's waiting list.
+     * Supports unlimited waiting list if waitingListCapacity is null.
      *
      * @param eventId  The ID of the event.
      * @param deviceId The entrant's device ID.
@@ -209,11 +210,12 @@ public class EntEventsRepository {
      */
     public void joinWaitingList(String eventId, String deviceId, ActionCallback callback) {
         final CollectionReference eventsCollection = firestore.collection("Events");
-        final CollectionReference entrantsCollection = firestore.collection("Users");
+        final CollectionReference usersCollection = firestore.collection("Users");
 
         firestore.runTransaction((Transaction.Function<Void>) transaction -> {
                     // Fetch event
-                    Event event = transaction.get(eventsCollection.document(eventId)).toObject(Event.class);
+                    DocumentSnapshot eventSnapshot = transaction.get(eventsCollection.document(eventId));
+                    Event event = eventSnapshot.toObject(Event.class);
 
                     if (event == null) {
                         throw new FirebaseFirestoreException("Event does not exist.",
@@ -222,39 +224,44 @@ public class EntEventsRepository {
 
                     Map<String, String> entrantsMap = event.getEntrants();
                     if (entrantsMap == null) {
-                        entrantsMap = new java.util.HashMap<>();
+                        entrantsMap = new HashMap<>();
                     }
 
                     // Check if entrant is already in the entrants map
                     if (entrantsMap.containsKey(deviceId)) {
-                        throw new FirebaseFirestoreException("Already on the waiting list.",
+                        throw new FirebaseFirestoreException("Already registered or on the waiting list.",
                                 FirebaseFirestoreException.Code.ABORTED, null);
                     }
 
-                    // Check if waiting list is full
-                    Long currentEntrants = (long) event.getCurrentEntrantsNumber();
-                    Long capacity = Long.valueOf(event.getWaitingListCapacity());
-                    if (currentEntrants >= capacity) {
-                        throw new FirebaseFirestoreException("Waiting list is full.",
-                                FirebaseFirestoreException.Code.ABORTED, null);
+                    // Retrieve waitingListCapacity
+                    Long waitingListCapacity = (long) event.getWaitingListCapacity();
+
+                    if (waitingListCapacity != null) {
+                        // Count current waiting list entrants
+                        long currentWaitingList = entrantsMap.values().stream()
+                                .filter(status -> "waitlist".equalsIgnoreCase(status))
+                                .count();
+
+                        if (currentWaitingList >= waitingListCapacity) {
+                            throw new FirebaseFirestoreException("Waiting list is full.",
+                                    FirebaseFirestoreException.Code.ABORTED, null);
+                        }
                     }
 
                     // Add entrant to entrants map with status "waitlist"
                     transaction.update(eventsCollection.document(eventId), "entrants." + deviceId, "waitlist");
 
-                    // Increment currentEntrantsNumber
-                    transaction.update(eventsCollection.document(eventId), "currentEntrantsNumber", FieldValue.increment(1));
+                    // Note: Do NOT increment currentEntrantsNumber for waiting list
+                    // Assuming currentEntrantsNumber tracks only main entrants
 
                     // Add eventId to the user's eventsJoined list using set with merge
                     Map<String, Object> userData = new HashMap<>();
                     userData.put("eventsJoined", FieldValue.arrayUnion(eventId));
-                    transaction.set(entrantsCollection.document(deviceId), userData, SetOptions.merge());
+                    transaction.set(usersCollection.document(deviceId), userData, SetOptions.merge());
 
                     return null;
                 }).addOnSuccessListener(aVoid -> callback.onSuccess())
                 .addOnFailureListener(callback::onFailure);
-
-
     }
 
     /**
@@ -266,11 +273,12 @@ public class EntEventsRepository {
      */
     public void leaveWaitingList(String eventId, String deviceId, ActionCallback callback) {
         final CollectionReference eventsCollection = firestore.collection("Events");
-        final CollectionReference entrantsCollection = firestore.collection("Users");
+        final CollectionReference usersCollection = firestore.collection("Users");
 
         firestore.runTransaction((Transaction.Function<Void>) transaction -> {
                     // Fetch event
-                    Event event = transaction.get(eventsCollection.document(eventId)).toObject(Event.class);
+                    DocumentSnapshot eventSnapshot = transaction.get(eventsCollection.document(eventId));
+                    Event event = eventSnapshot.toObject(Event.class);
 
                     if (event == null) {
                         throw new FirebaseFirestoreException("Event does not exist.",
@@ -283,14 +291,21 @@ public class EntEventsRepository {
                                 FirebaseFirestoreException.Code.ABORTED, null);
                     }
 
+                    // Check if the entrant is on the waiting list
+                    String status = entrantsMap.get(deviceId);
+                    if (!"waitlist".equalsIgnoreCase(status)) {
+                        throw new FirebaseFirestoreException("Entrant is not on the waiting list.",
+                                FirebaseFirestoreException.Code.ABORTED, null);
+                    }
+
                     // Remove entrant from entrants map
                     transaction.update(eventsCollection.document(eventId), "entrants." + deviceId, FieldValue.delete());
 
-                    // Decrement currentEntrantsNumber
-                    transaction.update(eventsCollection.document(eventId), "currentEntrantsNumber", FieldValue.increment(-1));
+                    // Note: Do NOT decrement currentEntrantsNumber for waiting list removal
+                    // Assuming currentEntrantsNumber tracks only main entrants
 
                     // Remove eventId from the user's eventsJoined list
-                    transaction.update(entrantsCollection.document(deviceId), "eventsJoined", FieldValue.arrayRemove(eventId));
+                    transaction.update(usersCollection.document(deviceId), "eventsJoined", FieldValue.arrayRemove(eventId));
 
                     return null;
                 }).addOnSuccessListener(aVoid -> callback.onSuccess())
