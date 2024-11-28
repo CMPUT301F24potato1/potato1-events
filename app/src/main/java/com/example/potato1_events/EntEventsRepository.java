@@ -176,7 +176,7 @@ public class EntEventsRepository {
      * @param callback Callback to handle the list of joined events.
      */
     public void getJoinedEvents(String deviceId, EventListCallback callback) {
-        DocumentReference userRef = firestore.collection("Entrants").document(deviceId);
+        DocumentReference userRef = firestore.collection("Users").document(deviceId);
         userRef.get().addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
                 DocumentSnapshot document = task.getResult();
@@ -209,7 +209,7 @@ public class EntEventsRepository {
      */
     public void joinWaitingList(String eventId, String deviceId, ActionCallback callback) {
         final CollectionReference eventsCollection = firestore.collection("Events");
-        final CollectionReference entrantsCollection = firestore.collection("Entrants");
+        final CollectionReference entrantsCollection = firestore.collection("Users");
 
         firestore.runTransaction((Transaction.Function<Void>) transaction -> {
                     // Fetch event
@@ -266,7 +266,7 @@ public class EntEventsRepository {
      */
     public void leaveWaitingList(String eventId, String deviceId, ActionCallback callback) {
         final CollectionReference eventsCollection = firestore.collection("Events");
-        final CollectionReference entrantsCollection = firestore.collection("Entrants");
+        final CollectionReference entrantsCollection = firestore.collection("Users");
 
         firestore.runTransaction((Transaction.Function<Void>) transaction -> {
                     // Fetch event

@@ -295,10 +295,8 @@ public class EventDetailsEntrantActivity extends AppCompatActivity {
         if (event.isGeolocationRequired()) {
             // **If Geolocation is Enabled, Show Geolocation Alert First**
             showGeolocationAlert();
-        } else {
-            // **If Geolocation is Not Enabled, Proceed to Join Confirmation**
-            showJoinConfirmationDialog();
         }
+        showJoinConfirmationDialog();
     }
 
     /**

@@ -244,7 +244,7 @@ public class CreateEditFacilityActivity extends AppCompatActivity implements Nav
      */
     private void uploadFacilityPhoto(String name, String address, String description) {
         // Create a unique filename
-        String fileName = "facility_photos/" + facilityId + "/" + UUID.randomUUID() + ".jpg";
+        String fileName = "images/facility_photos/" + facilityId + "/" + UUID.randomUUID() + ".jpg";
         StorageReference storageRef = storage.getReference().child(fileName);
 
         // Upload the image

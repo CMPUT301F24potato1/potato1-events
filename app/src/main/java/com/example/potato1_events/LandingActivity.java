@@ -74,11 +74,9 @@ public class LandingActivity extends AppCompatActivity {
 
         // Initialize buttons
         entrantButton = findViewById(R.id.entrantButton);
-        organizerButton = findViewById(R.id.organizerButton);
 
         // Set onClickListeners for buttons
-        entrantButton.setOnClickListener(v -> checkUserExists("Entrant"));
-        organizerButton.setOnClickListener(v -> checkUserExists("Organizer"));
+        entrantButton.setOnClickListener(v -> checkUserExists());
     }
 
     /**
@@ -96,10 +94,9 @@ public class LandingActivity extends AppCompatActivity {
      * If the user exists, navigates to the respective home activity.
      * If not, navigates to the UserInfoActivity to create a new user.
      *
-     * @param userType The type of user ("Entrant" or "Organizer").
      */
-    private void checkUserExists(String userType) {
-        userRepository.checkUserExists(userType, deviceId, new UserRepository.UserExistsCallback() {
+    private void checkUserExists() {
+        userRepository.checkUserExists(deviceId, new UserRepository.UserExistsCallback() {
             /**
              * Called when the user existence check is successful.
              *
@@ -109,19 +106,12 @@ public class LandingActivity extends AppCompatActivity {
             public void onResult(UserData userData) {
                 if (userData.exists()) {
                     // User exists, navigate to the appropriate home activity
-                    if (userType.equals("Entrant")) {
-                        Intent intent = new Intent(LandingActivity.this, EntrantHomeActivity.class);
-                        intent.putExtra("IS_ADMIN", userData.isAdmin());
-                        startActivity(intent);
-                    } else if (userType.equals("Organizer")) {
-                        Intent intent = new Intent(LandingActivity.this, OrganizerHomeActivity.class);
-                        intent.putExtra("IS_ADMIN", userData.isAdmin());
-                        startActivity(intent);
-                    }
+                    Intent intent = new Intent(LandingActivity.this, EntrantHomeActivity.class);
+                    intent.putExtra("IS_ADMIN", userData.isAdmin());
+                    startActivity(intent);
                 } else {
                     // User does not exist, navigate to UserInfoActivity to create a new user
                     Intent intent = new Intent(LandingActivity.this, UserInfoActivity.class);
-                    intent.putExtra("USER_TYPE", userType);
                     intent.putExtra("MODE", "CREATE");
                     startActivity(intent);
                 }

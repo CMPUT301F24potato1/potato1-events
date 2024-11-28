@@ -47,13 +47,12 @@ public class UserRepository {
     /**
      * Checks if a user exists in the database and retrieves their information.
      *
-     * @param userType  The type of user ("Entrant" or "Organizer").
      * @param deviceId  The unique device ID of the user.
      * @param callback  The callback to handle the result.
      */
-    public void checkUserExists(String userType, String deviceId,
+    public void checkUserExists(String deviceId,
                                 UserExistsCallback callback) {
-        firestore.collection(userType + "s").document(deviceId).get()
+        firestore.collection("Users").document(deviceId).get()
                 .addOnSuccessListener(documentSnapshot -> {
                     boolean exists = documentSnapshot.exists();
                     boolean isAdmin = false;

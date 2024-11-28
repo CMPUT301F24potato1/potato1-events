@@ -38,7 +38,7 @@ import java.util.List;
 
 /**
  * Activity for admins to manage user profiles.
- * Allows viewing and deleting users from the "Entrants" and "Organizers" collections in Firestore.
+ * Allows viewing and deleting users from the "Users" collection in Firestore.
  * Also handles the deletion of user profile images from Firebase Storage and their removal from event waiting lists.
  */
 public class ManageUsersActivity extends AppCompatActivity {
@@ -113,31 +113,21 @@ public class ManageUsersActivity extends AppCompatActivity {
     }
 
     /**
-     * Loads all users from "Entrants" and "Organizers" collections in Firestore.
+     * Loads all users from the "Users" collection in Firestore.
      * Populates the RecyclerView with the fetched user data.
      */
     private void loadUsers() {
-        CollectionReference entrantsRef = firestore.collection("Entrants");
-        CollectionReference organizersRef = firestore.collection("Organizers");
+        CollectionReference usersRef = firestore.collection("Users");
 
-        // Create tasks for both queries
-        Task<QuerySnapshot> entrantsTask = entrantsRef.get();
-        Task<QuerySnapshot> organizersTask = organizersRef.get();
-
-        // Use Tasks.whenAllSuccess to wait for both queries to complete successfully
-        Tasks.whenAllSuccess(entrantsTask, organizersTask)
-                .addOnSuccessListener(results -> {
+        // Fetch all users from the "Users" collection
+        usersRef.get()
+                .addOnSuccessListener(querySnapshot -> {
                     userList.clear(); // Clear existing users to avoid duplication
 
-                    for (Object result : results) {
-                        if (result instanceof QuerySnapshot) {
-                            QuerySnapshot querySnapshot = (QuerySnapshot) result;
-                            for (DocumentSnapshot doc : querySnapshot) {
-                                User user = doc.toObject(User.class);
-                                if (user != null) {
-                                    userList.add(user);
-                                }
-                            }
+                    for (DocumentSnapshot doc : querySnapshot) {
+                        User user = doc.toObject(User.class);
+                        if (user != null) {
+                            userList.add(user);
                         }
                     }
 
@@ -238,6 +228,7 @@ public class ManageUsersActivity extends AppCompatActivity {
             holder.nameTextView.setText(user.getName());
             holder.emailTextView.setText(user.getEmail());
             holder.phoneTextView.setText(user.getPhoneNumber());
+//            holder.roleTextView.setText(user.getRole()); // Set role
 
             // Set Delete Button Listener
             holder.deleteButton.setOnClickListener(v -> {
@@ -261,42 +252,20 @@ public class ManageUsersActivity extends AppCompatActivity {
          */
         class UserViewHolder extends RecyclerView.ViewHolder {
 
-            /**
-             * ImageView to display the user's profile image.
-             */
             ImageView profileImageView;
-
-            /**
-             * TextView to display the user's name.
-             */
             TextView nameTextView;
-
-            /**
-             * TextView to display the user's email.
-             */
             TextView emailTextView;
-
-            /**
-             * TextView to display the user's phone number.
-             */
             TextView phoneTextView;
-
-            /**
-             * Button to delete the user.
-             */
+//            TextView roleTextView; // New TextView for role
             Button deleteButton;
 
-            /**
-             * Constructs a UserViewHolder and initializes the UI components.
-             *
-             * @param itemView The View of the individual user item.
-             */
             UserViewHolder(@NonNull View itemView) {
                 super(itemView);
                 profileImageView = itemView.findViewById(R.id.userProfileImageView);
                 nameTextView = itemView.findViewById(R.id.userNameTextView);
                 emailTextView = itemView.findViewById(R.id.userEmailTextView);
                 phoneTextView = itemView.findViewById(R.id.userPhoneTextView);
+//                roleTextView = itemView.findViewById(R.id.userRoleTextView); // Initialize role TextView
                 deleteButton = itemView.findViewById(R.id.deleteUserButton);
             }
         }
@@ -323,62 +292,36 @@ public class ManageUsersActivity extends AppCompatActivity {
      * @param user The User object to delete.
      */
     private void deleteUser(User user) {
-        String collection = "";
-        String role = user.getRole();
+        String collection = "Users"; // Single collection
 
-        if (role == null) {
-            Toast.makeText(this, "User role is not specified.", Toast.LENGTH_SHORT).show();
-            Log.e(TAG, "User role is null for user: " + user.getUserId());
-            return;
-        }
+        DocumentReference userRef = firestore.collection(collection).document(user.getUserId());
 
-        switch (role) {
-            case "Entrant":
-                collection = "Entrants";
-                break;
-            case "Organizer":
-                collection = "Organizers";
-                break;
-            // Optionally handle Admin or other roles
-            default:
-                Toast.makeText(this, "Unknown user role: " + role, Toast.LENGTH_SHORT).show();
-                Log.e(TAG, "Unknown user role: " + role);
-                return; // Exit the method as the role is unrecognized
-        }
+        // First, delete the Firestore document
+        userRef.delete()
+                .addOnSuccessListener(aVoid -> {
+                    Toast.makeText(ManageUsersActivity.this, "User deleted successfully.", Toast.LENGTH_SHORT).show();
 
-        if (!collection.isEmpty()) {
-            DocumentReference userRef = firestore.collection(collection).document(user.getUserId());
+                    // Remove user from events' waiting lists
+                    removeUserFromEventsWaitingLists(user);
 
-            // First, delete the Firestore document
-            userRef.delete()
-                    .addOnSuccessListener(aVoid -> {
-                        Toast.makeText(ManageUsersActivity.this, "User deleted successfully.", Toast.LENGTH_SHORT).show();
+                    // Now, delete the profile image from Firebase Storage if it exists
+                    if (!TextUtils.isEmpty(user.getImagePath())) {
+                        StorageReference imageRef = FirebaseStorage.getInstance().getReference().child(user.getImagePath());
+                        imageRef.delete()
+                                .addOnSuccessListener(aVoid1 -> {
+                                    Log.d(TAG, "Profile image deleted successfully.");
+                                })
+                                .addOnFailureListener(e -> {
+                                    Log.e(TAG, "Error deleting profile image: " + e.getMessage(), e);
+                                });
+                    }
 
-                        // Remove user from events' waiting lists
-                        removeUserFromEventsWaitingLists(user);
-
-                        // Now, delete the profile image from Firebase Storage if it exists
-                        if (!TextUtils.isEmpty(user.getImagePath())) {
-                            StorageReference imageRef = FirebaseStorage.getInstance().getReference().child(user.getImagePath());
-                            imageRef.delete()
-                                    .addOnSuccessListener(aVoid1 -> {
-                                        Log.d(TAG, "Profile image deleted successfully.");
-                                    })
-                                    .addOnFailureListener(e -> {
-                                        Log.e(TAG, "Error deleting profile image: " + e.getMessage(), e);
-                                    });
-                        }
-
-                        loadUsers(); // Refresh the user list
-                    })
-                    .addOnFailureListener(e -> {
-                        Toast.makeText(ManageUsersActivity.this, "Error deleting user: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                        Log.e(TAG, "Error deleting user", e);
-                    });
-        } else {
-            Toast.makeText(this, "Cannot determine collection for user.", Toast.LENGTH_SHORT).show();
-            Log.e(TAG, "Collection not determined for user: " + user.getUserId());
-        }
+                    loadUsers(); // Refresh the user list
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(ManageUsersActivity.this, "Error deleting user: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    Log.e(TAG, "Error deleting user", e);
+                });
     }
 
     /**

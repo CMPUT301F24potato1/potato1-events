@@ -228,16 +228,10 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
         eventsLinearLayout.addView(eventView);
     }
 
-    /**
-     * Handles navigation menu item selections.
-     *
-     * @param item The selected menu item.
-     * @return True if the event was handled, false otherwise.
-     */
-    @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         // Handle navigation
         int id = item.getItemId();
+        Intent intent = null;
 
         if (id == R.id.nav_notifications) {
             // Navigate to NotificationsActivity
@@ -245,22 +239,31 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
 //            startActivity(intent);
         } else if (id == R.id.nav_edit_profile) {
             // Navigate to EditProfileActivity
-            Intent intent = new Intent(EntrantHomeActivity.this, UserInfoActivity.class);
-            intent.putExtra("USER_TYPE", "Entrant"); // or "Organizer"
+            intent = new Intent(EntrantHomeActivity.this, UserInfoActivity.class);
             intent.putExtra("MODE", "EDIT");
-            startActivity(intent);
         } else if (id == R.id.nav_manage_media) {
             // Navigate to ManageMediaActivity (visible only to admins)
-            Intent intent = new Intent(EntrantHomeActivity.this, ManageMediaActivity.class);
-            startActivity(intent);
+            intent = new Intent(EntrantHomeActivity.this, ManageMediaActivity.class);
         } else if (id == R.id.nav_manage_users) {
             // Navigate to ManageUsersActivity (visible only to admins)
-            Intent intent = new Intent(EntrantHomeActivity.this, ManageUsersActivity.class);
-            startActivity(intent);
+            intent = new Intent(EntrantHomeActivity.this, ManageUsersActivity.class);
         } else if (id == R.id.action_scan_qr) {
             // Handle QR code scanning
-            scanQRCode();
+            intent = new Intent(EntrantHomeActivity.this, QRScanActivity.class);
+        } else if (id == R.id.nav_create_event) {
+            intent = new Intent(EntrantHomeActivity.this, CreateEditEventActivity.class);
+        } else if (id == R.id.nav_edit_facility) {
+            intent = new Intent(EntrantHomeActivity.this, CreateEditFacilityActivity.class);
+        } else if (id == R.id.nav_my_events) {
+            intent = new Intent(EntrantHomeActivity.this, OrganizerHomeActivity.class);
         }
+
+        if (intent != null){
+            startActivity(intent);
+        } else {
+            Toast.makeText(this, "Invalid option selected", Toast.LENGTH_SHORT).show();
+        }
+
 
         drawerLayout.closeDrawer(GravityCompat.START);
         return true;
@@ -276,59 +279,5 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
         } else {
             super.onBackPressed();
         }
-    }
-
-    /**
-     * Initiates the QR code scanning using ZXing library.
-     */
-    private void scanQRCode() {
-        IntentIntegrator integrator = new IntentIntegrator(this);
-        integrator.setDesiredBarcodeFormats(IntentIntegrator.QR_CODE);
-        integrator.setPrompt("Scan a QR Code");
-        integrator.setOrientationLocked(true);  // Lock orientation to portrait
-        integrator.setCaptureActivity(PortraitCaptureActivity.class);
-        integrator.setBeepEnabled(true);
-        integrator.setBarcodeImageEnabled(true);
-        integrator.initiateScan();
-    }
-
-    /**
-     * Handles the result from the QR code scanning activity.
-     *
-     *
-     * @param requestCode The integer request code originally supplied to startActivityForResult(),
-     *                    allowing you to identify who this result came from.
-     * @param resultCode  The integer result code returned by the child activity through its setResult().
-     * @param data        An Intent, which can return result data to the caller (various data can be attached to Intent "extras").
-     */
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        IntentResult result = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
-        if(result != null) {
-            if(result.getContents() == null) {
-                Toast.makeText(this, "Cancelled", Toast.LENGTH_LONG).show();
-            } else {
-                String scannedData = result.getContents();
-                // Handle the scanned data
-                handleScannedData(scannedData);
-            }
-        } else {
-            super.onActivityResult(requestCode, resultCode, data);
-        }
-    }
-
-    /**
-     * Handles the scanned QR code data.
-     *
-     * @param scannedData The data obtained from scanning the QR code.
-     */
-    private void handleScannedData(String scannedData) {
-        // Assuming the scannedData contains the event ID
-        String eventId = scannedData;
-
-        // Start the EventDetailsEntrantActivity with the event ID
-        Intent intent = new Intent(EntrantHomeActivity.this, EventDetailsEntrantActivity.class);
-        intent.putExtra("EVENT_ID", eventId);
-        startActivity(intent);
     }
 }

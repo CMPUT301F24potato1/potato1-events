@@ -25,7 +25,6 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.VisibleForTesting;
 import androidx.appcompat.app.ActionBarDrawerToggle;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.core.view.GravityCompat;
@@ -60,7 +59,8 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
     private NavigationView navigationView;
     private androidx.appcompat.widget.Toolbar toolbar;
 
-    private String userType;
+    // Removed userType
+    // private String userType; // Removed
     private String deviceId;
     private FirebaseFirestore firestore;
     private FirebaseStorage storage;
@@ -155,13 +155,12 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
         phoneEditText = findViewById(R.id.phoneEditText);
         saveButton = findViewById(R.id.saveButton);
 
-        // Get user type and mode from intent
+        // Get mode from intent
         Intent intent = getIntent();
-        userType = intent.getStringExtra("USER_TYPE");
         mode = intent.getStringExtra("MODE"); // Expected to be "CREATE" or "EDIT"
 
-        if (userType == null || (!mode.equals(MODE_CREATE) && !mode.equals(MODE_EDIT))) {
-            Toast.makeText(this, "Invalid mode or user type.", Toast.LENGTH_SHORT).show();
+        if (mode == null || (!mode.equals(MODE_CREATE) && !mode.equals(MODE_EDIT))) {
+            Toast.makeText(this, "Invalid mode.", Toast.LENGTH_SHORT).show();
             finish();
             return;
         }
@@ -256,7 +255,7 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
      */
     private void loadOrInitializeUserData() {
         saveButton.setEnabled(false); // Disable save button while loading
-        firestore.collection(userType + "s").document(deviceId).get()
+        firestore.collection("Users").document(deviceId).get()
                 .addOnSuccessListener(documentSnapshot -> {
                     if (documentSnapshot.exists()) {
                         // User data exists, proceed in EDIT mode
@@ -312,8 +311,7 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
         toggle.setDrawerIndicatorEnabled(false);
         // Lock the drawer closed
         drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
-        // Optionally, remove the hamburger icon by setting a different navigation icon or hiding it
-        // Here, we'll remove the navigation icon
+        // Remove the navigation icon
         toolbar.setNavigationIcon(null);
     }
 
@@ -391,7 +389,7 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
      */
     private void uploadImageToFirebase(String name, String email, String phoneNumber) {
         // Create a unique filename
-        String fileName = "images/profile_pictures/" + userType + "/" + deviceId + "/" + UUID.randomUUID() + ".jpg";
+        String fileName = "images/profile_pictures/" + deviceId + "/" + UUID.randomUUID() + ".jpg";
 
         StorageReference storageRef = storage.getReference().child(fileName);
 
@@ -441,7 +439,7 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
         Bitmap bitmap = createAvatarBitmap(initials);
 
         // Create a unique filename for the default avatar
-        String fileName = "images/default_avatars/" + userType + "/" + deviceId + "/" + UUID.randomUUID() + ".png";
+        String fileName = "images/default_avatars/" + deviceId + "/" + UUID.randomUUID() + ".png";
         StorageReference storageRef = storage.getReference().child(fileName);
 
         // Convert bitmap to byte array
@@ -479,13 +477,15 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
         user.setEmail(email);
         user.setPhoneNumber(phoneNumber);
         user.setImagePath(imagePath);
-        user.setRole(userType);
+        // Removed role
+        // user.setRole(userType); // Removed
+
         if (mode.equals(MODE_CREATE)) {
             // Initialize eventsJoined list for new users
             user.setEventsJoined(new ArrayList<>());
 
             // Save new user to Firestore
-            firestore.collection(userType + "s").document(deviceId)
+            firestore.collection("Users").document(deviceId)
                     .set(user)
                     .addOnSuccessListener(aVoid -> {
                         Toast.makeText(UserInfoActivity.this, "Profile created successfully", Toast.LENGTH_SHORT).show();
@@ -498,7 +498,7 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
                     });
         } else {
             // Update existing user in Firestore
-            firestore.collection(userType + "s").document(deviceId)
+            firestore.collection("Users").document(deviceId)
                     .set(user)
                     .addOnSuccessListener(aVoid -> {
                         Toast.makeText(UserInfoActivity.this, "Profile updated successfully", Toast.LENGTH_SHORT).show();
@@ -538,17 +538,13 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
     }
 
     /**
-     * Navigates the user to the appropriate home page based on their user type.
+     * Navigates the user to the appropriate home page.
+     * Since roles are removed, navigate to a single HomeActivity.
      * Closes the current activity after navigation.
      */
     private void navigateToHomePage() {
-        if (userType.equals("Entrant")) {
-            Intent intent = new Intent(UserInfoActivity.this, EntrantHomeActivity.class);
-            startActivity(intent);
-        } else if (userType.equals("Organizer")) {
-            Intent intent = new Intent(UserInfoActivity.this, OrganizerHomeActivity.class);
-            startActivity(intent);
-        }
+        Intent intent = new Intent(UserInfoActivity.this, EntrantHomeActivity.class);
+        startActivity(intent);
         finish(); // Close current activity
     }
 
@@ -634,7 +630,8 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
         // Handle navigation
         int id = item.getItemId();
 
-        if (id == R.id.nav_organizer_profile) {
+        // Since roles are removed, adjust navigation accordingly
+        if (id == R.id.nav_edit_profile) {
             Intent intent = new Intent(UserInfoActivity.this, UserInfoActivity.class);
             Toast.makeText(this, "Already on this page.", Toast.LENGTH_SHORT).show();
         } else if (id == R.id.nav_create_event) {
@@ -648,7 +645,7 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
             Intent intent = new Intent(UserInfoActivity.this, ManageMediaActivity.class);
             startActivity(intent);
         } else if (id == R.id.nav_my_events) {
-            Intent intent = new Intent(UserInfoActivity.this, OrganizerHomeActivity.class);
+            Intent intent = new Intent(UserInfoActivity.this, EntrantHomeActivity.class);
             startActivity(intent);
         }
 
@@ -657,8 +654,8 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
     }
 
     /**
-     * If back button is pressed and side bar is opened, then return to the page.
-     * If done on the page itself, then default back to the normal back press action.
+     * If back button is pressed and side bar is opened, then close the drawer.
+     * Otherwise, perform the default back press action.
      */
     private void handleBackPressed() {
         OnBackPressedCallback callback = new OnBackPressedCallback(true /* enabled */) {
