@@ -80,6 +80,8 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
      *
      * @param firestore The mocked Firestore instance.
      */
+
+    private boolean isAdmin = false; // Retrieved from Intent
     @VisibleForTesting
     public void setFirestore(FirebaseFirestore firestore) {
         this.firestore = firestore;
@@ -105,7 +107,8 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
         eventRepository = new OrgEventsRepository(FirebaseFirestore.getInstance());
 
 
-        final boolean isAdmin = getIntent().getBooleanExtra("IS_ADMIN", false);
+
+        isAdmin = getIntent().getBooleanExtra("IS_ADMIN", false);
 
         // Initialize UI Components
         drawerLayout = findViewById(R.id.drawer_organizer_layout);
@@ -128,10 +131,12 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
         // Set Click Listener for Switch Mode Button
         switchModeButton.setOnClickListener(v -> switchMode());
 
-        // Make admin options available
         if (isAdmin) {
             navigationView.getMenu().findItem(R.id.nav_manage_media).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_manage_users).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_create_event).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_edit_facility).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_my_events).setVisible(true);
         }
 
         // Load events associated with the organizer's facility
@@ -304,6 +309,13 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
         finish();
     }
 
+    /**
+     * Handles navigation item selections from the navigation drawer.
+     *
+     * @param item The selected menu item.
+     * @return True if the event was handled, false otherwise.
+     */
+    @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         // Handle navigation
         int id = item.getItemId();
@@ -311,35 +323,61 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
 
         if (id == R.id.nav_notifications) {
             // Navigate to NotificationsActivity
-//            Intent intent = new Intent(EntrantHomeActivity.this, NotificationsActivity.class);
-//            startActivity(intent);
+            // Uncomment and implement if NotificationsActivity exists
+            // intent = new Intent(OrganizerHomeActivity.this, NotificationsActivity.class);
         } else if (id == R.id.nav_edit_profile) {
-            // Navigate to EditProfileActivity
+            // Navigate to UserInfoActivity
             intent = new Intent(OrganizerHomeActivity.this, UserInfoActivity.class);
+            intent.putExtra("USER_TYPE", "Organizer"); // or "Entrant" based on context
             intent.putExtra("MODE", "EDIT");
+            intent.putExtra("IS_ADMIN", isAdmin); // Pass isAdmin flag
         } else if (id == R.id.nav_manage_media) {
             // Navigate to ManageMediaActivity (visible only to admins)
-            intent = new Intent(OrganizerHomeActivity.this, ManageMediaActivity.class);
+            if (isAdmin) {
+                intent = new Intent(OrganizerHomeActivity.this, ManageMediaActivity.class);
+                intent.putExtra("IS_ADMIN", isAdmin); // Pass isAdmin flag
+            } else {
+                // Access denied message (optional as menu item is hidden)
+                Toast.makeText(this, "Access Denied: Admins Only", Toast.LENGTH_SHORT).show();
+            }
         } else if (id == R.id.nav_manage_users) {
             // Navigate to ManageUsersActivity (visible only to admins)
-            intent = new Intent(OrganizerHomeActivity.this, ManageUsersActivity.class);
+            if (isAdmin) {
+                intent = new Intent(OrganizerHomeActivity.this, ManageUsersActivity.class);
+                intent.putExtra("IS_ADMIN", isAdmin); // Pass isAdmin flag
+            } else {
+                // Access denied message (optional as menu item is hidden)
+                Toast.makeText(this, "Access Denied: Admins Only", Toast.LENGTH_SHORT).show();
+            }
         } else if (id == R.id.action_scan_qr) {
             // Handle QR code scanning
             intent = new Intent(OrganizerHomeActivity.this, QRScanActivity.class);
+            intent.putExtra("IS_ADMIN", isAdmin); // Pass isAdmin flag
         } else if (id == R.id.nav_create_event) {
+            // Navigate to CreateEditEventActivity and pass isAdmin flag
             intent = new Intent(OrganizerHomeActivity.this, CreateEditEventActivity.class);
+            intent.putExtra("IS_ADMIN", isAdmin); // Pass the isAdmin flag
         } else if (id == R.id.nav_edit_facility) {
+            // Navigate to CreateEditFacilityActivity and pass isAdmin flag
             intent = new Intent(OrganizerHomeActivity.this, CreateEditFacilityActivity.class);
+            intent.putExtra("IS_ADMIN", isAdmin); // Pass isAdmin flag
         } else if (id == R.id.nav_my_events) {
+            // Navigate to OrganizerHomeActivity and pass isAdmin flag
             intent = new Intent(OrganizerHomeActivity.this, OrganizerHomeActivity.class);
+            intent.putExtra("IS_ADMIN", isAdmin); // Pass isAdmin flag
+        } else if (id == R.id.nav_view_joined_events) {
+            // Navigate to EntrantHomeActivity and pass isAdmin flag
+            intent = new Intent(OrganizerHomeActivity.this, EntrantHomeActivity.class);
+            intent.putExtra("IS_ADMIN", isAdmin); // Pass isAdmin flag
         }
 
-        if (intent != null){
+        if (intent != null) {
             startActivity(intent);
         } else {
-            Toast.makeText(this, "Invalid option selected", Toast.LENGTH_SHORT).show();
+            if (id != R.id.nav_notifications) { // Assuming notifications are handled separately
+                Toast.makeText(this, "Invalid option selected", Toast.LENGTH_SHORT).show();
+            }
         }
-
 
         drawerLayout.closeDrawer(GravityCompat.START);
         return true;

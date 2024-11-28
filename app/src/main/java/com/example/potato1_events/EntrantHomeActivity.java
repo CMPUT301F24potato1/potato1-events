@@ -53,6 +53,9 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
     // To keep track of added event IDs to prevent duplicates
     private Set<String> addedEventIds = new HashSet<>();
 
+    // User Privileges
+    private boolean isAdmin = false; // Class-level variable
+
     /**
      * Initializes the activity, sets up UI components, Firebase instances, and event listeners.
      *
@@ -63,7 +66,9 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_entrant_home);
 
-        final boolean isAdmin = getIntent().getBooleanExtra("IS_ADMIN", false);
+        // Retrieve the isAdmin flag from Intent extras
+        isAdmin = getIntent().getBooleanExtra("IS_ADMIN", false);
+
 
         // Get device ID
         deviceId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
@@ -94,6 +99,9 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
         if (isAdmin) {
             navigationView.getMenu().findItem(R.id.nav_manage_media).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_manage_users).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_create_event).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_edit_facility).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_my_events).setVisible(true);
         }
 
         navigationView.setNavigationItemSelectedListener(this);
@@ -228,6 +236,13 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
         eventsLinearLayout.addView(eventView);
     }
 
+    /**
+     * Handles navigation menu item selections.
+     *
+     * @param item The selected menu item.
+     * @return True if the event was handled, false otherwise.
+     */
+    @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         // Handle navigation
         int id = item.getItemId();
@@ -235,11 +250,12 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
 
         if (id == R.id.nav_notifications) {
             // Navigate to NotificationsActivity
-//            Intent intent = new Intent(EntrantHomeActivity.this, NotificationsActivity.class);
-//            startActivity(intent);
+            // Uncomment and implement if NotificationsActivity exists
+            // intent = new Intent(EntrantHomeActivity.this, NotificationsActivity.class);
         } else if (id == R.id.nav_edit_profile) {
-            // Navigate to EditProfileActivity
+            // Navigate to UserInfoActivity in EDIT mode
             intent = new Intent(EntrantHomeActivity.this, UserInfoActivity.class);
+            intent.putExtra("IS_ADMIN", isAdmin);
             intent.putExtra("MODE", "EDIT");
         } else if (id == R.id.nav_manage_media) {
             // Navigate to ManageMediaActivity (visible only to admins)
@@ -248,22 +264,28 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
             // Navigate to ManageUsersActivity (visible only to admins)
             intent = new Intent(EntrantHomeActivity.this, ManageUsersActivity.class);
         } else if (id == R.id.action_scan_qr) {
-            // Handle QR code scanning
             intent = new Intent(EntrantHomeActivity.this, QRScanActivity.class);
         } else if (id == R.id.nav_create_event) {
+
             intent = new Intent(EntrantHomeActivity.this, CreateEditEventActivity.class);
+            intent.putExtra("IS_ADMIN", isAdmin);
         } else if (id == R.id.nav_edit_facility) {
+
             intent = new Intent(EntrantHomeActivity.this, CreateEditFacilityActivity.class);
+            intent.putExtra("IS_ADMIN", isAdmin);
         } else if (id == R.id.nav_my_events) {
+
             intent = new Intent(EntrantHomeActivity.this, OrganizerHomeActivity.class);
+            intent.putExtra("IS_ADMIN", isAdmin);
         }
 
-        if (intent != null){
+        if (intent != null) {
             startActivity(intent);
         } else {
-            Toast.makeText(this, "Invalid option selected", Toast.LENGTH_SHORT).show();
+            if (id != R.id.nav_notifications) { // Assuming notifications are handled separately
+                Toast.makeText(this, "Invalid option selected", Toast.LENGTH_SHORT).show();
+            }
         }
-
 
         drawerLayout.closeDrawer(GravityCompat.START);
         return true;
