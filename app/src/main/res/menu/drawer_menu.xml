@@ -36,6 +36,11 @@
         android:icon="@drawable/ic_facility" />
 
     <item
+        android:id="@+id/nav_view_joined_events"
+        android:title="My Joined Events"
+        android:icon="@drawable/ic_facility" />
+
+    <item
         android:id="@+id/nav_my_events"
         android:title="My Created Events"
         android:icon="@drawable/ic_event" />

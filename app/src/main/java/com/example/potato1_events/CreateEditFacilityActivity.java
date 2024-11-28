@@ -26,6 +26,7 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import com.google.android.material.navigation.NavigationView;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.squareup.picasso.Picasso;
@@ -68,6 +69,9 @@ public class CreateEditFacilityActivity extends AppCompatActivity implements Nav
     // Placeholder Image URL (Set this to your actual placeholder image URL)
     private static final String PLACEHOLDER_IMAGE_URL = "https://firebasestorage.googleapis.com/v0/b/your-app-id.appspot.com/o/facility_photos%2Fplaceholder_facility.jpg?alt=media&token=your-token";
 
+    // User Privileges
+    private boolean isAdmin = false; // Retrieved from Intent
+
     /**
      * Initializes the activity, sets up UI components, Firebase instances, and event listeners.
      *
@@ -78,9 +82,17 @@ public class CreateEditFacilityActivity extends AppCompatActivity implements Nav
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_create_edit_facility);
 
+        // Retrieve the isAdmin flag from Intent extras
+        isAdmin = getIntent().getBooleanExtra("IS_ADMIN", false);
+
+
         // Initialize Firebase Instances
         firestore = FirebaseFirestore.getInstance();
         storage = FirebaseStorage.getInstance();
+
+        // Retrieve deviceId
+        deviceId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
+        facilityId = deviceId; // Set facilityId to deviceId to enforce 1-to-1
 
         // Initialize UI Components
         facilityNameEditText = findViewById(R.id.facilityNameEditText);
@@ -97,7 +109,7 @@ public class CreateEditFacilityActivity extends AppCompatActivity implements Nav
         getSupportActionBar().setTitle("Create/Edit Facility");
 
         // Initialize DrawerLayout and NavigationView
-        drawerLayout = findViewById(R.id.drawer_organizer_layout);
+        drawerLayout = findViewById(R.id.drawer_layout); // Updated to use the same drawer as CreateEditEventActivity
         navigationView = findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
@@ -106,6 +118,15 @@ public class CreateEditFacilityActivity extends AppCompatActivity implements Nav
                 this, drawerLayout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawerLayout.addDrawerListener(toggle);
         toggle.syncState();
+
+        // Adjust Navigation Drawer Menu Items Based on isAdmin
+        if (isAdmin) {
+            navigationView.getMenu().findItem(R.id.nav_manage_media).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_manage_users).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_create_event).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_edit_facility).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_my_events).setVisible(true);
+        }
 
         // Initialize ActivityResultLauncher for image selection
         selectImageLauncher = registerForActivityResult(
@@ -144,10 +165,6 @@ public class CreateEditFacilityActivity extends AppCompatActivity implements Nav
         });
 
         saveFacilityButton.setOnClickListener(v -> saveFacility());
-
-        // Retrieve deviceId
-        deviceId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
-        facilityId = deviceId; // Set facilityId to deviceId to enforce 1-to-1
 
         // Load existing facility data if it exists
         loadFacilityData();
@@ -229,8 +246,10 @@ public class CreateEditFacilityActivity extends AppCompatActivity implements Nav
         if (selectedFacilityPhotoUri != null) {
             uploadFacilityPhoto(name, address, description);
         } else {
-            // If no new photo is selected, assign the placeholder image URL
-            facilityPhotoUrl = PLACEHOLDER_IMAGE_URL;
+            // If no new photo is selected, assign the placeholder image URL or retain existing
+            if (facilityPhotoUrl == null) {
+                facilityPhotoUrl = PLACEHOLDER_IMAGE_URL;
+            }
             saveFacilityToFirestore(name, address, description, facilityPhotoUrl);
         }
     }
@@ -308,7 +327,10 @@ public class CreateEditFacilityActivity extends AppCompatActivity implements Nav
      */
     private void navigateBackToPrevious() {
         Intent intent = new Intent(CreateEditFacilityActivity.this, OrganizerHomeActivity.class);
+        // Pass isAdmin flag to OrganizerHomeActivity
+        intent.putExtra("IS_ADMIN", isAdmin);
         startActivity(intent);
+        finish();
     }
 
     /**
@@ -321,19 +343,47 @@ public class CreateEditFacilityActivity extends AppCompatActivity implements Nav
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         // Handle navigation
         int id = item.getItemId();
+        Intent intent = null;
 
-        if (id == R.id.nav_organizer_profile) {
-            Intent intent = new Intent(CreateEditFacilityActivity.this, UserInfoActivity.class);
-            intent.putExtra("USER_TYPE", "Organizer");
+        if (id == R.id.nav_notifications) {
+            // Navigate to NotificationsActivity
+            // Uncomment and implement if NotificationsActivity exists
+            // intent = new Intent(CreateEditFacilityActivity.this, NotificationsActivity.class);
+        } else if (id == R.id.nav_edit_profile) {
+            // Navigate to UserInfoActivity
+            intent = new Intent(CreateEditFacilityActivity.this, UserInfoActivity.class);
             intent.putExtra("MODE", "EDIT");
-            startActivity(intent);
+            intent.putExtra("IS_ADMIN", isAdmin);
+        } else if (id == R.id.nav_manage_media) {
+
+            intent = new Intent(CreateEditFacilityActivity.this, ManageMediaActivity.class);
+
+        } else if (id == R.id.nav_manage_users) {
+
+            intent = new Intent(CreateEditFacilityActivity.this, ManageUsersActivity.class);
+
+        } else if (id == R.id.action_scan_qr) {
+            // Handle QR code scanning
+            intent = new Intent(CreateEditFacilityActivity.this, QRScanActivity.class);
+            intent.putExtra("IS_ADMIN", isAdmin);
         } else if (id == R.id.nav_create_event) {
-            Intent intent = new Intent(CreateEditFacilityActivity.this, CreateEditEventActivity.class);
-            startActivity(intent);
+            // Navigate to CreateEditEventActivity
+            intent = new Intent(CreateEditFacilityActivity.this, CreateEditEventActivity.class);
+            intent.putExtra("IS_ADMIN", isAdmin);
         } else if (id == R.id.nav_edit_facility) {
+            // Navigate to CreateEditFacilityActivity (current activity)
             Toast.makeText(this, "Already on this page.", Toast.LENGTH_SHORT).show();
         } else if (id == R.id.nav_my_events) {
-            Intent intent = new Intent(CreateEditFacilityActivity.this, OrganizerHomeActivity.class);
+            // Navigate to OrganizerHomeActivity and pass isAdmin flag
+            intent = new Intent(CreateEditFacilityActivity.this, OrganizerHomeActivity.class);
+            intent.putExtra("IS_ADMIN", isAdmin);
+        } else if (id == R.id.nav_view_joined_events) {
+            // Navigate to EntrantHomeActivity
+            intent = new Intent(CreateEditFacilityActivity.this, EntrantHomeActivity.class);
+            intent.putExtra("IS_ADMIN", isAdmin);
+        }
+
+        if (intent != null) {
             startActivity(intent);
         }
 

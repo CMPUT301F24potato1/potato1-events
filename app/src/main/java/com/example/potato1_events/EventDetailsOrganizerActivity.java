@@ -53,6 +53,8 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
      */
     private DrawerLayout drawerLayout;
 
+    private boolean isAdmin = false;
+
     /**
      * NavigationView for handling navigation menu items.
      */
@@ -215,6 +217,19 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
         } else {
             Toast.makeText(this, "Event ID not provided.", Toast.LENGTH_SHORT).show();
             finish();
+        }
+
+
+
+
+        // Adjust Navigation Drawer Menu Items Based on isAdmin
+        isAdmin = getIntent().getBooleanExtra("IS_ADMIN", false);
+        if (isAdmin) {
+            navigationView.getMenu().findItem(R.id.nav_manage_media).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_manage_users).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_create_event).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_edit_facility).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_my_events).setVisible(true);
         }
 
         handleBackPressed();
@@ -423,6 +438,7 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
     private void navigateToWaitingList() {
         Intent intent = new Intent(EventDetailsOrganizerActivity.this, EventWaitingListActivity.class);
         intent.putExtra("EVENT_ID", eventId);
+        intent.putExtra("IS_ADMIN", isAdmin);
         startActivity(intent);
     }
 
@@ -433,6 +449,7 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
     private void handleEditAction() {
         Intent intent = new Intent(EventDetailsOrganizerActivity.this, CreateEditEventActivity.class);
         intent.putExtra("EVENT_ID", eventId);
+        intent.putExtra("IS_ADMIN", isAdmin);
         startActivity(intent);
     }
 
@@ -494,7 +511,7 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
     }
 
     /**
-     * Handles navigation menu item selections.
+     * Handles navigation item selections from the navigation drawer.
      *
      * @param item The selected menu item.
      * @return True if the event was handled, false otherwise.
@@ -503,24 +520,47 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         // Handle navigation
         int id = item.getItemId();
+        Intent intent = null;
 
-        if (id == R.id.nav_organizer_profile) {
-            Intent intent = new Intent(EventDetailsOrganizerActivity.this, UserInfoActivity.class);
-            intent.putExtra("USER_TYPE", "Organizer");
+        if (id == R.id.nav_notifications) {
+            // Navigate to NotificationsActivity
+            // Uncomment and implement if NotificationsActivity exists
+            // intent = new Intent(CreateEditFacilityActivity.this, NotificationsActivity.class);
+        } else if (id == R.id.nav_edit_profile) {
+            // Navigate to UserInfoActivity
+            intent = new Intent(EventDetailsOrganizerActivity.this, UserInfoActivity.class);
             intent.putExtra("MODE", "EDIT");
-            startActivity(intent);
-        } else if (id == R.id.nav_create_event) {
-            Intent intent = new Intent(EventDetailsOrganizerActivity.this, CreateEditEventActivity.class);
-            startActivity(intent);
-        } else if (id == R.id.nav_edit_facility) {
-            Intent intent = new Intent(EventDetailsOrganizerActivity.this, CreateEditFacilityActivity.class);
-            startActivity(intent);
+            intent.putExtra("IS_ADMIN", isAdmin);
         } else if (id == R.id.nav_manage_media) {
-            // Navigate to ManageMediaActivity
-            Intent intent = new Intent(EventDetailsOrganizerActivity.this, ManageMediaActivity.class);
-            startActivity(intent);
+
+            intent = new Intent(EventDetailsOrganizerActivity.this, ManageMediaActivity.class);
+
+        } else if (id == R.id.nav_manage_users) {
+
+            intent = new Intent(EventDetailsOrganizerActivity.this, ManageUsersActivity.class);
+
+        } else if (id == R.id.action_scan_qr) {
+            // Handle QR code scanning
+            intent = new Intent(EventDetailsOrganizerActivity.this, QRScanActivity.class);
+            intent.putExtra("IS_ADMIN", isAdmin);
+        } else if (id == R.id.nav_create_event) {
+            // Navigate to CreateEditEventActivity
+            intent = new Intent(EventDetailsOrganizerActivity.this, CreateEditEventActivity.class);
+            intent.putExtra("IS_ADMIN", isAdmin);
+        } else if (id == R.id.nav_edit_facility) {
+            intent = new Intent(EventDetailsOrganizerActivity.this, CreateEditFacilityActivity.class);
+            intent.putExtra("IS_ADMIN", isAdmin);
         } else if (id == R.id.nav_my_events) {
-            Intent intent = new Intent(EventDetailsOrganizerActivity.this, OrganizerHomeActivity.class);
+            // Navigate to OrganizerHomeActivity and pass isAdmin flag
+            intent = new Intent(EventDetailsOrganizerActivity.this, OrganizerHomeActivity.class);
+            intent.putExtra("IS_ADMIN", isAdmin);
+        } else if (id == R.id.nav_view_joined_events) {
+            // Navigate to EntrantHomeActivity and pass isAdmin flag
+            intent = new Intent(EventDetailsOrganizerActivity.this, EntrantHomeActivity.class);
+            intent.putExtra("IS_ADMIN", isAdmin);
+        }
+
+        if (intent != null) {
             startActivity(intent);
         }
 

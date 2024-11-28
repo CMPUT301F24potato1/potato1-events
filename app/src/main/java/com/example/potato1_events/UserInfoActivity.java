@@ -53,6 +53,8 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
     // Modes
     private static final String MODE_CREATE = "CREATE";
     private static final String MODE_EDIT = "EDIT";
+    private boolean isAdmin = false; // Retrieved from Intent
+
 
     // Drawer Layout and Navigation View
     private DrawerLayout drawerLayout;
@@ -125,6 +127,8 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_user_info);
 
+
+
         // Initialize Firebase Firestore and Storage
         firestore = FirebaseFirestore.getInstance();
         storage = FirebaseStorage.getInstance();
@@ -147,6 +151,7 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
         // Set NavigationView listener
         navigationView.setNavigationItemSelectedListener(this);
 
+
         // Initialize UI Components
         profileImageView = findViewById(R.id.profileImageView);
         uploadRemovePictureButton = findViewById(R.id.uploadPictureButton);
@@ -157,7 +162,17 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
 
         // Get mode from intent
         Intent intent = getIntent();
-        mode = intent.getStringExtra("MODE"); // Expected to be "CREATE" or "EDIT"
+        mode = intent.getStringExtra("MODE");
+
+        isAdmin = getIntent().getBooleanExtra("IS_ADMIN", false);
+
+        if (isAdmin) {
+            navigationView.getMenu().findItem(R.id.nav_manage_media).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_manage_users).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_create_event).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_edit_facility).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_my_events).setVisible(true);
+        }
 
         if (mode == null || (!mode.equals(MODE_CREATE) && !mode.equals(MODE_EDIT))) {
             Toast.makeText(this, "Invalid mode.", Toast.LENGTH_SHORT).show();
@@ -212,6 +227,8 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
                 removeProfilePicture();
             }
         });
+
+
 
         saveButton.setOnClickListener(v -> saveUserInfo());
 
@@ -620,32 +637,53 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
     }
 
     /**
-     * Handles navigation menu item selections.
+     * Handles navigation item selections from the navigation drawer.
      *
      * @param item The selected menu item.
-     * @return True if handled, else false.
+     * @return True if the event was handled, false otherwise.
      */
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         // Handle navigation
         int id = item.getItemId();
+        Intent intent = null;
 
-        // Since roles are removed, adjust navigation accordingly
-        if (id == R.id.nav_edit_profile) {
-            Intent intent = new Intent(UserInfoActivity.this, UserInfoActivity.class);
+        if (id == R.id.nav_notifications) {
+            // Navigate to NotificationsActivity
+            // Uncomment and implement if NotificationsActivity exists
+            // intent = new Intent(CreateEditFacilityActivity.this, NotificationsActivity.class);
+        } else if (id == R.id.nav_edit_profile) {
             Toast.makeText(this, "Already on this page.", Toast.LENGTH_SHORT).show();
-        } else if (id == R.id.nav_create_event) {
-            Intent intent = new Intent(UserInfoActivity.this, CreateEditEventActivity.class);
-            startActivity(intent);
-        } else if (id == R.id.nav_edit_facility) {
-            Intent intent = new Intent(UserInfoActivity.this, CreateEditFacilityActivity.class);
-            startActivity(intent);
         } else if (id == R.id.nav_manage_media) {
-            // Navigate to ManageMediaActivity
-            Intent intent = new Intent(UserInfoActivity.this, ManageMediaActivity.class);
-            startActivity(intent);
+
+            intent = new Intent(UserInfoActivity.this, ManageMediaActivity.class);
+
+        } else if (id == R.id.nav_manage_users) {
+
+            intent = new Intent(UserInfoActivity.this, ManageUsersActivity.class);
+
+        } else if (id == R.id.action_scan_qr) {
+            // Handle QR code scanning
+            intent = new Intent(UserInfoActivity.this, QRScanActivity.class);
+            intent.putExtra("IS_ADMIN", isAdmin);
+        } else if (id == R.id.nav_create_event) {
+            // Navigate to CreateEditEventActivity and pass isAdmin flag
+            intent = new Intent(UserInfoActivity.this, CreateEditEventActivity.class);
+            intent.putExtra("IS_ADMIN", isAdmin);
+        } else if (id == R.id.nav_edit_facility) {
+            // Navigate to CreateEditFacilityActivity (current activity)
+            Toast.makeText(this, "Already on this page.", Toast.LENGTH_SHORT).show();
         } else if (id == R.id.nav_my_events) {
-            Intent intent = new Intent(UserInfoActivity.this, EntrantHomeActivity.class);
+            // Navigate to OrganizerHomeActivity and pass isAdmin flag
+            intent = new Intent(UserInfoActivity.this, OrganizerHomeActivity.class);
+            intent.putExtra("IS_ADMIN", isAdmin);
+        } else if (id == R.id.nav_view_joined_events) {
+            // Navigate to EntrantHomeActivity and pass isAdmin flag
+            intent = new Intent(UserInfoActivity.this, EntrantHomeActivity.class);
+            intent.putExtra("IS_ADMIN", isAdmin);
+        }
+
+        if (intent != null) {
             startActivity(intent);
         }
 

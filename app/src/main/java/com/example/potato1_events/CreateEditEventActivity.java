@@ -1,3 +1,4 @@
+// File: CreateEditEventActivity.java
 package com.example.potato1_events;
 
 import android.Manifest;
@@ -36,6 +37,7 @@ import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.WriterException;
+import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.qrcode.QRCodeWriter;
 import com.squareup.picasso.Picasso;
 
@@ -76,6 +78,9 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
     // Organizer's deviceId acting as facilityId
     private String deviceId;
 
+    // User Privileges
+    private boolean isAdmin = false; // Retrieved from Intent
+
     /**
      * Sets the Firestore instance for testing purposes.
      *
@@ -95,6 +100,9 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_create_edit_event);
+
+        // Retrieve the isAdmin flag from Intent extras
+        isAdmin = getIntent().getBooleanExtra("IS_ADMIN", false);
 
         // Initialize Firebase instances
         firestore = FirebaseFirestore.getInstance();
@@ -136,6 +144,15 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
         drawerLayout.addDrawerListener(toggle);
         toggle.syncState();
 
+        // Adjust Navigation Drawer Menu Items Based on isAdmin
+        if (isAdmin) {
+            navigationView.getMenu().findItem(R.id.nav_manage_media).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_manage_users).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_create_event).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_edit_facility).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_my_events).setVisible(true);
+        }
+
         // Initialize ActivityResultLauncher for image selection
         selectImageLauncher = registerForActivityResult(
                 new ActivityResultContracts.GetContent(),
@@ -174,7 +191,7 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
                 requestPermissionLauncher.launch(getReadPermission());
             }
         });
-        saveEventButton.setOnClickListener(v -> saveEvent()); // Updated to handle QR code generation internally
+        saveEventButton.setOnClickListener(v -> saveEvent()); // Handle QR code generation internally
         deleteEventButton.setOnClickListener(v -> confirmDeleteEvent());
         generateQRCodeButton.setOnClickListener(v -> generateQRCode()); // Set up Generate QR Code button listener
 
@@ -328,6 +345,7 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
      */
     private void navigateToCreateFacility() {
         Intent intent = new Intent(CreateEditEventActivity.this, CreateEditFacilityActivity.class);
+        intent.putExtra("IS_ADMIN", isAdmin); // Pass isAdmin flag
         startActivity(intent);
     }
 
@@ -416,7 +434,7 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
     private void uploadPosterImage(String name, String description, String recCentre, String location,
                                    int availableSpots, int waitingListSpots, boolean isGeolocationEnabled) {
         // Create a unique filename
-        String fileName = "images/event_posters/" + UUID.randomUUID() + ".jpg";
+        String fileName = "event_posters/" + UUID.randomUUID() + ".jpg";
         StorageReference storageRef = storage.getReference().child(fileName);
 
         // Upload the image
@@ -627,6 +645,7 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
     private void navigateBackToEventDetails() {
         Intent intent = new Intent(CreateEditEventActivity.this, EventDetailsOrganizerActivity.class);
         intent.putExtra("EVENT_ID", eventId);
+        intent.putExtra("IS_ADMIN", isAdmin); // Pass isAdmin flag
         startActivity(intent);
         finish();
     }
@@ -636,6 +655,7 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
      */
     private void navigateBackToEventList() {
         Intent intent = new Intent(CreateEditEventActivity.this, OrganizerHomeActivity.class);
+        intent.putExtra("IS_ADMIN", isAdmin); // Pass isAdmin flag
         startActivity(intent);
         finish();
     }
@@ -728,6 +748,20 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
     }
 
     /**
+     * Initiates the QR code scanning using ZXing library.
+     */
+    private void scanQRCode() {
+        IntentIntegrator integrator = new IntentIntegrator(this);
+        integrator.setDesiredBarcodeFormats(IntentIntegrator.QR_CODE);
+        integrator.setPrompt("Scan a QR Code");
+        integrator.setOrientationLocked(true);  // Lock orientation to portrait
+        integrator.setCaptureActivity(PortraitCaptureActivity.class);
+        integrator.setBeepEnabled(true);
+        integrator.setBarcodeImageEnabled(true);
+        integrator.initiateScan();
+    }
+
+    /**
      * Confirms with the user before deleting the event.
      */
     private void confirmDeleteEvent() {
@@ -775,6 +809,7 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
                 });
     }
 
+
     /**
      * Handles navigation item selections.
      *
@@ -785,18 +820,46 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         // Handle navigation
         int id = item.getItemId();
+        Intent intent = null;
 
-        if (id == R.id.nav_organizer_profile) {
-            Intent intent = new Intent(CreateEditEventActivity.this, UserInfoActivity.class);
+        if (id == R.id.nav_notifications) {
+            // Navigate to NotificationsActivity
+            // Uncomment and implement if NotificationsActivity exists
+            // intent = new Intent(CreateEditEventActivity.this, NotificationsActivity.class);
+        } else if (id == R.id.nav_edit_profile) {
+            // Navigate to UserInfoActivity
+            intent = new Intent(CreateEditEventActivity.this, UserInfoActivity.class);
             intent.putExtra("MODE", "EDIT");
-            startActivity(intent);
+            intent.putExtra("IS_ADMIN", isAdmin);
+        } else if (id == R.id.nav_manage_media) {
+            // Navigate to ManageMediaActivity
+            intent = new Intent(CreateEditEventActivity.this, ManageMediaActivity.class);
+
+        } else if (id == R.id.nav_manage_users) {
+            intent = new Intent(CreateEditEventActivity.this, ManageUsersActivity.class);
+
+        } else if (id == R.id.action_scan_qr) {
+            // Handle QR code scanning
+            intent = new Intent(CreateEditEventActivity.this, QRScanActivity.class);
+
         } else if (id == R.id.nav_create_event) {
-            Toast.makeText(this, "Already on this page.", Toast.LENGTH_SHORT).show();
+
+        Toast.makeText(this, "Already on this page.", Toast.LENGTH_SHORT).show();
         } else if (id == R.id.nav_edit_facility) {
-            Intent intent = new Intent(CreateEditEventActivity.this, CreateEditFacilityActivity.class);
-            startActivity(intent);
+
+            intent = new Intent(CreateEditEventActivity.this, CreateEditFacilityActivity.class);
+            intent.putExtra("IS_ADMIN", isAdmin);
         } else if (id == R.id.nav_my_events) {
-            Intent intent = new Intent(CreateEditEventActivity.this, OrganizerHomeActivity.class);
+            // Navigate to OrganizerHomeActivity
+            intent = new Intent(CreateEditEventActivity.this, OrganizerHomeActivity.class);
+            intent.putExtra("IS_ADMIN", isAdmin);
+        } else if (id == R.id.nav_view_joined_events) {
+            // Navigate to EntrantHomeActivity
+            intent = new Intent(CreateEditEventActivity.this, EntrantHomeActivity.class);
+            intent.putExtra("IS_ADMIN", isAdmin);
+        }
+
+        if (intent != null) {
             startActivity(intent);
         }
 
