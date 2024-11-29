@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
@@ -24,11 +25,9 @@ import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
 import com.google.android.material.navigation.NavigationView;
 import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -97,6 +96,10 @@ public class EventWaitingListActivity extends AppCompatActivity implements Navig
 
     private boolean isAdmin = false;
 
+    /**
+     * Tag for logging.
+     */
+    private static final String TAG = "EventWaitingListActivity";
 
     /**
      * Called when the activity is first created.
@@ -139,6 +142,7 @@ public class EventWaitingListActivity extends AppCompatActivity implements Navig
         Intent intent = getIntent();
         if (intent != null && intent.hasExtra("EVENT_ID")) {
             eventId = intent.getStringExtra("EVENT_ID");
+            Log.d(TAG, "Event ID: " + eventId);
             fetchEntrants(eventId);
         } else {
             Toast.makeText(this, "No Event ID provided.", Toast.LENGTH_SHORT).show();
@@ -183,6 +187,7 @@ public class EventWaitingListActivity extends AppCompatActivity implements Navig
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 String selectedStatus = statusOptions[position];
+                Log.d(TAG, "Selected Status Filter: " + selectedStatus);
                 filterEntrantsByStatus(selectedStatus);
             }
 
@@ -219,6 +224,12 @@ public class EventWaitingListActivity extends AppCompatActivity implements Navig
                                 return;
                             }
 
+                            // Log entrantsMap contents for debugging
+                            Log.d(TAG, "Entrants Map:");
+                            for (Map.Entry<String, String> entry : entrantsMap.entrySet()) {
+                                Log.d(TAG, "Entrant ID: " + entry.getKey() + ", Status: " + entry.getValue());
+                            }
+
                             List<Task<DocumentSnapshot>> userTasks = new ArrayList<>();
 
                             for (Map.Entry<String, String> entry : entrantsMap.entrySet()) {
@@ -226,7 +237,7 @@ public class EventWaitingListActivity extends AppCompatActivity implements Navig
                                 String status = entry.getValue();
 
                                 // Fetch all entrants regardless of status
-                                Task<DocumentSnapshot> userTask = firestore.collection("Entrants").document(entrantId).get();
+                                Task<DocumentSnapshot> userTask = firestore.collection("Users").document(entrantId).get();
                                 userTasks.add(userTask);
                             }
 
@@ -241,6 +252,9 @@ public class EventWaitingListActivity extends AppCompatActivity implements Navig
                                                 if (user != null) {
                                                     user.setUserId(userSnapshot.getId());
                                                     fullUserList.add(user);
+                                                    Log.d(TAG, "Fetched User: " + user.getUserId() + ", Name: " + user.getName());
+                                                } else {
+                                                    Log.w(TAG, "User document is null for ID: " + userSnapshot.getId());
                                                 }
                                             }
                                         }
@@ -263,16 +277,20 @@ public class EventWaitingListActivity extends AppCompatActivity implements Navig
                                     })
                                     .addOnFailureListener(e -> {
                                         Toast.makeText(EventWaitingListActivity.this, "Error loading users: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                                        Log.e(TAG, "Error fetching users: ", e);
                                     });
                         } else {
                             Toast.makeText(this, "Error parsing event data.", Toast.LENGTH_SHORT).show();
+                            Log.e(TAG, "Event parsing returned null.");
                         }
                     } else {
                         Toast.makeText(this, "Event not found.", Toast.LENGTH_SHORT).show();
+                        Log.e(TAG, "Event document does not exist.");
                     }
                 })
                 .addOnFailureListener(e -> {
                     Toast.makeText(this, "Error fetching event data: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    Log.e(TAG, "Error fetching event data: ", e);
                 });
     }
 
@@ -284,6 +302,7 @@ public class EventWaitingListActivity extends AppCompatActivity implements Navig
      */
     private void filterEntrantsByStatus(String status) {
         if (userAdapter == null) {
+            Log.w(TAG, "UserAdapter is null. Cannot filter entrants.");
             return;
         }
 
@@ -296,15 +315,13 @@ public class EventWaitingListActivity extends AppCompatActivity implements Navig
                 // Retrieve the entrant's status from the entrants map
                 String entrantStatus = userAdapter.getEntrantStatus(user.getUserId());
 
-                if (status.equalsIgnoreCase("Waitlist") && "waitlist".equalsIgnoreCase(entrantStatus)) {
+                if ("Waitlist".equalsIgnoreCase(status) && "waitlist".equalsIgnoreCase(entrantStatus)) {
                     filteredUserList.add(user);
-                } else if (status.equalsIgnoreCase("Enrolled") && "enrolled".equalsIgnoreCase(entrantStatus)) {
+                } else if ("Enrolled".equalsIgnoreCase(status) && "enrolled".equalsIgnoreCase(entrantStatus)) {
                     filteredUserList.add(user);
-                }
-                else if (status.equalsIgnoreCase("Canceled") && "canceled".equalsIgnoreCase(entrantStatus)) {
+                } else if ("Canceled".equalsIgnoreCase(status) && "canceled".equalsIgnoreCase(entrantStatus)) {
                     filteredUserList.add(user);
-                }
-                else if (status.equalsIgnoreCase("Chosen") && "chosen".equalsIgnoreCase(entrantStatus)) {
+                } else if ("Chosen".equalsIgnoreCase(status) && "chosen".equalsIgnoreCase(entrantStatus)) {
                     filteredUserList.add(user);
                 }
             }
@@ -312,6 +329,7 @@ public class EventWaitingListActivity extends AppCompatActivity implements Navig
 
         userAdapter.notifyDataSetChanged();
 
+        Log.d(TAG, "Filtered Users Count: " + filteredUserList.size());
         Toast.makeText(this, "Filtered Users: " + filteredUserList.size(), Toast.LENGTH_SHORT).show();
     }
 
@@ -330,7 +348,7 @@ public class EventWaitingListActivity extends AppCompatActivity implements Navig
         if (id == R.id.nav_notifications) {
             // Navigate to NotificationsActivity
             // Uncomment and implement if NotificationsActivity exists
-            // intent = new Intent(CreateEditFacilityActivity.this, NotificationsActivity.class);
+            // intent = new Intent(EventWaitingListActivity.this, NotificationsActivity.class);
         } else if (id == R.id.nav_edit_profile) {
             // Navigate to UserInfoActivity
             intent = new Intent(EventWaitingListActivity.this, UserInfoActivity.class);

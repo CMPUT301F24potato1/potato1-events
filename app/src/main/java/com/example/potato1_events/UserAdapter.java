@@ -3,6 +3,7 @@ package com.example.potato1_events;
 
 import android.content.Context;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -38,6 +39,11 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
     private Context context;
 
     /**
+     * Tag for logging.
+     */
+    private static final String TAG = "UserAdapter";
+
+    /**
      * Constructor for UserAdapter.
      *
      * @param userList      List of users to display.
@@ -54,10 +60,12 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
      * Retrieves the status of an entrant based on userId.
      *
      * @param userId The ID of the user.
-     * @return The status string ("waitlist", "enrolled", etc.) or null if not found.
+     * @return The status string ("waitlist", "enrolled", etc.) or "Unknown" if not found.
      */
     public String getEntrantStatus(String userId) {
-        return userStatusMap.get(userId);
+        String status = userStatusMap.getOrDefault(userId, "Unknown");
+        Log.d(TAG, "User ID: " + userId + ", Status: " + status);
+        return status;
     }
 
     /**
@@ -140,21 +148,47 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
             if (!TextUtils.isEmpty(user.getImagePath())) {
                 StorageReference imageRef = FirebaseStorage.getInstance().getReference().child(user.getImagePath());
                 imageRef.getDownloadUrl()
-                        .addOnSuccessListener(uri -> Picasso.get().load(uri)
-                                .placeholder(R.drawable.ic_placeholder_image)
-                                .error(R.drawable.ic_error_image)
-                                .into(entrantProfileImageView))
-                        .addOnFailureListener(e -> entrantProfileImageView.setImageResource(R.drawable.ic_error_image));
+                        .addOnSuccessListener(uri -> {
+                            Picasso.get().load(uri)
+                                    .placeholder(R.drawable.ic_placeholder_image)
+                                    .error(R.drawable.ic_error_image)
+                                    .into(entrantProfileImageView);
+                            Log.d(TAG, "Loaded profile image for user: " + user.getUserId());
+                        })
+                        .addOnFailureListener(e -> {
+                            Log.e(TAG, "Failed to load profile image for user: " + user.getUserId(), e);
+                            entrantProfileImageView.setImageResource(R.drawable.ic_error_image);
+                        });
             } else {
                 entrantProfileImageView.setImageResource(R.drawable.ic_placeholder_image);
+                Log.d(TAG, "No profile image path for user: " + user.getUserId());
             }
 
             // Set entrant name
             entrantNameTextView.setText(user.getName() != null ? user.getName() : "Unnamed Entrant");
 
             // Retrieve and set entrant status from the map using userId
-            String status = userStatusMap.getOrDefault(user.getUserId(), "Unknown");
+            String status = getEntrantStatus(user.getUserId());
             entrantStatusTextView.setText("Status: " + capitalizeFirstLetter(status));
+
+            // Optional: Change text color based on status for better UX
+            switch (status.toLowerCase()) {
+                case "enrolled":
+                    entrantStatusTextView.setTextColor(context.getResources().getColor(R.color.enrolledColor));
+                    break;
+                case "waitlist":
+                    entrantStatusTextView.setTextColor(context.getResources().getColor(R.color.waitlistColor));
+                    break;
+                case "canceled":
+                    entrantStatusTextView.setTextColor(context.getResources().getColor(R.color.canceledColor));
+                    break;
+                case "chosen":
+                    entrantStatusTextView.setTextColor(context.getResources().getColor(R.color.chosenColor));
+                    break;
+                default:
+                    entrantStatusTextView.setTextColor(context.getResources().getColor(R.color.unknownColor));
+                    break;
+            }
         }
     }
 
@@ -166,7 +200,7 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
      */
     private String capitalizeFirstLetter(String text) {
         if (TextUtils.isEmpty(text)) {
-            return text;
+            return "Unknown";
         }
         return text.substring(0, 1).toUpperCase() + text.substring(1).toLowerCase();
     }

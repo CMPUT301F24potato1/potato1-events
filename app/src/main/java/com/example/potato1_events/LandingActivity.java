@@ -14,7 +14,6 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 /**
@@ -30,11 +29,6 @@ public class LandingActivity extends AppCompatActivity {
      * Button to navigate as an Entrant.
      */
     private Button entrantButton;
-
-    /**
-     * Button to navigate as an Organizer.
-     */
-    private Button organizerButton;
 
     /**
      * Unique device ID used to identify the user.
@@ -76,7 +70,10 @@ public class LandingActivity extends AppCompatActivity {
         entrantButton = findViewById(R.id.entrantButton);
 
         // Set onClickListeners for buttons
-        entrantButton.setOnClickListener(v -> checkUserExists());
+        entrantButton.setOnClickListener(v -> checkUserExists(false));
+
+        // Automatically check if user exists
+        checkUserExists(true);
     }
 
     /**
@@ -94,8 +91,9 @@ public class LandingActivity extends AppCompatActivity {
      * If the user exists, navigates to the respective home activity.
      * If not, navigates to the UserInfoActivity to create a new user.
      *
+     * @param isAutomaticCheck Indicates if the check is automatic (on activity creation) or manual (button click).
      */
-    private void checkUserExists() {
+    private void checkUserExists(boolean isAutomaticCheck) {
         userRepository.checkUserExists(deviceId, new UserRepository.UserExistsCallback() {
             /**
              * Called when the user existence check is successful.
@@ -105,15 +103,20 @@ public class LandingActivity extends AppCompatActivity {
             @Override
             public void onResult(UserData userData) {
                 if (userData.exists()) {
-                    // User exists, navigate to the appropriate home activity
+                    // User exists, navigate to EntrantHomeActivity
                     Intent intent = new Intent(LandingActivity.this, EntrantHomeActivity.class);
                     intent.putExtra("IS_ADMIN", userData.isAdmin());
                     startActivity(intent);
+                    finish();
                 } else {
-                    // User does not exist, navigate to UserInfoActivity to create a new user
-                    Intent intent = new Intent(LandingActivity.this, UserInfoActivity.class);
-                    intent.putExtra("MODE", "CREATE");
-                    startActivity(intent);
+                    if (isAutomaticCheck) {
+                        // Do nothing, stay on LandingActivity
+                    } else {
+                        // User does not exist, navigate to UserInfoActivity to create a new user
+                        Intent intent = new Intent(LandingActivity.this, UserInfoActivity.class);
+                        intent.putExtra("MODE", "CREATE");
+                        startActivity(intent);
+                    }
                 }
             }
 

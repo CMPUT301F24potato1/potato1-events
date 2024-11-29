@@ -46,11 +46,12 @@ import java.util.*;
 /**
  * Activity for creating or editing events within the application.
  * Handles user input, data validation, image uploads, and interaction with Firebase services.
+ * Integrates the navigation drawer with admin functionalities.
  */
 public class CreateEditEventActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
     // UI Components
-    private EditText eventNameEditText, eventDescriptionEditText, recCentreEditText, eventLocationEditText, availableSpotsEditText, waitingListSpotsEditText;
+    private EditText eventNameEditText, eventDescriptionEditText, eventLocationEditText, availableSpotsEditText, waitingListSpotsEditText;
     private Button startDateButton, endDateButton, uploadPosterButton, saveEventButton, deleteEventButton, generateQRCodeButton;
     private CheckBox geolocationCheckBox;
     private ImageView eventPosterImageView, qrCodeImageView; // QR Code ImageView
@@ -59,6 +60,7 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
     private FirebaseStorage storage;
     private DrawerLayout drawerLayout;
     private NavigationView navigationView;
+    private Toolbar toolbar;
 
     private Uri selectedPosterUri = null;
     private String posterImageUrl = null; // Store the download URL of the poster image
@@ -114,7 +116,6 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
         // Initialize UI components
         eventNameEditText = findViewById(R.id.eventNameEditText);
         eventDescriptionEditText = findViewById(R.id.eventDescriptionEditText);
-        recCentreEditText = findViewById(R.id.recCentreEditText);
         eventLocationEditText = findViewById(R.id.eventLocationEditText);
         availableSpotsEditText = findViewById(R.id.availableSpotsEditText);
         waitingListSpotsEditText = findViewById(R.id.waitingListSpotsEditText);
@@ -130,8 +131,9 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
         generateQRCodeButton = findViewById(R.id.generateQRCodeButton); // Initialize Generate QR Code Button
 
         // Initialize Toolbar
-        Toolbar toolbar = findViewById(R.id.toolbar);
+        toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        getSupportActionBar().setTitle("Create/Edit Event");
 
         // Initialize DrawerLayout and NavigationView
         drawerLayout = findViewById(R.id.drawer_layout);
@@ -205,8 +207,6 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
         } else {
             deleteEventButton.setVisibility(View.GONE); // Hide delete button in create mode
             generateQRCodeButton.setVisibility(View.VISIBLE); // Show generate QR code button in create mode
-            recCentreEditText.setText(deviceId); // Automatically set facilityId to deviceId
-            recCentreEditText.setEnabled(false); // Disable editing of facilityId
         }
 
         // Verify that the organizer has a facility before allowing event creation
@@ -356,16 +356,13 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
     private void saveEvent() {
         String name = eventNameEditText.getText().toString().trim();
         String description = eventDescriptionEditText.getText().toString().trim();
-        String recCentre = recCentreEditText.getText().toString().trim(); // Should be deviceId
         String location = eventLocationEditText.getText().toString().trim();
         String availableSpotsStr = availableSpotsEditText.getText().toString().trim();
-        String waitingListSpotsStr = waitingListSpotsEditText.getText().toString().trim();
         boolean isGeolocationEnabled = geolocationCheckBox.isChecked();
 
         // Input validation
-        if (TextUtils.isEmpty(name) || TextUtils.isEmpty(description) || TextUtils.isEmpty(recCentre) ||
-                TextUtils.isEmpty(location) || TextUtils.isEmpty(availableSpotsStr) ||
-                TextUtils.isEmpty(waitingListSpotsStr)) {
+        if (TextUtils.isEmpty(name) || TextUtils.isEmpty(description) ||
+                TextUtils.isEmpty(location) || TextUtils.isEmpty(availableSpotsStr)) {
             Toast.makeText(this, "Please fill in all required fields.", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -386,36 +383,52 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
             return;
         }
 
-        // Ensure waitingListSpots > availableSpots
+        // Parse available spots
         int availableSpots;
-        int waitingListSpots;
-
         try {
             availableSpots = Integer.parseInt(availableSpotsStr);
-            waitingListSpots = Integer.parseInt(waitingListSpotsStr);
+            if (availableSpots <= 0) {
+                Toast.makeText(this, "Available spots must be greater than zero.", Toast.LENGTH_SHORT).show();
+                return;
+            }
         } catch (NumberFormatException e) {
-            Toast.makeText(this, "Please enter valid numbers for spots.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Please enter a valid number for available spots.", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        if (waitingListSpots < availableSpots) {
-            Toast.makeText(this, "Waiting list spots must be greater than available spots.", Toast.LENGTH_SHORT).show();
-            return;
+        // Parse waiting list spots (optional)
+        Integer waitingListSpots = null; // Null indicates unlimited
+        String waitingListSpotsStr = waitingListSpotsEditText.getText().toString().trim();
+        if (!TextUtils.isEmpty(waitingListSpotsStr)) {
+            try {
+                waitingListSpots = Integer.parseInt(waitingListSpotsStr);
+                if (waitingListSpots <= 0) {
+                    Toast.makeText(this, "Waiting list spots must be greater than zero.", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                if (waitingListSpots < availableSpots) {
+                    Toast.makeText(this, "Waiting list spots must be greater than or equal to available spots.", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+            } catch (NumberFormatException e) {
+                Toast.makeText(this, "Please enter a valid number for waiting list spots.", Toast.LENGTH_SHORT).show();
+                return;
+            }
         }
 
         saveEventButton.setEnabled(false);
 
         // Image for the event, if empty then we have a placeholder
         if (selectedPosterUri != null) {
-            uploadPosterImage(name, description, recCentre, location, availableSpots, waitingListSpots, isGeolocationEnabled);
+            uploadPosterImage(name, description, location, availableSpots, waitingListSpots, isGeolocationEnabled);
         } else {
             // If editing and no new image is selected, keep the last image
             if (isEditingExistingEvent()) {
                 // Preserve existing posterImageUrl and QR code hash
-                saveEventToFirestore(name, description, recCentre, location, availableSpots, waitingListSpots, isGeolocationEnabled, posterImageUrl, null);
+                saveEventToFirestore(name, description, location, availableSpots, waitingListSpots, isGeolocationEnabled, posterImageUrl, null);
             } else {
                 // Proceed to save event without poster image
-                saveEventToFirestore(name, description, recCentre, location, availableSpots, waitingListSpots, isGeolocationEnabled, null, null);
+                saveEventToFirestore(name, description, location, availableSpots, waitingListSpots, isGeolocationEnabled, null, null);
             }
         }
     }
@@ -425,14 +438,13 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
      *
      * @param name                 Event name.
      * @param description          Event description.
-     * @param recCentre            Associated rec centre (facilityId).
      * @param location             Event location.
      * @param availableSpots       Number of available spots.
-     * @param waitingListSpots     Number of waiting list spots.
+     * @param waitingListSpots     Number of waiting list spots (can be null for unlimited).
      * @param isGeolocationEnabled Whether geolocation is enabled.
      */
-    private void uploadPosterImage(String name, String description, String recCentre, String location,
-                                   int availableSpots, int waitingListSpots, boolean isGeolocationEnabled) {
+    private void uploadPosterImage(String name, String description, String location,
+                                   int availableSpots, Integer waitingListSpots, boolean isGeolocationEnabled) {
         // Create a unique filename
         String fileName = "event_posters/" + UUID.randomUUID() + ".jpg";
         StorageReference storageRef = storage.getReference().child(fileName);
@@ -444,7 +456,7 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
                     storageRef.getDownloadUrl().addOnSuccessListener(uri -> {
                         posterImageUrl = uri.toString();
                         // Proceed to save the event with the poster URL
-                        generateQRCodeAndSaveEvent(name, description, recCentre, location, availableSpots, waitingListSpots, isGeolocationEnabled, posterImageUrl);
+                        generateQRCodeAndSaveEvent(name, description, location, availableSpots, waitingListSpots, isGeolocationEnabled, posterImageUrl);
                     }).addOnFailureListener(e -> {
                         Toast.makeText(CreateEditEventActivity.this, "Failed to get poster URL: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                         saveEventButton.setEnabled(true);
@@ -461,25 +473,24 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
      *
      * @param name                 Event name.
      * @param description          Event description.
-     * @param recCentre            Associated rec centre (facilityId).
      * @param location             Event location.
      * @param availableSpots       Number of available spots.
-     * @param waitingListSpots     Number of waiting list spots.
+     * @param waitingListSpots     Number of waiting list spots (can be null for unlimited).
      * @param isGeolocationEnabled Whether geolocation is enabled.
      * @param posterUrl            URL of the uploaded poster image.
      */
-    private void generateQRCodeAndSaveEvent(String name, String description, String recCentre, String location,
-                                            int availableSpots, int waitingListSpots,
+    private void generateQRCodeAndSaveEvent(String name, String description, String location,
+                                            int availableSpots, Integer waitingListSpots,
                                             boolean isGeolocationEnabled, String posterUrl) {
 
         if (isEditingExistingEvent()) {
             // **Editing Existing Event: Use Existing QR Code Hash**
             // No need to regenerate QR code; proceed to save updates
-            saveEventToFirestore(name, description, recCentre, location, availableSpots, waitingListSpots, isGeolocationEnabled, posterUrl, null);
+            saveEventToFirestore(name, description, location, availableSpots, waitingListSpots, isGeolocationEnabled, posterUrl, null);
         } else {
             // **Creating New Event: Generate QR Code After Event Creation**
             // Since QR code generation requires the event ID, proceed to create the event first.
-            saveEventToFirestore(name, description, recCentre, location, availableSpots, waitingListSpots, isGeolocationEnabled, posterUrl, null);
+            saveEventToFirestore(name, description, location, availableSpots, waitingListSpots, isGeolocationEnabled, posterUrl, null);
         }
     }
 
@@ -488,16 +499,15 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
      *
      * @param name                 Event name.
      * @param description          Event description.
-     * @param recCentre            Associated rec centre (facilityId).
      * @param location             Event location.
      * @param availableSpots       Number of available spots.
-     * @param waitingListSpots     Number of waiting list spots.
+     * @param waitingListSpots     Number of waiting list spots (can be null for unlimited).
      * @param isGeolocationEnabled Whether geolocation is enabled.
      * @param posterUrl            URL of the uploaded poster image.
      * @param qrCodeHash           QR code hash data. If null, it will be generated after event creation.
      */
-    private void saveEventToFirestore(String name, String description, String recCentre, String location,
-                                      int availableSpots, int waitingListSpots,
+    private void saveEventToFirestore(String name, String description, String location,
+                                      int availableSpots, Integer waitingListSpots,
                                       boolean isGeolocationEnabled, String posterUrl, String qrCodeHash) {
 
         if (isEditingExistingEvent()) {
@@ -509,7 +519,11 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
             updates.put("description", description);
             updates.put("eventLocation", location);
             updates.put("capacity", availableSpots);
-            updates.put("waitingListCapacity", waitingListSpots);
+            if (waitingListSpots != null) {
+                updates.put("waitingListCapacity", waitingListSpots);
+            } else {
+                updates.put("waitingListCapacity", FieldValue.delete()); // Remove the field for unlimited
+            }
             updates.put("geolocationRequired", isGeolocationEnabled);
             updates.put("posterImageUrl", posterUrl);
             updates.put("startDate", startDateTime.getTime());
@@ -534,10 +548,15 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
             Map<String, Object> eventData = new HashMap<>();
             eventData.put("name", name);
             eventData.put("description", description);
-            eventData.put("facilityId", recCentre); // Should be deviceId
+            eventData.put("facilityId", deviceId); // Associate with deviceId directly
             eventData.put("eventLocation", location);
             eventData.put("capacity", availableSpots);
-            eventData.put("waitingListCapacity", waitingListSpots);
+            if (waitingListSpots != null) {
+                eventData.put("waitingListCapacity", waitingListSpots);
+            } else {
+                // Omit the field to represent an unlimited waiting list
+                // Firestore doesn't support null values in maps directly, so omitting the field is preferred
+            }
             eventData.put("currentEntrantsNumber", 0); // Initialize to 0
             eventData.put("geolocationRequired", isGeolocationEnabled);
             eventData.put("posterImageUrl", posterUrl);
@@ -686,7 +705,6 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
                         // Populate the UI fields
                         eventNameEditText.setText(name);
                         eventDescriptionEditText.setText(description);
-                        recCentreEditText.setText(facilityId);
                         eventLocationEditText.setText(location);
                         if (capacityLong != null) {
                             availableSpotsEditText.setText(String.valueOf(capacityLong.intValue()));
@@ -724,6 +742,16 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
                         if (!TextUtils.isEmpty(qrCodeHashFetched)) {
                             // Optionally, display the QR code if desired
                             generateQRCodeAndDisplay(qrCodeHashFetched);
+                        }
+
+                        // Handle unlimited waiting list based on waitingListCapacity being null
+                        if (waitingListCapacityLong == null) {
+                            // Waiting list is unlimited
+                            waitingListSpotsEditText.setEnabled(false);
+                            waitingListSpotsEditText.setText(""); // Clear any existing text
+                        } else {
+                            // Waiting list has a capacity
+                            waitingListSpotsEditText.setEnabled(true);
                         }
 
                     } else {
@@ -809,9 +837,8 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
                 });
     }
 
-
     /**
-     * Handles navigation item selections.
+     * Handles navigation item selections from the navigation drawer.
      *
      * @param item The selected menu item.
      * @return True if the event was handled, false otherwise.
@@ -832,31 +859,42 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
             intent.putExtra("MODE", "EDIT");
             intent.putExtra("IS_ADMIN", isAdmin);
         } else if (id == R.id.nav_manage_media) {
-            // Navigate to ManageMediaActivity
-            intent = new Intent(CreateEditEventActivity.this, ManageMediaActivity.class);
-
+            // Navigate to ManageMediaActivity (visible only to admins)
+            if (isAdmin) {
+                intent = new Intent(CreateEditEventActivity.this, ManageMediaActivity.class);
+                intent.putExtra("IS_ADMIN", isAdmin); // Pass isAdmin flag
+            } else {
+                // Access denied message (optional as menu item is hidden)
+                Toast.makeText(this, "Access Denied: Admins Only", Toast.LENGTH_SHORT).show();
+            }
         } else if (id == R.id.nav_manage_users) {
-            intent = new Intent(CreateEditEventActivity.this, ManageUsersActivity.class);
-
+            // Navigate to ManageUsersActivity (visible only to admins)
+            if (isAdmin) {
+                intent = new Intent(CreateEditEventActivity.this, ManageUsersActivity.class);
+                intent.putExtra("IS_ADMIN", isAdmin); // Pass isAdmin flag
+            } else {
+                // Access denied message (optional as menu item is hidden)
+                Toast.makeText(this, "Access Denied: Admins Only", Toast.LENGTH_SHORT).show();
+            }
         } else if (id == R.id.action_scan_qr) {
             // Handle QR code scanning
             intent = new Intent(CreateEditEventActivity.this, QRScanActivity.class);
-
+            intent.putExtra("IS_ADMIN", isAdmin); // Pass isAdmin flag
         } else if (id == R.id.nav_create_event) {
-
-        Toast.makeText(this, "Already on this page.", Toast.LENGTH_SHORT).show();
+            // Navigate to CreateEditEventActivity and pass isAdmin flag
+            Toast.makeText(this, "Already on this page.", Toast.LENGTH_SHORT).show();
         } else if (id == R.id.nav_edit_facility) {
-
+            // Navigate to CreateEditFacilityActivity and pass isAdmin flag
             intent = new Intent(CreateEditEventActivity.this, CreateEditFacilityActivity.class);
-            intent.putExtra("IS_ADMIN", isAdmin);
+            intent.putExtra("IS_ADMIN", isAdmin); // Pass isAdmin flag
         } else if (id == R.id.nav_my_events) {
             // Navigate to OrganizerHomeActivity
             intent = new Intent(CreateEditEventActivity.this, OrganizerHomeActivity.class);
-            intent.putExtra("IS_ADMIN", isAdmin);
+            intent.putExtra("IS_ADMIN", isAdmin); // Pass isAdmin flag
         } else if (id == R.id.nav_view_joined_events) {
             // Navigate to EntrantHomeActivity
             intent = new Intent(CreateEditEventActivity.this, EntrantHomeActivity.class);
-            intent.putExtra("IS_ADMIN", isAdmin);
+            intent.putExtra("IS_ADMIN", isAdmin); // Pass isAdmin flag
         }
 
         if (intent != null) {
