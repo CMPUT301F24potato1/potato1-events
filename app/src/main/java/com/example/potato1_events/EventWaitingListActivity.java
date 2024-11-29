@@ -11,6 +11,7 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
@@ -24,10 +25,12 @@ import android.widget.Toast;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
 import com.google.android.material.navigation.NavigationView;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -35,7 +38,7 @@ import java.util.Map;
  * Activity to display the list of entrants on the waiting list for an event with filtering capabilities.
  * Allows organizers to view and manage entrants based on their status.
  */
-public class EventWaitingListActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
+public class EventWaitingListActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener, UserAdapter.OnCancelClickListener {
 
     // UI Components
 
@@ -264,7 +267,7 @@ public class EventWaitingListActivity extends AppCompatActivity implements Navig
                                         filteredUserList.addAll(fullUserList);
 
                                         // Initialize the UserAdapter
-                                        userAdapter = new UserAdapter(filteredUserList, entrantsMap, this);
+                                        userAdapter = new UserAdapter(filteredUserList, entrantsMap, this, this);
                                         waitingListRecyclerView.setAdapter(userAdapter);
 
                                         userAdapter.notifyDataSetChanged();
@@ -408,5 +411,47 @@ public class EventWaitingListActivity extends AppCompatActivity implements Navig
             }
         };
         getOnBackPressedDispatcher().addCallback(this, callback);
+    }
+    /**
+     * Handles the cancel action when the "Cancel" button is clicked in the UserAdapter.
+     *
+     * @param user The user to cancel.
+     */
+    @Override
+    public void onCancelClick(User user) {
+        // Show a confirmation dialog
+        new AlertDialog.Builder(this)
+                .setTitle("Cancel Entrant")
+                .setMessage("Are you sure you want to cancel this entrant?")
+                .setPositiveButton("Yes", (dialog, which) -> {
+                    cancelEntrant(user);
+                })
+                .setNegativeButton("No", null)
+                .show();
+    }
+
+    /**
+     * Cancels the entrant by updating their status in Firestore and refreshes the list.
+     *
+     * @param user The user to cancel.
+     */
+    private void cancelEntrant(User user) {
+        // Update the entrant's status in Firestore
+        DocumentReference eventRef = firestore.collection("Events").document(eventId);
+
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("entrants." + user.getUserId(), "Canceled");
+        updates.put("waitingListFilled", false); // Optionally set to false to refill the spot
+
+        eventRef.update(updates)
+                .addOnSuccessListener(aVoid -> {
+                    Toast.makeText(this, "Entrant canceled successfully.", Toast.LENGTH_SHORT).show();
+                    // Refresh the entrants list
+                    fetchEntrants(eventId);
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this, "Error canceling entrant: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    Log.e(TAG, "Error canceling entrant: ", e);
+                });
     }
 }
