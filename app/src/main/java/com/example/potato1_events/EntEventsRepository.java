@@ -213,7 +213,7 @@ public class EntEventsRepository {
         final CollectionReference usersCollection = firestore.collection("Users");
 
         firestore.runTransaction((Transaction.Function<Void>) transaction -> {
-                    // Fetch event
+                    // Fetch event document
                     DocumentSnapshot eventSnapshot = transaction.get(eventsCollection.document(eventId));
                     Event event = eventSnapshot.toObject(Event.class);
 
@@ -227,17 +227,17 @@ public class EntEventsRepository {
                         entrantsMap = new HashMap<>();
                     }
 
-                    // Check if entrant is already in the entrants map
+                    // Check if entrant is already registered or on the waiting list
                     if (entrantsMap.containsKey(deviceId)) {
                         throw new FirebaseFirestoreException("Already registered or on the waiting list.",
                                 FirebaseFirestoreException.Code.ABORTED, null);
                     }
 
-                    // Retrieve waitingListCapacity
-                    Long waitingListCapacity = (long) event.getWaitingListCapacity();
+                    // Retrieve waitingListCapacity (nullable)
+                    Integer waitingListCapacity = event.getWaitingListCapacity();
 
                     if (waitingListCapacity != null) {
-                        // Count current waiting list entrants
+                        // Limited waiting list; enforce capacity
                         long currentWaitingList = entrantsMap.values().stream()
                                 .filter(status -> "waitlist".equalsIgnoreCase(status))
                                 .count();
@@ -247,8 +247,9 @@ public class EntEventsRepository {
                                     FirebaseFirestoreException.Code.ABORTED, null);
                         }
                     }
+                    // Else, unlimited waiting list; no capacity checks
 
-                    // Add entrant to entrants map with status "waitlist"
+                    // Add entrant to waiting list with status "waitlist"
                     transaction.update(eventsCollection.document(eventId), "entrants." + deviceId, "waitlist");
 
                     // Note: Do NOT increment currentEntrantsNumber for waiting list
@@ -276,7 +277,7 @@ public class EntEventsRepository {
         final CollectionReference usersCollection = firestore.collection("Users");
 
         firestore.runTransaction((Transaction.Function<Void>) transaction -> {
-                    // Fetch event
+                    // Fetch event document
                     DocumentSnapshot eventSnapshot = transaction.get(eventsCollection.document(eventId));
                     Event event = eventSnapshot.toObject(Event.class);
 

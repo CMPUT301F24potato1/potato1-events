@@ -71,7 +71,7 @@ public class Event {
     /**
      * Maximum number of entrants in the waiting list.
      */
-    private int waitingListCapacity;
+    private Integer waitingListCapacity;
 
     /**
      * URL of the event poster image.
@@ -147,7 +147,7 @@ public class Event {
      */
     public Event(String id, String facilityId, String name, String description, Date startDate, Date endDate,
                  Date registrationStart, Date registrationEnd, double price, int capacity, int currentEntrantsNumber,
-                 int waitingListCapacity, String posterImageUrl, String qrCodeHash,
+                 Integer waitingListCapacity, String posterImageUrl, String qrCodeHash,
                  Map<String, String> entrants, Date createdAt, String status, boolean geolocationRequired,
                  String eventLocation) {
         this.id = id;
@@ -380,18 +380,21 @@ public class Event {
     /**
      * Gets the maximum capacity of the waiting list.
      *
-     * @return Waiting list capacity.
+     * @return Waiting list capacity, or null if unlimited.
      */
-    public int getWaitingListCapacity() {
+    public Integer getWaitingListCapacity() {
         return waitingListCapacity;
     }
 
     /**
      * Sets the maximum capacity of the waiting list.
      *
-     * @param waitingListCapacity Waiting list capacity.
+     * @param waitingListCapacity Waiting list capacity, or null for unlimited.
      */
-    public void setWaitingListCapacity(int waitingListCapacity) {
+    public void setWaitingListCapacity(Integer waitingListCapacity) {
+        if (waitingListCapacity != null && waitingListCapacity < 0) {
+            throw new IllegalArgumentException("Waiting list capacity cannot be negative");
+        }
         this.waitingListCapacity = waitingListCapacity;
     }
 
