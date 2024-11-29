@@ -86,9 +86,6 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        // Bind the Switch Mode button
-        switchModeButton = findViewById(R.id.switchModeButton);
-
         // Set up Navigation Drawer
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawerLayout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
@@ -105,9 +102,6 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
         }
 
         navigationView.setNavigationItemSelectedListener(this);
-
-        // Set Click Listener for Switch Mode Button
-        switchModeButton.setOnClickListener(v -> switchMode());
 
         // Initialize event list
         eventList = new ArrayList<>();

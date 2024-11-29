@@ -109,6 +109,8 @@ public class Event {
      */
     private boolean randomDrawPerformed;
 
+    private boolean waitingListFilled;
+
     /**
      * Event's location.
      */
@@ -456,7 +458,7 @@ public class Event {
      * Adds or updates an entrant's status.
      *
      * @param entrantId The ID of the entrant.
-     * @param status    The status of the entrant (e.g., "enrolled", "selected", "confirmed", "declined").
+     * @param status    The status of the entrant (e.g., "Accepted", "Selected", "Not Selected", "Declined", "Waitlist").
      */
     public void updateEntrantStatus(String entrantId, String status) {
         this.entrants.put(entrantId, status);
@@ -568,5 +570,28 @@ public class Event {
      */
     public void setEventLocation(String eventLocation) {
         this.eventLocation = eventLocation;
+    }
+
+    public boolean isWaitingListFilled() {
+        return waitingListFilled;
+    }
+
+    public void setWaitingListFilled(boolean waitingListFilled) {
+        this.waitingListFilled = waitingListFilled;
+    }
+
+    public String getAvailableCapacity() {
+        int acceptedEntrants = 0;
+
+        if (entrants != null && !entrants.isEmpty()) {
+            for (String status : entrants.values()) {
+                if ("Selected".equalsIgnoreCase(status) || "Accepted".equalsIgnoreCase(status)) {
+                    acceptedEntrants++;
+                }
+            }
+        }
+
+        int availableCapacity = capacity - acceptedEntrants;
+        return String.valueOf(availableCapacity);
     }
 }

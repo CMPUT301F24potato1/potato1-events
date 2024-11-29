@@ -117,8 +117,6 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        // Bind the Switch Mode button
-        switchModeButton = findViewById(R.id.switchModeButton);
 
         // Set up Navigation Drawer
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
@@ -128,8 +126,6 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
 
         navigationView.setNavigationItemSelectedListener(this);
 
-        // Set Click Listener for Switch Mode Button
-        switchModeButton.setOnClickListener(v -> switchMode());
 
         if (isAdmin) {
             navigationView.getMenu().findItem(R.id.nav_manage_media).setVisible(true);

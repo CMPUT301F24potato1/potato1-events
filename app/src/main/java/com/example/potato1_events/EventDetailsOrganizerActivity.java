@@ -96,6 +96,12 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
     private TextView eventCapacityTextView;
 
     /**
+     * TextView to display the event capacity details.
+     */
+    private TextView eventAvaliableCapacityTextView;
+
+
+    /**
      * TextView to display whether geolocation is required for the event.
      */
     private TextView eventGeolocationTextView;
@@ -199,6 +205,7 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
         eventDescriptionTextView = findViewById(R.id.eventDescriptionTextView);
         eventLocationTextView = findViewById(R.id.eventLocationTextView);
         eventDatesTextView = findViewById(R.id.eventDatesTextView);
+        eventAvaliableCapacityTextView = findViewById(R.id.eventAvaliableCapacityTextView);
         eventCapacityTextView = findViewById(R.id.eventCapacityTextView);
         eventGeolocationTextView = findViewById(R.id.eventGeolocationTextView);
         eventStatusTextView = findViewById(R.id.eventStatusTextView);
@@ -298,8 +305,10 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
             eventDatesTextView.setText("Event Dates: Not Available");
         }
 
-        String capacity = "Available spots for event: " + event.getCapacity();
+        String capacity = "Total Capacity: " + event.getCapacity();
         eventCapacityTextView.setText(capacity);
+
+        eventAvaliableCapacityTextView.setText("Available Spots for the Event: " + event.getAvailableCapacity() );
 
         String geo = "Geolocation Required: " + (event.isGeolocationRequired() ? "Yes" : "No");
         eventGeolocationTextView.setText(geo);
@@ -347,7 +356,7 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
                     Map<String, String> entrantsMap = loadedEvent.getEntrants();
                     // Count the number of entrants with the "waitlist" status
                     long waitlistCount = entrantsMap.values().stream()
-                            .filter(status -> "waitlist".equalsIgnoreCase(status))
+                            .filter(status -> "waitlist".equalsIgnoreCase(status) | "selected".equalsIgnoreCase(status))
                             .count();
 
                     String waitlistText = "Waiting List: " + waitlistCount + "/" + loadedEvent.getWaitingListCapacity();

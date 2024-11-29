@@ -11,7 +11,7 @@ public class MyApplication extends Application {
     public void onCreate() {
         super.onCreate();
 
-       //scheduleRandomDrawWorker();
+       scheduleRandomDrawWorker();
     }
 
     private void scheduleRandomDrawWorker() {

@@ -52,14 +52,13 @@ public class RandomDrawWorker extends Worker {
      */
     private void performRandomDraw() {
         FirebaseFirestore firestore = FirebaseFirestore.getInstance();
-
-        // Get current timestamp
         Timestamp now = Timestamp.now();
 
-        // Query events where registration has ended and random draw hasn't been performed
+        // Query events that need random draw
         firestore.collection("Events")
                 .whereLessThanOrEqualTo("registrationEnd", now)
-                .whereEqualTo("randomDrawPerformed", false) // Ensure only relevant events are processed
+                //.whereEqualTo("waitingListFilled", false)
+                .whereEqualTo("randomDrawPerformed", false)
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
                     if (queryDocumentSnapshots.isEmpty()) {
@@ -68,7 +67,6 @@ public class RandomDrawWorker extends Worker {
                     }
 
                     for (DocumentSnapshot eventDoc : queryDocumentSnapshots.getDocuments()) {
-                        // Perform random draw for each eligible event
                         processEventRandomDraw(eventDoc);
                     }
                 })
@@ -88,16 +86,8 @@ public class RandomDrawWorker extends Worker {
         DocumentReference eventRef = eventDoc.getReference();
         String eventId = eventDoc.getId();
 
-        // Use a transaction to ensure atomicity of the random draw operation
         firestore.runTransaction((Transaction.Function<Void>) transaction -> {
             DocumentSnapshot snapshot = transaction.get(eventRef);
-
-            Boolean randomDrawPerformed = snapshot.getBoolean("randomDrawPerformed");
-            if (randomDrawPerformed != null && randomDrawPerformed) {
-                // Random draw already performed for this event
-                Log.d(TAG, "Random draw already performed for event: " + eventId);
-                return null;
-            }
 
             Map<String, Object> eventData = snapshot.getData();
             if (eventData == null) {
@@ -105,88 +95,84 @@ public class RandomDrawWorker extends Worker {
                 return null;
             }
 
-            // Retrieve entrants map from event data
+            // Retrieve entrants map
             Map<String, String> entrantsMap = (Map<String, String>) eventData.get("entrants");
             if (entrantsMap == null || entrantsMap.isEmpty()) {
                 Log.d(TAG, "No entrants for event: " + eventId);
-
-                // Mark random draw as performed even if there are no entrants
-                transaction.update(eventRef, "randomDrawPerformed", true);
+                // No entrants to process
                 return null;
             }
 
-            // Collect entrant IDs with status "On Waiting List"
-            List<String> waitlistEntrantIds = new ArrayList<>();
-            for (Map.Entry<String, String> entry : entrantsMap.entrySet()) {
-                if ("On Waiting List".equalsIgnoreCase(entry.getValue())) {
-                    waitlistEntrantIds.add(entry.getKey());
+            // Get event capacity
+            Long capacityLong = snapshot.getLong("capacity");
+            int capacity = capacityLong != null ? capacityLong.intValue() : 0;
+
+            // Calculate the number of entrants who have accepted or are selected
+            int noneligibleEntrants = 0;
+            int acceptedEntrants = 0;
+            for (String status : entrantsMap.values()) {
+                if ("Selected".equalsIgnoreCase(status) || "Accepted".equalsIgnoreCase(status)) {
+                    noneligibleEntrants++;
+                }
+                if ("Accepted".equalsIgnoreCase(status)) {
+                    acceptedEntrants++;
                 }
             }
 
-            if (waitlistEntrantIds.isEmpty()) {
-                Log.d(TAG, "No waitlist entrants for event: " + eventId);
-                // Mark random draw as performed since there are no waitlist entrants
+            if (acceptedEntrants == capacity){
+                Log.d(TAG, "All entrants accepted for event: " + eventId);
+                // Update waitingListFilled
+                transaction.update(eventRef, "waitingListFilled", true);
                 transaction.update(eventRef, "randomDrawPerformed", true);
                 return null;
             }
 
-            // Shuffle the list randomly to ensure fair selection
-            Collections.shuffle(waitlistEntrantIds, new Random());
-
-            // Retrieve event capacity and current number of entrants
-            Long capacityLong = snapshot.getLong("capacity");
-            Long currentEntrantsNumberLong = snapshot.getLong("currentEntrantsNumber");
-            int capacity = capacityLong != null ? capacityLong.intValue() : 0;
-            int currentEntrantsNumber = currentEntrantsNumberLong != null ? currentEntrantsNumberLong.intValue() : 0;
-            int slotsAvailable = capacity - currentEntrantsNumber;
+            // Determine available slots
+            int slotsAvailable = capacity - noneligibleEntrants;
 
             if (slotsAvailable <= 0) {
                 Log.d(TAG, "No available slots for event: " + eventId);
-                // Mark random draw as performed since there are no available slots
-                transaction.update(eventRef, "randomDrawPerformed", true);
+                // Update waitingListFilled
+                transaction.update(eventRef, "waitingListFilled", true);
                 return null;
             }
 
-            // Determine the number of entrants to select based on available slots
-            int numberToSelect = Math.min(slotsAvailable, waitlistEntrantIds.size());
-
-            // Select entrants to be moved from waitlist to enrolled
-            List<String> selectedEntrants = waitlistEntrantIds.subList(0, numberToSelect);
-            List<String> notSelectedEntrants = waitlistEntrantIds.subList(numberToSelect, waitlistEntrantIds.size());
-
-            // Create a new entrants map with updated statuses
-            Map<String, String> newEntrantsMap = new HashMap<>();
-
-            // Retain entrants who are not on the waitlist
+            // Collect eligible entrant IDs (status is "Not Selected" or "waitlist")
+            List<String> eligibleEntrantIds = new ArrayList<>();
             for (Map.Entry<String, String> entry : entrantsMap.entrySet()) {
-                String entrantId = entry.getKey();
                 String status = entry.getValue();
-                if (!"On Waiting List".equalsIgnoreCase(status)) {
-                    newEntrantsMap.put(entrantId, status);
+                if ("Not Selected".equalsIgnoreCase(status) || "waitlist".equalsIgnoreCase(status)) {
+                    eligibleEntrantIds.add(entry.getKey());
                 }
             }
 
-            // Update statuses for selected entrants to "Enrolled"
+            if (eligibleEntrantIds.isEmpty()) {
+                Log.d(TAG, "No eligible entrants to fill available slots for event: " + eventId);
+                // Update waitingListFilled
+                transaction.update(eventRef, "waitingListFilled", true);
+                return null;
+            }
+
+            // Shuffle the list to randomly select entrants
+            Collections.shuffle(eligibleEntrantIds, new Random());
+
+            int numberToSelect = Math.min(slotsAvailable, eligibleEntrantIds.size());
+            List<String> selectedEntrants = eligibleEntrantIds.subList(0, numberToSelect);
+            List<String> notSelectedEntrants = eligibleEntrantIds.subList(numberToSelect, eligibleEntrantIds.size());
+
+            // Update entrant statuses
             for (String entrantId : selectedEntrants) {
-                newEntrantsMap.put(entrantId, "Enrolled");
+                entrantsMap.put(entrantId, "Selected");
             }
-
-            // Ensure not selected entrants remain on the waitlist
             for (String entrantId : notSelectedEntrants) {
-                newEntrantsMap.put(entrantId, "On Waiting List");
+                entrantsMap.put(entrantId, "Not Selected");
             }
 
-            // Update the current number of entrants
-            int newCurrentEntrantsNumber = currentEntrantsNumber + selectedEntrants.size();
+            // Update the event document with the new entrants map
+            transaction.update(eventRef, "entrants", entrantsMap);
 
-            // Prepare the updates for the event document
-            Map<String, Object> eventUpdates = new HashMap<>();
-            eventUpdates.put("entrants", newEntrantsMap);
-            eventUpdates.put("currentEntrantsNumber", newCurrentEntrantsNumber);
-            eventUpdates.put("randomDrawPerformed", true);
-
-            // Apply the updates within the transaction
-            transaction.update(eventRef, eventUpdates);
+            // Set waitingListFilled to true
+            transaction.update(eventRef, "waitingListFilled", true);
 
             Log.d(TAG, "Random draw performed for event: " + eventId);
             return null;
