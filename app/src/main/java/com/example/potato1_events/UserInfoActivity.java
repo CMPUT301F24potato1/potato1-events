@@ -651,7 +651,7 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
         if (id == R.id.nav_notifications) {
             // Navigate to NotificationsActivity
             // Uncomment and implement if NotificationsActivity exists
-            // intent = new Intent(CreateEditFacilityActivity.this, NotificationsActivity.class);
+            intent = new Intent(UserInfoActivity.this, NotificationsActivity.class);
         } else if (id == R.id.nav_edit_profile) {
             Toast.makeText(this, "Already on this page.", Toast.LENGTH_SHORT).show();
         } else if (id == R.id.nav_manage_media) {

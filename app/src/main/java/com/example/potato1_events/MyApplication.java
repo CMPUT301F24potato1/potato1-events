@@ -7,11 +7,19 @@ import java.util.concurrent.TimeUnit;
 
 public class MyApplication extends Application {
 
+    private static final String TAG = "MyApplication";
+
+    private EventStatusListener eventStatusListener;
+
     @Override
     public void onCreate() {
         super.onCreate();
+        // Initialize and start EventStatusListener for notifications
+        eventStatusListener = new EventStatusListener(this);
+        eventStatusListener.startListening();
+        scheduleRandomDrawWorker();
 
-       scheduleRandomDrawWorker();
+
     }
 
     private void scheduleRandomDrawWorker() {

@@ -351,7 +351,7 @@ public class EventWaitingListActivity extends AppCompatActivity implements Navig
         if (id == R.id.nav_notifications) {
             // Navigate to NotificationsActivity
             // Uncomment and implement if NotificationsActivity exists
-            // intent = new Intent(EventWaitingListActivity.this, NotificationsActivity.class);
+            intent = new Intent(EventWaitingListActivity.this, NotificationsActivity.class);
         } else if (id == R.id.nav_edit_profile) {
             // Navigate to UserInfoActivity
             intent = new Intent(EventWaitingListActivity.this, UserInfoActivity.class);

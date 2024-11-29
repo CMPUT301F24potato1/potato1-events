@@ -348,7 +348,7 @@ public class CreateEditFacilityActivity extends AppCompatActivity implements Nav
         if (id == R.id.nav_notifications) {
             // Navigate to NotificationsActivity
             // Uncomment and implement if NotificationsActivity exists
-            // intent = new Intent(CreateEditFacilityActivity.this, NotificationsActivity.class);
+            intent = new Intent(CreateEditFacilityActivity.this, NotificationsActivity.class);
         } else if (id == R.id.nav_edit_profile) {
             // Navigate to UserInfoActivity
             intent = new Intent(CreateEditFacilityActivity.this, UserInfoActivity.class);

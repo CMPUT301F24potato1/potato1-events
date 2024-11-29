@@ -321,7 +321,7 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
         if (id == R.id.nav_notifications) {
             // Navigate to NotificationsActivity
             // Uncomment and implement if NotificationsActivity exists
-            // intent = new Intent(OrganizerHomeActivity.this, NotificationsActivity.class);
+            intent = new Intent(OrganizerHomeActivity.this, NotificationsActivity.class);
         } else if (id == R.id.nav_edit_profile) {
             // Navigate to UserInfoActivity
             intent = new Intent(OrganizerHomeActivity.this, UserInfoActivity.class);

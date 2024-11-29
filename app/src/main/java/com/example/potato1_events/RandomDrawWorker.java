@@ -174,6 +174,8 @@ public class RandomDrawWorker extends Worker {
             // Set waitingListFilled to true
             transaction.update(eventRef, "waitingListFilled", true);
 
+
+
             Log.d(TAG, "Random draw performed for event: " + eventId);
             return null;
         }).addOnSuccessListener(aVoid -> {

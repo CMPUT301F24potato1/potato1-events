@@ -74,6 +74,7 @@ dependencies {
     implementation(libs.firebase.storage)
     implementation(libs.espresso.intents)
     implementation(libs.espresso.contrib)
+    implementation ("com.google.firebase:firebase-messaging:23.0.5")
 //    implementation(libs.rules)
 //    implementation("androidx.test:rules:1.4.0")
     testImplementation(libs.junit)
