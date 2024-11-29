@@ -358,7 +358,6 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
         String description = eventDescriptionEditText.getText().toString().trim();
         String location = eventLocationEditText.getText().toString().trim();
         String availableSpotsStr = availableSpotsEditText.getText().toString().trim();
-        String waitingListSpotsStr = waitingListSpotsEditText.getText().toString().trim();
         boolean isGeolocationEnabled = geolocationCheckBox.isChecked();
 
         // Input validation
@@ -398,7 +397,8 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
         }
 
         // Parse waiting list spots (optional)
-        Integer waitingListSpots = null; // Null indicates no limit
+        Integer waitingListSpots = null; // Null indicates unlimited
+        String waitingListSpotsStr = waitingListSpotsEditText.getText().toString().trim();
         if (!TextUtils.isEmpty(waitingListSpotsStr)) {
             try {
                 waitingListSpots = Integer.parseInt(waitingListSpotsStr);
@@ -554,7 +554,7 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
             if (waitingListSpots != null) {
                 eventData.put("waitingListCapacity", waitingListSpots);
             } else {
-                // Optionally, omit the field or set it to a special value like null
+                // Omit the field to represent an unlimited waiting list
                 // Firestore doesn't support null values in maps directly, so omitting the field is preferred
             }
             eventData.put("currentEntrantsNumber", 0); // Initialize to 0
@@ -742,6 +742,16 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
                         if (!TextUtils.isEmpty(qrCodeHashFetched)) {
                             // Optionally, display the QR code if desired
                             generateQRCodeAndDisplay(qrCodeHashFetched);
+                        }
+
+                        // Handle unlimited waiting list based on waitingListCapacity being null
+                        if (waitingListCapacityLong == null) {
+                            // Waiting list is unlimited
+                            waitingListSpotsEditText.setEnabled(false);
+                            waitingListSpotsEditText.setText(""); // Clear any existing text
+                        } else {
+                            // Waiting list has a capacity
+                            waitingListSpotsEditText.setEnabled(true);
                         }
 
                     } else {
