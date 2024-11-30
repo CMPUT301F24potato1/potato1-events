@@ -567,7 +567,7 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
             eventData.put("endDate", endDateTime.getTime());
             eventData.put("registrationEnd", registrationEndDateTime.getTime());
             eventData.put("randomDrawPerformed", false); // Ensure this is set to false during creation
-
+            eventData.put("waitingListFilled", false);
             // Create a new event document
             firestore.collection("Events").add(eventData)
                     .addOnSuccessListener(documentReference -> {

@@ -116,6 +116,7 @@ public class RandomDrawWorker extends Worker {
             // Calculate the number of entrants who have accepted or are selected
             int nonEligibleEntrants = 0;
             int acceptedEntrants = 0;
+            int EligibleEntrants = 0;
             for (String status : entrantsMap.values()) {
                 if ("Selected".equalsIgnoreCase(status) || "Accepted".equalsIgnoreCase(status)) {
                     nonEligibleEntrants++;
@@ -123,9 +124,12 @@ public class RandomDrawWorker extends Worker {
                 if ("Accepted".equalsIgnoreCase(status)) {
                     acceptedEntrants++;
                 }
+                if ("Not Selected".equalsIgnoreCase(status)) {
+                    EligibleEntrants++;
+                }
             }
-
-            if (acceptedEntrants >= capacity) {
+            Boolean waitingListFilled = (Boolean) eventData.get("waitingListFilled");
+            if ((acceptedEntrants >= capacity || EligibleEntrants == 0) && Boolean.TRUE.equals(waitingListFilled) && waitingListFilled != null) {
                 Log.d(TAG, "All entrants accepted for event: " + eventId);
                 // Update randomDrawPerformed and waitingListFilled
                 transaction.update(eventRef, "randomDrawPerformed", true);
@@ -139,7 +143,6 @@ public class RandomDrawWorker extends Worker {
             if (slotsAvailable <= 0) {
                 Log.d(TAG, "No available slots for event: " + eventId);
                 // Update randomDrawPerformed and waitingListFilled
-                transaction.update(eventRef, "randomDrawPerformed", true);
                 transaction.update(eventRef, "waitingListFilled", true);
                 return null;
             }
@@ -153,13 +156,6 @@ public class RandomDrawWorker extends Worker {
                 }
             }
 
-            if (eligibleEntrantIds.isEmpty()) {
-                Log.d(TAG, "No eligible entrants to fill available slots for event: " + eventId);
-                // Update randomDrawPerformed and waitingListFilled
-                transaction.update(eventRef, "randomDrawPerformed", true);
-                transaction.update(eventRef, "waitingListFilled", true);
-                return null;
-            }
 
             // Shuffle the list to randomly select entrants
             Collections.shuffle(eligibleEntrantIds, new Random());
@@ -180,7 +176,6 @@ public class RandomDrawWorker extends Worker {
             transaction.update(eventRef, "entrants", entrantsMap);
 
             // Mark randomDrawPerformed and waitingListFilled
-            transaction.update(eventRef, "randomDrawPerformed", true);
             transaction.update(eventRef, "waitingListFilled", true);
 
             Log.d(TAG, "Random draw performed for event: " + eventId);
