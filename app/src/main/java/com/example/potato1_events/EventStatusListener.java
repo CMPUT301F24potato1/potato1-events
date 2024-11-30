@@ -35,15 +35,25 @@ public class EventStatusListener {
     private Context context;
     private List<ListenerRegistration> listenerRegistrations;
 
+    // Map to keep track of previous statuses for each event the user has joined
+    private Map<String, String> previousStatuses;
+
     // Map to keep track of previous waitingListFilled values for organizer events
     private Map<String, Boolean> previousWaitingListFilledValues;
+
+    // Map to keep track of event listeners (one per event)
+    private Map<String, ListenerRegistration> eventListeners;
 
     public EventStatusListener(Context context) {
         this.context = context.getApplicationContext();
         firestore = FirebaseFirestore.getInstance();
+        // It's highly recommended to use Firebase Authentication for user IDs.
+        // Here, we're using device ID as per your current implementation.
         currentUserId = Settings.Secure.getString(context.getContentResolver(), Settings.Secure.ANDROID_ID);
         listenerRegistrations = new ArrayList<>();
+        previousStatuses = new HashMap<>();
         previousWaitingListFilledValues = new HashMap<>();
+        eventListeners = new HashMap<>();
         createNotificationChannel();
     }
 
@@ -51,30 +61,27 @@ public class EventStatusListener {
      * Starts listening to events the user has joined and organized.
      */
     public void startListening() {
-        // List of possible statuses
-        String[] statuses = {"Waitlist", "Selected", "Not Selected", "Accepted", "Declined"};
+        // Listener for the user's document to monitor changes in eventsJoined
+        ListenerRegistration userDocListener = firestore.collection("Users").document(currentUserId)
+                .addSnapshotListener((documentSnapshot, e) -> {
+                    if (e != null) {
+                        Log.w(TAG, "User document listen failed.", e);
+                        return;
+                    }
 
-        // Loop through each status and set up a listener for events the user has joined
-        for (String status : statuses) {
-            ListenerRegistration registration = firestore.collection("Events")
-                    .whereEqualTo("entrants." + currentUserId, status)
-                    .addSnapshotListener((snapshots, e) -> {
-                        if (e != null) {
-                            Log.w(TAG, "Listen failed for status " + status, e);
-                            return;
+                    if (documentSnapshot != null && documentSnapshot.exists()) {
+                        List<String> eventsJoined = (List<String>) documentSnapshot.get("eventsJoined");
+                        if (eventsJoined != null) {
+                            updateEventListeners(eventsJoined);
+                        } else {
+                            // If eventsJoined is null, remove all existing event listeners
+                            updateEventListeners(new ArrayList<>());
                         }
+                    }
+                });
+        listenerRegistrations.add(userDocListener);
 
-                        if (snapshots != null) {
-                            for (DocumentChange dc : snapshots.getDocumentChanges()) {
-                                DocumentSnapshot document = dc.getDocument();
-                                handleStatusChange(document);
-                            }
-                        }
-                    });
-            listenerRegistrations.add(registration);
-        }
-
-        // Set up a listener for events the user has organized
+        // Listener for events the user has organized
         ListenerRegistration organizerRegistration = firestore.collection("Events")
                 .whereEqualTo("facilityId", currentUserId)
                 .addSnapshotListener((snapshots, e) -> {
@@ -94,23 +101,93 @@ public class EventStatusListener {
     }
 
     /**
+     * Updates event listeners based on the new list of eventsJoined.
+     *
+     * @param newEventsJoined The updated list of event IDs the user has joined.
+     */
+    private void updateEventListeners(List<String> newEventsJoined) {
+        // Determine which events are new and need listeners added
+        for (String eventId : newEventsJoined) {
+            if (!eventListeners.containsKey(eventId)) {
+                addEventListener(eventId);
+            }
+        }
+
+        // Determine which events have been removed and need listeners removed
+        for (String eventId : new ArrayList<>(eventListeners.keySet())) {
+            if (!newEventsJoined.contains(eventId)) {
+                removeEventListener(eventId);
+            }
+        }
+    }
+
+    /**
+     * Adds a listener for a specific event to monitor status changes.
+     *
+     * @param eventId The ID of the event to listen to.
+     */
+    private void addEventListener(String eventId) {
+        ListenerRegistration registration = firestore.collection("Events").document(eventId)
+                .addSnapshotListener((documentSnapshot, e) -> {
+                    if (e != null) {
+                        Log.w(TAG, "Event listen failed for event ID: " + eventId, e);
+                        return;
+                    }
+
+                    if (documentSnapshot != null && documentSnapshot.exists()) {
+                        handleStatusChange(eventId, documentSnapshot);
+                    }
+                });
+        eventListeners.put(eventId, registration);
+        Log.d(TAG, "Added listener for event: " + eventId);
+    }
+
+    /**
+     * Removes the listener for a specific event.
+     *
+     * @param eventId The ID of the event to stop listening to.
+     */
+    private void removeEventListener(String eventId) {
+        ListenerRegistration registration = eventListeners.remove(eventId);
+        if (registration != null) {
+            registration.remove();
+            previousStatuses.remove(eventId);
+            Log.d(TAG, "Removed listener for event: " + eventId);
+        }
+    }
+
+    /**
      * Handles the status change of the user in an event they've joined.
      *
-     * @param eventSnapshot The snapshot of the event document.
+     * @param eventId        The ID of the event.
+     * @param eventSnapshot  The snapshot of the event document.
      */
-    private void handleStatusChange(DocumentSnapshot eventSnapshot) {
-        String eventId = eventSnapshot.getId();
+    private void handleStatusChange(String eventId, DocumentSnapshot eventSnapshot) {
         String eventName = eventSnapshot.getString("name");
 
         // Get the user's status in this event
         String status = (String) eventSnapshot.get("entrants." + currentUserId);
 
         if (status != null) {
-            Log.d(TAG, "Status changed to " + status + " for event " + eventId);
-            // Create a notification
-            createNotification(eventId, eventName, status);
-            // Optionally, add to in-app notifications
-            saveNotificationToFirestore(eventId, eventName, status);
+            String previousStatus = previousStatuses.get(eventId);
+
+            if (previousStatus == null) {
+                // First time seeing this event, store the status but do not send a notification
+                previousStatuses.put(eventId, status);
+                Log.d(TAG, "Initial status for event " + eventId + ": " + status + ", no notification sent.");
+            } else if (!status.equals(previousStatus)) {
+                // Status has changed
+                Log.d(TAG, "Status changed from " + previousStatus + " to " + status + " for event " + eventId);
+                // Create a notification
+                createNotification(eventId, eventName, status);
+                // Optionally, add to in-app notifications
+                saveNotificationToFirestore(eventId, eventName, status);
+                // Update previous status
+                previousStatuses.put(eventId, status);
+            } else {
+                // Status remains the same
+                Log.d(TAG, "Status for event " + eventId + " remains " + status + ", no notification sent.");
+            }
         }
     }
 
@@ -137,7 +214,7 @@ public class EventStatusListener {
             Log.d(TAG, "Initial waitingListFilled value for event " + eventId + ": " + waitingListFilled);
         } else {
             // Compare previous and current values
-            if (!previousValue.equals(waitingListFilled)) {
+            if (waitingListFilled != previousValue) {
                 // Value has changed
                 Log.d(TAG, "waitingListFilled changed for event " + eventId + ": " + previousValue + " -> " + waitingListFilled);
 
@@ -165,7 +242,12 @@ public class EventStatusListener {
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         intent.putExtra("EVENT_ID", eventId);
 
-        PendingIntent pendingIntent = PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        PendingIntent pendingIntent = PendingIntent.getActivity(
+                context,
+                0,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
 
         String title = "Event Status Update";
         String message = "Your status for event \"" + eventName + "\" has changed to " + status + ".";
@@ -182,11 +264,12 @@ public class EventStatusListener {
         int notificationId = eventId.hashCode(); // Unique ID per event
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ActivityCompat.checkSelfPermission(this.context, android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            if (ActivityCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
                 Log.w(TAG, "Notification permission not granted.");
                 return;
             }
         }
+
         notificationManager.notify(notificationId, builder.build());
         Log.d(TAG, "Notification displayed for event: " + eventId);
     }
@@ -206,6 +289,7 @@ public class EventStatusListener {
         notification.setUserId(currentUserId);
         notification.setType("status_change");
         notification.setRead(false);
+        notification.setStatus(status);
 
         firestore.collection("Notifications")
                 .add(notification)
@@ -228,7 +312,12 @@ public class EventStatusListener {
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         intent.putExtra("EVENT_ID", eventId);
 
-        PendingIntent pendingIntent = PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        PendingIntent pendingIntent = PendingIntent.getActivity(
+                context,
+                0,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
 
         String title = "Random Draw Performed";
         String message = "Random draw has been performed for your event \"" + eventName + "\".";
@@ -245,11 +334,12 @@ public class EventStatusListener {
         int notificationId = eventId.hashCode(); // Unique ID per event
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ActivityCompat.checkSelfPermission(this.context, android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            if (ActivityCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
                 Log.w(TAG, "Notification permission not granted.");
                 return;
             }
         }
+
         notificationManager.notify(notificationId, builder.build());
         Log.d(TAG, "Organizer notification displayed for event: " + eventId);
     }
@@ -299,6 +389,15 @@ public class EventStatusListener {
      * Stops listening to events and removes all listeners.
      */
     public void stopListening() {
+        // Remove event listeners
+        for (ListenerRegistration registration : eventListeners.values()) {
+            registration.remove();
+        }
+        eventListeners.clear();
+        previousStatuses.clear();
+        previousWaitingListFilledValues.clear();
+
+        // Remove other listeners
         for (ListenerRegistration registration : listenerRegistrations) {
             registration.remove();
         }

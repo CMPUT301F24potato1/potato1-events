@@ -9,6 +9,15 @@ public class NotificationItem {
     private String userId;
     private String type; // e.g., "selection", "acceptance", "decline"
     private boolean isRead;
+    private String status;
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
 
     public NotificationItem() {
         // Empty constructor needed for Firestore serialization

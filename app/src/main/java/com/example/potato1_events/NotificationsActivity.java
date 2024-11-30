@@ -2,6 +2,7 @@
 package com.example.potato1_events;
 
 import android.content.Intent;
+import android.graphics.Canvas;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.util.Log;
@@ -14,11 +15,14 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.navigation.NavigationView;
+import com.google.firebase.firestore.DocumentChange;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.util.ArrayList;
@@ -40,6 +44,7 @@ public class NotificationsActivity extends AppCompatActivity implements Navigati
     private String currentUserId;
 
     private boolean isAdmin = false;
+    private ListenerRegistration notificationsListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -78,26 +83,54 @@ public class NotificationsActivity extends AppCompatActivity implements Navigati
         notificationsAdapter = new NotificationsAdapter(notificationList, this, this);
         notificationsRecyclerView.setAdapter(notificationsAdapter);
 
+        ItemTouchHelper itemTouchHelper = new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
+            @Override
+            public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
+                // We are not supporting move operation in this case
+                return false;
+            }
+
+            @Override
+            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+                int position = viewHolder.getAdapterPosition();
+                NotificationItem notification = notificationList.get(position);
+                deleteNotification(notification, position);
+            }
+
+            @Override
+            public void onChildDraw(@NonNull Canvas c, @NonNull RecyclerView recyclerView,
+                                    @NonNull RecyclerView.ViewHolder viewHolder, float dX, float dY,
+                                    int actionState, boolean isCurrentlyActive) {
+                // Optionally, you can customize the swipe background and icon here
+                super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
+            }
+        });
+
+        itemTouchHelper.attachToRecyclerView(notificationsRecyclerView);
+
         // Fetch Notifications
         fetchNotifications();
     }
 
     private void fetchNotifications() {
-        firestore.collection("Notifications")
+        notificationsListener = firestore.collection("Notifications")
                 .whereEqualTo("userId", currentUserId)
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    notificationList.clear();
-                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
-                        NotificationItem notification = doc.toObject(NotificationItem.class);
-                        notification.setId(doc.getId());
-                        notificationList.add(notification);
+                .addSnapshotListener((snapshots, e) -> {
+                    if (e != null) {
+                        Toast.makeText(this, "Error fetching notifications: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        Log.e(TAG, "Error fetching notifications", e);
+                        return;
                     }
-                    notificationsAdapter.notifyDataSetChanged();
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Error fetching notifications: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    Log.e(TAG, "Error fetching notifications", e);
+
+                    if (snapshots != null) {
+                        notificationList.clear();
+                        for (QueryDocumentSnapshot doc : snapshots) {
+                            NotificationItem notification = doc.toObject(NotificationItem.class);
+                            notification.setId(doc.getId());
+                            notificationList.add(notification);
+                        }
+                        notificationsAdapter.notifyDataSetChanged();
+                    }
                 });
     }
 
@@ -193,7 +226,7 @@ public class NotificationsActivity extends AppCompatActivity implements Navigati
                 .get()
                 .addOnSuccessListener(documentSnapshot -> {
                     if (documentSnapshot.exists()) {
-                        String organizerId = documentSnapshot.getString("organizerId");
+                        String organizerId = documentSnapshot.getString("facilityId");
                         if (organizerId != null) {
                             // Create notification for organizer
                             NotificationItem notification = new NotificationItem();
@@ -212,10 +245,44 @@ public class NotificationsActivity extends AppCompatActivity implements Navigati
 
     private void markNotificationAsRead(NotificationItem notification) {
         firestore.collection("Notifications").document(notification.getId())
-                .update("read", true)
+                .delete()
                 .addOnSuccessListener(aVoid -> {
-                    notification.setRead(true);
-                    notificationsAdapter.notifyDataSetChanged();
+                    // No need to manually remove the notification; the listener will handle it
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this, "Error deleting notification: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    Log.e(TAG, "Error deleting notification", e);
                 });
+    }
+    private void deleteNotification(NotificationItem notification, int position) {
+        firestore.collection("Notifications").document(notification.getId())
+                .delete()
+                .addOnSuccessListener(aVoid -> {
+                    // The listener will handle the removal, so no need to update the list here
+                    Toast.makeText(this, "Notification deleted", Toast.LENGTH_SHORT).show();
+                })
+                .addOnFailureListener(e -> {
+                    // If deletion fails, we need to notify the adapter to rebind the item
+                    notificationsAdapter.notifyItemChanged(position);
+                    Toast.makeText(this, "Error deleting notification: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    Log.e(TAG, "Error deleting notification", e);
+                });
+    }
+    private int findNotificationIndex(String notificationId) {
+        for (int i = 0; i < notificationList.size(); i++) {
+            if (notificationList.get(i).getId().equals(notificationId)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (notificationsListener != null) {
+            notificationsListener.remove();
+            notificationsListener = null;
+        }
     }
 }
