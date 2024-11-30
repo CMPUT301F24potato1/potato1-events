@@ -104,6 +104,14 @@
                         android:textAppearance="?attr/textAppearanceBody2"
                         android:layout_marginTop="8dp" />
 
+                    <!-- Capacity in the event -->
+                    <TextView
+                        android:id="@+id/eventAvaliableCapacityTextView"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="?attr/textAppearanceBody2"
+                        android:layout_marginTop="8dp" />
+
                     <!-- Event waiting list capacity -->
                     <TextView
                         android:id="@+id/eventWaitlistCountTextView"

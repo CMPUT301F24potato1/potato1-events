@@ -2,9 +2,12 @@
 package com.example.potato1_events;
 
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
@@ -19,6 +22,8 @@ import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.cardview.widget.CardView;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 
@@ -56,6 +61,8 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
     // User Privileges
     private boolean isAdmin = false; // Class-level variable
 
+    private static final int NOTIFICATION_PERMISSION_REQUEST_CODE = 1001;
+
     /**
      * Initializes the activity, sets up UI components, Firebase instances, and event listeners.
      *
@@ -86,9 +93,6 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        // Bind the Switch Mode button
-        switchModeButton = findViewById(R.id.switchModeButton);
-
         // Set up Navigation Drawer
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawerLayout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
@@ -103,11 +107,8 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
             navigationView.getMenu().findItem(R.id.nav_edit_facility).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_my_events).setVisible(true);
         }
-
+        requestNotificationPermission();
         navigationView.setNavigationItemSelectedListener(this);
-
-        // Set Click Listener for Switch Mode Button
-        switchModeButton.setOnClickListener(v -> switchMode());
 
         // Initialize event list
         eventList = new ArrayList<>();
@@ -251,7 +252,7 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
         if (id == R.id.nav_notifications) {
             // Navigate to NotificationsActivity
             // Uncomment and implement if NotificationsActivity exists
-            // intent = new Intent(EntrantHomeActivity.this, NotificationsActivity.class);
+            intent = new Intent(EntrantHomeActivity.this, NotificationsActivity.class);
         } else if (id == R.id.nav_edit_profile) {
             // Navigate to UserInfoActivity in EDIT mode
             intent = new Intent(EntrantHomeActivity.this, UserInfoActivity.class);
@@ -299,6 +300,26 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
             drawerLayout.closeDrawer(GravityCompat.START);
         } else {
             super.onBackPressed();
+        }
+    }
+    private void requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, NOTIFICATION_PERMISSION_REQUEST_CODE);
+            }
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == NOTIFICATION_PERMISSION_REQUEST_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Log.d("EntrantHomeActivity", "Notification permission granted.");
+            } else {
+                Log.d("EntrantHomeActivity", "Notification permission denied.");
+                // Optionally, inform the user that notifications will not be shown
+            }
         }
     }
 }

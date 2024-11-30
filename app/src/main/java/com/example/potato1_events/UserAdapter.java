@@ -7,8 +7,11 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.google.firebase.storage.FirebaseStorage;
@@ -39,10 +42,20 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
     private Context context;
 
     /**
+     * Listener for handling cancel actions.
+     */
+    private OnCancelClickListener onCancelClickListener;
+
+    /**
      * Tag for logging.
      */
     private static final String TAG = "UserAdapter";
-
+    /**
+     * Interface for handling cancel action.
+     */
+    public interface OnCancelClickListener {
+        void onCancelClick(User user);
+    }
     /**
      * Constructor for UserAdapter.
      *
@@ -50,10 +63,11 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
      * @param userStatusMap Map of userId to status.
      * @param context       The context from the Activity.
      */
-    public UserAdapter(List<User> userList, Map<String, String> userStatusMap, Context context) {
+    public UserAdapter(List<User> userList, Map<String, String> userStatusMap, Context context, OnCancelClickListener onCancelClickListener) {
         this.userList = userList;
         this.userStatusMap = userStatusMap;
         this.context = context;
+        this.onCancelClickListener = onCancelClickListener;
     }
 
     /**
@@ -126,6 +140,11 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
         TextView entrantStatusTextView;
 
         /**
+         * Button for canceling an entrant.
+         */
+        Button cancelButton;
+
+        /**
          * Constructor for UserViewHolder.
          *
          * @param itemView The view representing a single user item.
@@ -135,6 +154,7 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
             entrantProfileImageView = itemView.findViewById(R.id.entrantProfileImageView);
             entrantNameTextView = itemView.findViewById(R.id.entrantNameTextView);
             entrantStatusTextView = itemView.findViewById(R.id.entrantStatusTextView);
+            cancelButton = itemView.findViewById(R.id.cancelEntrantButton);
         }
 
         /**
@@ -189,6 +209,20 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
                     entrantStatusTextView.setTextColor(context.getResources().getColor(R.color.unknownColor));
                     break;
             }
+            if ("Selected".equalsIgnoreCase(status)) {
+                cancelButton.setVisibility(View.VISIBLE);
+            } else {
+                cancelButton.setVisibility(View.GONE);
+            }
+
+            // Handle "Cancel" button click
+            cancelButton.setOnClickListener(v -> {
+                if (onCancelClickListener != null) {
+                    onCancelClickListener.onCancelClick(user);
+                } else {
+                    Toast.makeText(context, "Cancel action not implemented.", Toast.LENGTH_SHORT).show();
+                }
+            });
         }
     }
 

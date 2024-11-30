@@ -852,7 +852,7 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
         if (id == R.id.nav_notifications) {
             // Navigate to NotificationsActivity
             // Uncomment and implement if NotificationsActivity exists
-            // intent = new Intent(CreateEditEventActivity.this, NotificationsActivity.class);
+            intent = new Intent(CreateEditEventActivity.this, NotificationsActivity.class);
         } else if (id == R.id.nav_edit_profile) {
             // Navigate to UserInfoActivity
             intent = new Intent(CreateEditEventActivity.this, UserInfoActivity.class);
