@@ -37,11 +37,11 @@ android {
     buildFeatures {
         viewBinding = true
     }
-    packaging {
-        resources {
-            excludes += "mockito-extensions/org.mockito.plugins.MockMaker"
-        }
-    }
+//    packaging {
+//        resources {
+//            excludes += "mockito-extensions/org.mockito.plugins.MockMaker"
+//        }
+//    }
 
 }
 
@@ -104,7 +104,7 @@ dependencies {
     // Instrumentation Tests (Run on Android devices/emulators)
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
-    androidTestImplementation("org.mockito:mockito-android:5.5.0")
+//    androidTestImplementation("org.mockito:mockito-android:5.5.0")
 
     // Mockito for Android Instrumented Tests
 //    androidTestImplementation("org.mockito:mockito-android:3.12.4")
