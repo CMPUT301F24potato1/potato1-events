@@ -356,11 +356,17 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
                     Map<String, String> entrantsMap = loadedEvent.getEntrants();
                     // Count the number of entrants with the "waitlist" status
                     long waitlistCount = entrantsMap.values().stream()
-                            .filter(status -> "waitlist".equalsIgnoreCase(status) | "selected".equalsIgnoreCase(status))
+                            .filter(status -> "waitlist".equalsIgnoreCase(status) || "selected".equalsIgnoreCase(status))
                             .count();
 
-                    String waitlistText = "Waiting List: " + waitlistCount + "/" + loadedEvent.getWaitingListCapacity();
-                    eventWaitlistCountTextView.setText(waitlistText);
+                    // Check if waitingListCapacity is null
+                    if (loadedEvent.getWaitingListCapacity() != null) {
+                        String waitlistText = "Waiting List: " + waitlistCount + "/" + loadedEvent.getWaitingListCapacity();
+                        eventWaitlistCountTextView.setText(waitlistText);
+                    } else {
+                        String waitlistText = "Waiting List: " + waitlistCount;
+                        eventWaitlistCountTextView.setText(waitlistText);
+                    }
                 } else {
                     eventWaitlistCountTextView.setText("Waiting List: 0/" + (event != null ? event.getWaitingListCapacity() : "N/A"));
                 }

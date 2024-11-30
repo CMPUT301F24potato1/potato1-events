@@ -1,4 +1,3 @@
-// File: UserInfoActivity.java
 package com.example.potato1_events;
 
 import android.Manifest;
@@ -10,7 +9,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.net.Uri;
 import android.os.Bundle;
-import android.provider.Settings;
+import android.provider.Settings.Secure;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.MenuItem;
@@ -19,17 +18,22 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
-import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.VisibleForTesting;
 import androidx.appcompat.app.ActionBarDrawerToggle;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
 import com.google.android.material.navigation.NavigationView;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
@@ -44,7 +48,8 @@ import de.hdodenhof.circleimageview.CircleImageView;
 
 /**
  * Activity responsible for handling user information, including profile picture selection,
- * uploading images to Firebase Storage, generating default avatars, and saving/updating user data to Firestore.
+ * uploading images to Firebase Storage, generating default avatars, requesting location permissions,
+ * fetching user location, and saving/updating user data to Firestore.
  */
 public class UserInfoActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
@@ -54,7 +59,6 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
     private static final String MODE_CREATE = "CREATE";
     private static final String MODE_EDIT = "EDIT";
     private boolean isAdmin = false; // Retrieved from Intent
-
 
     // Drawer Layout and Navigation View
     private DrawerLayout drawerLayout;
@@ -81,14 +85,26 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
     // ActivityResultLauncher for selecting image
     private ActivityResultLauncher<String> selectImageLauncher;
 
-    // ActivityResultLauncher for requesting permissions
-    private ActivityResultLauncher<String> requestPermissionLauncher;
+    // ActivityResultLauncher for requesting storage permissions
+    private ActivityResultLauncher<String> requestStoragePermissionLauncher;
+
+    // ActivityResultLauncher for location permissions
+    private ActivityResultLauncher<String[]> locationPermissionLauncher;
 
     // Current mode: CREATE or EDIT
     private String mode;
 
     // ActionBarDrawerToggle
     private ActionBarDrawerToggle toggle;
+
+    // Location Components
+    private FusedLocationProviderClient fusedLocationClient;
+
+    // Permission Request Codes
+    private static final int LOCATION_PERMISSION_REQUEST_CODE = 2001;
+
+    // User Object
+    private User currentUser; // To hold the user data being saved
 
     /**
      * Sets the FirebaseFirestore instance.
@@ -132,6 +148,9 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
         // Initialize Firebase Firestore and Storage
         firestore = FirebaseFirestore.getInstance();
         storage = FirebaseStorage.getInstance();
+
+        // Initialize Location Client
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
         // Initialize DrawerLayout and NavigationView
         drawerLayout = findViewById(R.id.user_info_activity);
@@ -181,7 +200,7 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
         }
 
         // Get device ID
-        deviceId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
+        deviceId = Secure.getString(getContentResolver(), Secure.ANDROID_ID);
 
         // Initialize ActivityResultLauncher for image selection
         selectImageLauncher = registerForActivityResult(
@@ -198,14 +217,42 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
                 }
         );
 
-        // Initialize ActivityResultLauncher for permission requests
-        requestPermissionLauncher = registerForActivityResult(
+        // Initialize ActivityResultLauncher for storage permissions
+        requestStoragePermissionLauncher = registerForActivityResult(
                 new ActivityResultContracts.RequestPermission(),
                 isGranted -> {
                     if (isGranted) {
                         openImageSelector();
                     } else {
                         Toast.makeText(this, "Permission denied to read your External storage", Toast.LENGTH_SHORT).show();
+                    }
+                }
+        );
+
+        // Initialize ActivityResultLauncher for location permissions
+        locationPermissionLauncher = registerForActivityResult(
+                new ActivityResultContracts.RequestMultiplePermissions(),
+                result -> {
+                    Boolean fineLocationGranted = result.getOrDefault(Manifest.permission.ACCESS_FINE_LOCATION, false);
+                    Boolean coarseLocationGranted = result.getOrDefault(Manifest.permission.ACCESS_COARSE_LOCATION, false);
+                    if (fineLocationGranted != null && fineLocationGranted) {
+                        // Precise location access granted
+                        if (currentUser != null) {
+                            getLastLocation(currentUser);
+                        }
+                    } else if (coarseLocationGranted != null && coarseLocationGranted) {
+                        // Only approximate location access granted
+                        if (currentUser != null) {
+                            getLastLocation(currentUser);
+                        }
+                    } else {
+                        // No location access granted
+                        Toast.makeText(this, "Location permission denied. Proceeding without location data.", Toast.LENGTH_SHORT).show();
+                        if (currentUser != null) {
+                            currentUser.setLatitude(null);
+                            currentUser.setLongitude(null);
+                            saveUserToFirestore(currentUser);
+                        }
                     }
                 }
         );
@@ -220,7 +267,7 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
                     openImageSelector();
                 } else {
                     // Request permission
-                    requestPermissionLauncher.launch(getReadPermission());
+                    requestStoragePermissionLauncher.launch(getReadPermission());
                 }
             } else if (buttonText.equals("Remove Picture")) {
                 // Remove Picture functionality
@@ -345,8 +392,8 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
     }
 
     /**
-     * Handles the process of saving or updating user information, including uploading a selected image
-     * or handling image removal, and updating Firestore accordingly.
+     * Handles the process of saving or updating user information, including uploading a selected image,
+     * handling image removal, fetching location, and updating Firestore accordingly.
      */
     private void saveUserInfo() {
         String name = nameEditText.getText().toString().trim();
@@ -421,8 +468,17 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
                         existingImageRef.delete()
                                 .addOnSuccessListener(aVoid -> {
                                     Log.d(TAG, "Existing image deleted successfully.");
-                                    // Update Firestore with new image path
-                                    saveOrUpdateUserInFirestore(name, email, phoneNumber, imagePath);
+                                    // Initialize currentUser
+                                    currentUser = new User();
+                                    currentUser.setUserId(deviceId); // Assign device ID as userId
+                                    currentUser.setName(name);
+                                    currentUser.setEmail(email);
+                                    currentUser.setPhoneNumber(phoneNumber);
+                                    currentUser.setImagePath(imagePath);
+                                    currentUser.setEventsJoined(new ArrayList<>()); // Initialize eventsJoined
+
+                                    // Proceed to fetch location and save
+                                    fetchUserLocationAndSave(currentUser);
                                 })
                                 .addOnFailureListener(e -> {
                                     Toast.makeText(UserInfoActivity.this, "Failed to delete existing image: " + e.getMessage(), Toast.LENGTH_SHORT).show();
@@ -430,8 +486,17 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
                                     saveButton.setEnabled(true);
                                 });
                     } else {
-                        // No existing image, update Firestore with new image path
-                        saveOrUpdateUserInFirestore(name, email, phoneNumber, imagePath);
+                        // No existing image, initialize currentUser
+                        currentUser = new User();
+                        currentUser.setUserId(deviceId); // Assign device ID as userId
+                        currentUser.setName(name);
+                        currentUser.setEmail(email);
+                        currentUser.setPhoneNumber(phoneNumber);
+                        currentUser.setImagePath(imagePath);
+                        currentUser.setEventsJoined(new ArrayList<>()); // Initialize eventsJoined
+
+                        // Proceed to fetch location and save
+                        fetchUserLocationAndSave(currentUser);
                     }
                 })
                 .addOnFailureListener(e -> {
@@ -469,8 +534,17 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
                 .addOnSuccessListener(taskSnapshot -> {
                     // Get the storage path
                     String avatarPath = storageRef.getPath();
-                    // Update Firestore with new default avatar path
-                    saveOrUpdateUserInFirestore(name, email, phoneNumber, avatarPath);
+                    // Initialize currentUser
+                    currentUser = new User();
+                    currentUser.setUserId(deviceId); // Assign device ID as userId
+                    currentUser.setName(name);
+                    currentUser.setEmail(email);
+                    currentUser.setPhoneNumber(phoneNumber);
+                    currentUser.setImagePath(avatarPath);
+                    currentUser.setEventsJoined(new ArrayList<>()); // Initialize eventsJoined
+
+                    // Proceed to fetch location and save
+                    fetchUserLocationAndSave(currentUser);
                 })
                 .addOnFailureListener(e -> {
                     Toast.makeText(UserInfoActivity.this, "Default avatar upload failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
@@ -480,7 +554,7 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
     }
 
     /**
-     * Saves or updates the user's information in Firestore.
+     * Saves or updates the user's information in Firestore, including location data.
      *
      * @param name        The user's name.
      * @param email       The user's email address.
@@ -488,15 +562,83 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
      * @param imagePath   The image path to save (can be null).
      */
     private void saveOrUpdateUserInFirestore(String name, String email, String phoneNumber, String imagePath) {
-        User user = new User();
-        user.setUserId(deviceId); // Assign device ID as userId
-        user.setName(name);
-        user.setEmail(email);
-        user.setPhoneNumber(phoneNumber);
-        user.setImagePath(imagePath);
-        // Removed role
-        // user.setRole(userType); // Removed
+        currentUser = new User();
+        currentUser.setUserId(deviceId); // Assign device ID as userId
+        currentUser.setName(name);
+        currentUser.setEmail(email);
+        currentUser.setPhoneNumber(phoneNumber);
+        currentUser.setImagePath(imagePath);
+        currentUser.setEventsJoined(new ArrayList<>()); // Initialize eventsJoined
 
+        // Proceed to fetch location and save
+        fetchUserLocationAndSave(currentUser);
+    }
+
+    /**
+     * Fetches the user's current location and updates the User object before saving to Firestore.
+     *
+     * @param user The User object to update with location data.
+     */
+    private void fetchUserLocationAndSave(User user) {
+        // Check location permissions
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+                ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            // Permissions are already granted
+            getLastLocation(user);
+        } else {
+            // Request location permissions
+            locationPermissionLauncher.launch(new String[]{
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+            });
+        }
+    }
+
+    /**
+     * Retrieves the user's last known location and updates the User object.
+     *
+     * @param user The User object to update with location data.
+     */
+    private void getLastLocation(User user) {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // Permissions are not granted
+            Toast.makeText(this, "Location permissions are not granted.", Toast.LENGTH_SHORT).show();
+            user.setLatitude(null);
+            user.setLongitude(null);
+            saveUserToFirestore(user);
+            return;
+        }
+        fusedLocationClient.getLastLocation()
+                .addOnCompleteListener(new OnCompleteListener<android.location.Location>() {
+                    @Override
+                    public void onComplete(@NonNull Task<android.location.Location> task) {
+                        if (task.isSuccessful() && task.getResult() != null) {
+                            android.location.Location location = task.getResult();
+                            double latitude = location.getLatitude();
+                            double longitude = location.getLongitude();
+                            user.setLatitude(latitude);
+                            user.setLongitude(longitude);
+                            // Proceed to save user data with location
+                            saveUserToFirestore(user);
+                        } else {
+                            Toast.makeText(UserInfoActivity.this, "Unable to retrieve location. Please ensure location services are enabled.", Toast.LENGTH_SHORT).show();
+                            Log.e(TAG, "Failed to get location");
+                            // Proceed to save user data without location
+                            user.setLatitude(null);
+                            user.setLongitude(null);
+                            saveUserToFirestore(user);
+                        }
+                    }
+                });
+    }
+
+    /**
+     * Saves the User object to Firestore.
+     *
+     * @param user The User object containing all user data.
+     */
+    private void saveUserToFirestore(User user) {
         if (mode.equals(MODE_CREATE)) {
             // Initialize eventsJoined list for new users
             user.setEventsJoined(new ArrayList<>());
@@ -552,17 +694,6 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
         String initials = getInitials(name);
         Bitmap bitmap = createAvatarBitmap(initials);
         profileImageView.setImageBitmap(bitmap);
-    }
-
-    /**
-     * Navigates the user to the appropriate home page.
-     * Since roles are removed, navigate to a single HomeActivity.
-     * Closes the current activity after navigation.
-     */
-    private void navigateToHomePage() {
-        Intent intent = new Intent(UserInfoActivity.this, EntrantHomeActivity.class);
-        startActivity(intent);
-        finish(); // Close current activity
     }
 
     /**
@@ -637,7 +768,18 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
     }
 
     /**
-     * Handles navigation item selections from the navigation drawer.
+     * Navigates the user to the appropriate home page.
+     * Since roles are removed, navigate to a single HomeActivity.
+     * Closes the current activity after navigation.
+     */
+    private void navigateToHomePage() {
+        Intent intent = new Intent(UserInfoActivity.this, EntrantHomeActivity.class);
+        startActivity(intent);
+        finish(); // Close current activity
+    }
+
+    /**
+     * Handles navigation menu item selections.
      *
      * @param item The selected menu item.
      * @return True if the event was handled, false otherwise.
@@ -665,7 +807,6 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
         } else if (id == R.id.action_scan_qr) {
             // Handle QR code scanning
             intent = new Intent(UserInfoActivity.this, QRScanActivity.class);
-            intent.putExtra("IS_ADMIN", isAdmin);
         } else if (id == R.id.nav_create_event) {
             // Navigate to CreateEditEventActivity and pass isAdmin flag
             intent = new Intent(UserInfoActivity.this, CreateEditEventActivity.class);
@@ -687,6 +828,7 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
             startActivity(intent);
         }
 
+
         drawerLayout.closeDrawer(GravityCompat.START);
         return true;
     }
@@ -696,7 +838,7 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
      * Otherwise, perform the default back press action.
      */
     private void handleBackPressed() {
-        OnBackPressedCallback callback = new OnBackPressedCallback(true /* enabled */) {
+        androidx.activity.OnBackPressedCallback callback = new androidx.activity.OnBackPressedCallback(true /* enabled */) {
             @Override
             public void handleOnBackPressed() {
                 if (drawerLayout.isDrawerOpen(GravityCompat.START)) {

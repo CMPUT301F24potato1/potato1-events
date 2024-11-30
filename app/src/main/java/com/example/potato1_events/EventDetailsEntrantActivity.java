@@ -1,16 +1,24 @@
 // File: EventDetailsEntrantActivity.java
 package com.example.potato1_events;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.content.ContextCompat;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.location.Location;
+import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings.Secure;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
@@ -18,6 +26,10 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -120,6 +132,12 @@ public class EventDetailsEntrantActivity extends AppCompatActivity {
      */
     private String userType = "Entrant";
 
+    // Location Components
+    private FusedLocationProviderClient fusedLocationClient;
+
+    // Permission Components
+    private ActivityResultLauncher<String[]> locationPermissionLauncher;
+
     /**
      * Called when the activity is first created.
      * Initializes UI components, Firebase instances, and retrieves event details.
@@ -145,6 +163,32 @@ public class EventDetailsEntrantActivity extends AppCompatActivity {
         eventStatusTextView = findViewById(R.id.eventStatusTextView);
         joinButton = findViewById(R.id.joinButton);
         leaveButton = findViewById(R.id.leaveButton);
+
+        // Initialize Location Client
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+
+        // Initialize ActivityResultLauncher for location permissions
+        locationPermissionLauncher = registerForActivityResult(
+                new ActivityResultContracts.RequestMultiplePermissions(),
+                result -> {
+                    Boolean fineLocationGranted = result.getOrDefault(Manifest.permission.ACCESS_FINE_LOCATION, false);
+                    Boolean coarseLocationGranted = result.getOrDefault(Manifest.permission.ACCESS_COARSE_LOCATION, false);
+                    if (fineLocationGranted != null && fineLocationGranted) {
+                        // Precise location access granted
+                        Toast.makeText(this, "Location permission granted.", Toast.LENGTH_SHORT).show();
+                        showJoinConfirmationDialog();
+                    } else if (coarseLocationGranted != null && coarseLocationGranted) {
+                        // Only approximate location access granted
+                        Toast.makeText(this, "Approximate location permission granted.", Toast.LENGTH_SHORT).show();
+                        showJoinConfirmationDialog();
+                    } else {
+                        // No location access granted
+                        Toast.makeText(this, "Location permission denied. Cannot join the event.", Toast.LENGTH_SHORT).show();
+                        // Optionally, disable the join button or provide further instructions
+                        joinButton.setEnabled(false);
+                    }
+                }
+        );
 
         // Retrieve Device ID (unique identifier for the entrant)
         deviceId = Secure.getString(getContentResolver(), Secure.ANDROID_ID);
@@ -173,24 +217,6 @@ public class EventDetailsEntrantActivity extends AppCompatActivity {
             actionBar.setDisplayHomeAsUpEnabled(true);
             actionBar.setTitle("Event Details"); // Set your desired title here
         }
-    }
-
-    /**
-     * Sets the EntEventsRepository instance (used for testing).
-     *
-     * @param repository The EntEventsRepository instance.
-     */
-    public void setEntEventsRepository(EntEventsRepository repository) {
-        this.entEventsRepository = repository;
-    }
-
-    /**
-     * Sets the device ID (used for testing).
-     *
-     * @param id The device ID.
-     */
-    public void setDeviceId(String id) {
-        this.deviceId = id;
     }
 
     /**
@@ -259,9 +285,14 @@ public class EventDetailsEntrantActivity extends AppCompatActivity {
             eventDatesTextView.setText("Event Dates: Not Available");
         }
 
-        String capacity = "Waiting List Capacity: " + event.getCurrentEntrantsNumber() + " / " + event.getWaitingListCapacity();
-        eventCapacityTextView.setText(capacity);
-
+        if (event.getWaitingListCapacity() == null) {
+            String capacity = "Currently " + event.getCurrentEntrantsNumber() + " on the waiting list. No limit to spots on the waiting list.";
+            eventCapacityTextView.setText(capacity);
+        }
+        else {
+            String capacity = "Waiting List Capacity: " + event.getCurrentEntrantsNumber() + " / " + event.getWaitingListCapacity();
+            eventCapacityTextView.setText(capacity);
+        }
         String geo = "Geolocation Required: " + (event.isGeolocationRequired() ? "Yes" : "No");
         eventGeolocationTextView.setText(geo);
 
@@ -293,11 +324,36 @@ public class EventDetailsEntrantActivity extends AppCompatActivity {
      */
     private void handleJoinAction() {
         if (event.isGeolocationRequired()) {
-            // **If Geolocation is Enabled, Show Geolocation Alert First**
-            showGeolocationAlert();
+            // Check if location permissions are granted
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+                    ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                // Permissions are granted, proceed to join
+                showGeolocationAlert();
+            } else {
+                // Permissions are not granted, request them with rationale
+                new AlertDialog.Builder(this)
+                        .setTitle("Geolocation Permission Needed")
+                        .setMessage("This event requires access to your location to join. Please grant location permissions.")
+                        .setPositiveButton("Grant", (dialog, which) -> {
+                            // Request location permissions
+                            locationPermissionLauncher.launch(new String[]{
+                                    Manifest.permission.ACCESS_FINE_LOCATION,
+                                    Manifest.permission.ACCESS_COARSE_LOCATION
+                            });
+                        })
+                        .setNegativeButton("Cancel", (dialog, which) -> {
+                            dialog.dismiss();
+                            Toast.makeText(this, "Cannot join the event without location permissions.", Toast.LENGTH_SHORT).show();
+                        })
+                        .create()
+                        .show();
+            }
+        } else {
+            // Geolocation not required, proceed to join
+            showJoinConfirmationDialog();
         }
-        showJoinConfirmationDialog();
     }
+
 
     /**
      * Displays a Geolocation Alert Dialog prompting the user about geolocation requirements.
@@ -314,6 +370,7 @@ public class EventDetailsEntrantActivity extends AppCompatActivity {
                 .setNegativeButton("Cancel", null)
                 .show();
     }
+
 
     /**
      * Displays the Join Waiting List confirmation dialog.
@@ -397,5 +454,4 @@ public class EventDetailsEntrantActivity extends AppCompatActivity {
             }
         });
     }
-
 }
