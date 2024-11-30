@@ -27,6 +27,9 @@ public class User {
 
     private List<String> eventsJoined; // List of event document IDs
 
+    private Double latitude;  // User's current latitude
+    private Double longitude; // User's current longitude
+
     /**
      * Default constructor required for Firestore serialization.
      * Initializes isAdmin to false by default.
@@ -263,5 +266,41 @@ public class User {
      */
     public void setEventsJoined(List<String> eventsJoined) {
         this.eventsJoined = eventsJoined;
+    }
+
+    /**
+     * Gets the user's latitude.
+     *
+     * @return The user's current latitude.
+     */
+    public Double getLatitude() {
+        return latitude;
+    }
+
+    /**
+     * Sets the user's latitude.
+     *
+     * @param latitude The user's current latitude.
+     */
+    public void setLatitude(Double latitude) {
+        this.latitude = latitude;
+    }
+
+    /**
+     * Gets the user's longitude.
+     *
+     * @return The user's current longitude.
+     */
+    public Double getLongitude() {
+        return longitude;
+    }
+
+    /**
+     * Sets the user's longitude.
+     *
+     * @param longitude The user's current longitude.
+     */
+    public void setLongitude(Double longitude) {
+        this.longitude = longitude;
     }
 }
