@@ -1,33 +1,39 @@
 // File: RandomDrawWorker.java
-package com.example.potato1_events; // Replace with your actual package name
+package com.example.potato1_events;
 
 import android.content.Context;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
+import androidx.work.Data;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
 import com.google.firebase.Timestamp;
-import com.google.firebase.firestore.*;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 
 /**
  * Worker class responsible for performing random draws for events.
- * It checks for events that have ended their registration period and haven't had a random draw performed yet.
- * For each such event, it selects entrants from the waiting list based on available slots and updates their status.
+ * It can process either a specific event (if eventId is provided) or all eligible events.
  */
 public class RandomDrawWorker extends Worker {
 
-    // Tag for logging purposes
     private static final String TAG = "RandomDrawWorker";
+    private static final String KEY_EVENT_ID = "eventId";
 
     /**
      * Constructs a new RandomDrawWorker.
      *
-     * @param context      The application context.
-     * @param params Parameters for the worker.
+     * @param context The application context.
+     * @param params  Parameters for the worker.
      */
     public RandomDrawWorker(@NonNull Context context, @NonNull WorkerParameters params) {
         super(context, params);
@@ -42,52 +48,37 @@ public class RandomDrawWorker extends Worker {
     @Override
     public Result doWork() {
         Log.d(TAG, "RandomDrawWorker is running");
-        performRandomDraw();
+        String eventId = getInputData().getString(KEY_EVENT_ID);
+
+        if (eventId != null && !eventId.isEmpty()) {
+            // Process a specific event
+            Log.d(TAG, "Processing specific event: " + eventId);
+            performRandomDrawForEvent(eventId);
+        } else {
+            // Process all eligible events
+            Log.d(TAG, "Processing all eligible events");
+            performRandomDrawForAllEvents();
+        }
+
         return Result.success();
     }
 
     /**
-     * Initiates the random draw process by querying eligible events and processing each one.
-     * An eligible event is one where the registration period has ended and a random draw hasn't been performed yet.
-     */
-    private void performRandomDraw() {
-        FirebaseFirestore firestore = FirebaseFirestore.getInstance();
-        Timestamp now = Timestamp.now();
-
-        // Query events that need random draw
-        firestore.collection("Events")
-                .whereLessThanOrEqualTo("registrationEnd", now)
-                //.whereEqualTo("waitingListFilled", false)
-                .whereEqualTo("randomDrawPerformed", false)
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    if (queryDocumentSnapshots.isEmpty()) {
-                        Log.d(TAG, "No events require random draw at this time.");
-                        return;
-                    }
-
-                    for (DocumentSnapshot eventDoc : queryDocumentSnapshots.getDocuments()) {
-                        processEventRandomDraw(eventDoc);
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    Log.e(TAG, "Error querying events for random draw", e);
-                });
-    }
-
-    /**
-     * Processes the random draw for a specific event.
-     * Updates entrant statuses based on available slots and marks the random draw as performed.
+     * Performs the random draw for a specific event.
      *
-     * @param eventDoc The DocumentSnapshot representing the event to process.
+     * @param eventId The ID of the event to process.
      */
-    private void processEventRandomDraw(DocumentSnapshot eventDoc) {
+    private void performRandomDrawForEvent(String eventId) {
         FirebaseFirestore firestore = FirebaseFirestore.getInstance();
-        DocumentReference eventRef = eventDoc.getReference();
-        String eventId = eventDoc.getId();
+        DocumentReference eventRef = firestore.collection("Events").document(eventId);
 
-        firestore.runTransaction((Transaction.Function<Void>) transaction -> {
+        firestore.runTransaction(transaction -> {
             DocumentSnapshot snapshot = transaction.get(eventRef);
+
+            if (!snapshot.exists()) {
+                Log.e(TAG, "Event document does not exist: " + eventId);
+                return null;
+            }
 
             Map<String, Object> eventData = snapshot.getData();
             if (eventData == null) {
@@ -95,11 +86,26 @@ public class RandomDrawWorker extends Worker {
                 return null;
             }
 
+            // Check if random draw is already performed
+            Boolean randomDrawPerformed = (Boolean) eventData.get("randomDrawPerformed");
+            if (randomDrawPerformed != null && randomDrawPerformed) {
+                Log.d(TAG, "Random draw already performed for event: " + eventId);
+                return null;
+            }
+
+            // Check if registration period has ended
+            Timestamp registrationEnd = snapshot.getTimestamp("registrationEnd");
+            if (registrationEnd == null || registrationEnd.toDate().after(new java.util.Date())) {
+                Log.d(TAG, "Registration period not ended for event: " + eventId);
+                return null;
+            }
+
             // Retrieve entrants map
             Map<String, String> entrantsMap = (Map<String, String>) eventData.get("entrants");
             if (entrantsMap == null || entrantsMap.isEmpty()) {
                 Log.d(TAG, "No entrants for event: " + eventId);
-                // No entrants to process
+                // Mark randomDrawPerformed to avoid reprocessing
+                transaction.update(eventRef, "randomDrawPerformed", true);
                 return null;
             }
 
@@ -108,47 +114,49 @@ public class RandomDrawWorker extends Worker {
             int capacity = capacityLong != null ? capacityLong.intValue() : 0;
 
             // Calculate the number of entrants who have accepted or are selected
-            int noneligibleEntrants = 0;
+            int nonEligibleEntrants = 0;
             int acceptedEntrants = 0;
             for (String status : entrantsMap.values()) {
                 if ("Selected".equalsIgnoreCase(status) || "Accepted".equalsIgnoreCase(status)) {
-                    noneligibleEntrants++;
+                    nonEligibleEntrants++;
                 }
                 if ("Accepted".equalsIgnoreCase(status)) {
                     acceptedEntrants++;
                 }
             }
 
-            if (acceptedEntrants == capacity){
+            if (acceptedEntrants >= capacity) {
                 Log.d(TAG, "All entrants accepted for event: " + eventId);
-                // Update waitingListFilled
-                transaction.update(eventRef, "waitingListFilled", true);
+                // Update randomDrawPerformed and waitingListFilled
                 transaction.update(eventRef, "randomDrawPerformed", true);
+                transaction.update(eventRef, "waitingListFilled", true);
                 return null;
             }
 
             // Determine available slots
-            int slotsAvailable = capacity - noneligibleEntrants;
+            int slotsAvailable = capacity - nonEligibleEntrants;
 
             if (slotsAvailable <= 0) {
                 Log.d(TAG, "No available slots for event: " + eventId);
-                // Update waitingListFilled
+                // Update randomDrawPerformed and waitingListFilled
+                transaction.update(eventRef, "randomDrawPerformed", true);
                 transaction.update(eventRef, "waitingListFilled", true);
                 return null;
             }
 
-            // Collect eligible entrant IDs (status is "Not Selected" or "waitlist")
+            // Collect eligible entrant IDs (status is "Not Selected" or "Waitlist")
             List<String> eligibleEntrantIds = new ArrayList<>();
             for (Map.Entry<String, String> entry : entrantsMap.entrySet()) {
                 String status = entry.getValue();
-                if ("Not Selected".equalsIgnoreCase(status) || "waitlist".equalsIgnoreCase(status)) {
+                if ("Not Selected".equalsIgnoreCase(status) || "Waitlist".equalsIgnoreCase(status)) {
                     eligibleEntrantIds.add(entry.getKey());
                 }
             }
 
             if (eligibleEntrantIds.isEmpty()) {
                 Log.d(TAG, "No eligible entrants to fill available slots for event: " + eventId);
-                // Update waitingListFilled
+                // Update randomDrawPerformed and waitingListFilled
+                transaction.update(eventRef, "randomDrawPerformed", true);
                 transaction.update(eventRef, "waitingListFilled", true);
                 return null;
             }
@@ -171,10 +179,9 @@ public class RandomDrawWorker extends Worker {
             // Update the event document with the new entrants map
             transaction.update(eventRef, "entrants", entrantsMap);
 
-            // Set waitingListFilled to true
+            // Mark randomDrawPerformed and waitingListFilled
+            transaction.update(eventRef, "randomDrawPerformed", true);
             transaction.update(eventRef, "waitingListFilled", true);
-
-
 
             Log.d(TAG, "Random draw performed for event: " + eventId);
             return null;
@@ -183,5 +190,45 @@ public class RandomDrawWorker extends Worker {
         }).addOnFailureListener(e -> {
             Log.e(TAG, "Transaction failure for event: " + eventId, e);
         });
+    }
+
+    /**
+     * Performs random draw for all eligible events.
+     */
+    private void performRandomDrawForAllEvents() {
+        FirebaseFirestore firestore = FirebaseFirestore.getInstance();
+        Timestamp now = Timestamp.now();
+
+        // Query events that need random draw
+        firestore.collection("Events")
+                .whereLessThanOrEqualTo("registrationEnd", now)
+                .whereEqualTo("randomDrawPerformed", false)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    if (queryDocumentSnapshots.isEmpty()) {
+                        Log.d(TAG, "No events require random draw at this time.");
+                        return;
+                    }
+
+                    for (DocumentSnapshot eventDoc : queryDocumentSnapshots.getDocuments()) {
+                        processEventRandomDraw(eventDoc);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error querying events for random draw", e);
+                });
+    }
+
+    /**
+     * Processes the random draw for a specific event.
+     * This method is similar to performRandomDrawForEvent but used internally.
+     *
+     * @param eventDoc The DocumentSnapshot representing the event to process.
+     */
+    private void processEventRandomDraw(DocumentSnapshot eventDoc) {
+        String eventId = eventDoc.getId();
+        String eventName = eventDoc.getString("name");
+
+        performRandomDrawForEvent(eventId);
     }
 }

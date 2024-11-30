@@ -8,7 +8,7 @@ import java.util.concurrent.TimeUnit;
 public class MyApplication extends Application {
 
     private static final String TAG = "MyApplication";
-
+    private RandomDrawListener randomDrawListener;
     private EventStatusListener eventStatusListener;
 
     @Override
@@ -18,6 +18,8 @@ public class MyApplication extends Application {
         eventStatusListener = new EventStatusListener(this);
         eventStatusListener.startListening();
         scheduleRandomDrawWorker();
+        randomDrawListener = new RandomDrawListener(this);
+        randomDrawListener.startListening();
 
 
     }
@@ -33,14 +35,12 @@ public class MyApplication extends Application {
 
         WorkManager.getInstance(this).enqueue(randomDrawWorkRequest);
     }
-//        PeriodicWorkRequest randomDrawWorkRequest =
-//                new PeriodicWorkRequest.Builder(RandomDrawWorker.class, 1, TimeUnit.MINUTES)
-//                        .setConstraints(constraints)
-//                        .build();
-
-//        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
-//                "RandomDrawWork",
-//                ExistingPeriodicWorkPolicy.KEEP,
-//                randomDrawWorkRequest);
-//    }
+    @Override
+    public void onTerminate() {
+        super.onTerminate();
+        // Stop the real-time listener
+        if (randomDrawListener != null) {
+            randomDrawListener.stopListening();
+        }
+    }
 }
