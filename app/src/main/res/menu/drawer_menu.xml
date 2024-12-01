@@ -51,6 +51,12 @@
         android:title="Manage Events"
         android:visible="false" />
 
+    <item
+        android:id="@+id/nav_manage_facilities"
+        android:icon="@android:drawable/ic_menu_gallery"
+        android:title="Manage Facilities"
+        android:visible="false" />
+
 
 </menu>
 
