@@ -7,11 +7,13 @@ import static androidx.test.espresso.intent.Intents.intended;
 import static androidx.test.espresso.matcher.RootMatchers.withDecorView;
 import static androidx.test.espresso.intent.matcher.IntentMatchers.hasComponent;
 import static androidx.test.espresso.action.ViewActions.click;
+import static androidx.test.espresso.matcher.ViewMatchers.withEffectiveVisibility;
 import static androidx.test.espresso.matcher.ViewMatchers.withText;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.is;
+import static org.mockito.ArgumentMatchers.anyString;
 
 import android.Manifest;
 import android.content.Intent;
@@ -20,6 +22,7 @@ import androidx.test.core.app.ActivityScenario;
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.espresso.intent.Intents;
 import androidx.test.espresso.matcher.RootMatchers;
+import androidx.test.espresso.matcher.ViewMatchers;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
 import androidx.test.rule.GrantPermissionRule;
@@ -33,6 +36,7 @@ import org.junit.runner.RunWith;
 import org.mockito.Mockito;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,6 +51,9 @@ public class EntrantHomeTest {
     @Rule
     public GrantPermissionRule grantPermissionRule =
             GrantPermissionRule.grant(Manifest.permission.ACCESS_FINE_LOCATION);
+    @Rule
+    public GrantPermissionRule notificationPermissionRule =
+            GrantPermissionRule.grant(android.Manifest.permission.POST_NOTIFICATIONS);
 
     @Before
     public void setUp() {
@@ -114,183 +121,186 @@ public class EntrantHomeTest {
     }
 
     /**
-     * Tests that the entrant can view event details.
+     * Tests that the entrant can view the details of an event.
      */
     @Test
-    public void testViewEventDetails() {
-        // Mock event data
+    public void testDisplayEventDetails() {
+        // Initialize the mock repository
+        EntEventsRepository mockRepository = Mockito.mock(EntEventsRepository.class);
+
+        // Create a mock event
         Event mockEvent = new Event();
         mockEvent.setId("event1");
-        mockEvent.setName("Test Event 1");
-        mockEvent.setDescription("This is a test event.");
-        mockEvent.setEventLocation("Test Location 1");
-        mockEvent.setPosterImageUrl("http://example.com/poster.jpg");
-        mockEvent.setStartDate(new java.util.Date());
-        mockEvent.setEndDate(new java.util.Date());
-        mockEvent.setCurrentEntrantsNumber(5);
-        mockEvent.setWaitingListCapacity(10);
+        mockEvent.setName("Sample Event 1");
+        mockEvent.setDescription("This is a sample event description.");
+        mockEvent.setEventLocation("Location 1");
+        mockEvent.setPosterImageUrl("");
+        mockEvent.setStartDate(new Date());
+        mockEvent.setEndDate(new Date());
+        mockEvent.setCurrentEntrantsNumber(0);
+        mockEvent.setWaitingListCapacity(100);
         mockEvent.setGeolocationRequired(false);
-        mockEvent.setStatus("Upcoming");
+        mockEvent.setStatus("Open");
         mockEvent.setEntrants(new HashMap<>());
 
-        // Mock EntEventsRepository
-        EntEventsRepository mockRepo = Mockito.mock(EntEventsRepository.class);
+        // Mock the getEventById method
         Mockito.doAnswer(invocation -> {
-            String eventId = invocation.getArgument(0);
             EntEventsRepository.EventCallback callback = invocation.getArgument(1);
-            if ("event1".equals(eventId)) {
-                callback.onEventLoaded(mockEvent);
-            } else {
-                callback.onEventLoaded(null);
-            }
+            callback.onEventLoaded(mockEvent);
             return null;
-        }).when(mockRepo).getEventById(Mockito.eq("event1"), Mockito.any());
+        }).when(mockRepository).getEventById(anyString(), Mockito.any());
 
-        // Launch EventDetailsEntrantActivity with intent and inject mock repository
+        // Create an Intent with the EVENT_ID extra
         Intent intent = new Intent(ApplicationProvider.getApplicationContext(), EventDetailsEntrantActivity.class);
         intent.putExtra("EVENT_ID", "event1");
+
+        // Launch the activity with the Intent
         ActivityScenario<EventDetailsEntrantActivity> scenario = ActivityScenario.launch(intent);
+
         scenario.onActivity(activity -> {
-            activity.setEntEventsRepository(mockRepo);
-            activity.setDeviceId("mockDeviceId"); // Inject mock device ID if necessary
+            activity.setEntEventsRepository(mockRepository);
+            activity.setDeviceId("testDeviceId");
             activity.loadEventDetails("event1");
         });
 
-        // Verify that event details are displayed
-        onView(withId(R.id.eventNameTextView)).check(matches(withText("Test Event 1")));
-        onView(withId(R.id.eventDescriptionTextView)).check(matches(withText("This is a test event.")));
-        onView(withId(R.id.eventLocationTextView)).check(matches(withText("Location: Test Location 1")));
-        // Additional verifications can be added for dates, capacity, etc.
+        // Verify that the event details are displayed
+        onView(withId(R.id.eventNameTextView)).check(matches(withText("Sample Event 1")));
+        onView(withId(R.id.eventDescriptionTextView)).check(matches(withText("This is a sample event description.")));
+        onView(withId(R.id.eventLocationTextView)).check(matches(withText("Location: Location 1")));
     }
 
     /**
-     * Tests that the entrant can join the waiting list for an event.
+     * Tests that the entrant can join the waiting list of an event.
      */
     @Test
     public void testJoinWaitingList() {
-        // Mock event data
+        // Initialize the mock repository
+        EntEventsRepository mockRepository = Mockito.mock(EntEventsRepository.class);
+
+        // Create a mock event
         Event mockEvent = new Event();
         mockEvent.setId("event1");
-        mockEvent.setName("Test Event 1");
-        mockEvent.setCurrentEntrantsNumber(5);
-        mockEvent.setWaitingListCapacity(10);
+        mockEvent.setName("Sample Event 1");
+        mockEvent.setDescription("This is a sample event description.");
+        mockEvent.setEventLocation("Location 1");
+        mockEvent.setPosterImageUrl("");
+        mockEvent.setStartDate(new Date());
+        mockEvent.setEndDate(new Date());
+        mockEvent.setCurrentEntrantsNumber(0);
+        mockEvent.setWaitingListCapacity(100);
         mockEvent.setGeolocationRequired(false);
+        mockEvent.setStatus("Open");
         mockEvent.setEntrants(new HashMap<>());
 
-        // Mock EntEventsRepository
-        EntEventsRepository mockRepo = Mockito.mock(EntEventsRepository.class);
-        // Mock getEventById
+        // Mock the getEventById method
         Mockito.doAnswer(invocation -> {
-            String eventId = invocation.getArgument(0);
             EntEventsRepository.EventCallback callback = invocation.getArgument(1);
-            if ("event1".equals(eventId)) {
-                callback.onEventLoaded(mockEvent);
-            } else {
-                callback.onEventLoaded(null);
-            }
+            callback.onEventLoaded(mockEvent);
             return null;
-        }).when(mockRepo).getEventById(Mockito.eq("event1"), Mockito.any());
+        }).when(mockRepository).getEventById(anyString(), Mockito.any());
 
-        // Mock joinWaitingList
+        // Mock joinWaitingList to simulate success
         Mockito.doAnswer(invocation -> {
-            String eventId = invocation.getArgument(0);
-            String deviceId = invocation.getArgument(1);
             EntEventsRepository.ActionCallback callback = invocation.getArgument(2);
             callback.onSuccess();
             return null;
-        }).when(mockRepo).joinWaitingList(Mockito.eq("event1"), Mockito.eq("mockDeviceId"), Mockito.any());
+        }).when(mockRepository).joinWaitingList(anyString(), anyString(), Mockito.any());
 
-        // Launch EventDetailsEntrantActivity with intent and inject mock repository
+        // Create an Intent with the EVENT_ID extra
         Intent intent = new Intent(ApplicationProvider.getApplicationContext(), EventDetailsEntrantActivity.class);
         intent.putExtra("EVENT_ID", "event1");
+
+        // Launch the activity with the Intent
         ActivityScenario<EventDetailsEntrantActivity> scenario = ActivityScenario.launch(intent);
+
         scenario.onActivity(activity -> {
-            activity.setEntEventsRepository(mockRepo);
-            activity.setDeviceId("mockId"); // Inject mock device ID
+            activity.setEntEventsRepository(mockRepository);
+            activity.setDeviceId("testDeviceId");
             activity.loadEventDetails("event1");
         });
 
-        // Click on Join Button
+        // Click the join button
         onView(withId(R.id.joinButton)).perform(click());
 
-        // Handle the Confirmation Dialog by clicking "Yes"
-//        onView(withText("Yes"))
-//                .inRoot(RootMatchers.isDialog())
-////                .check(matches(isDisplayed()))
-//                .perform(click());
-//
-//        // Verify that a success toast is displayed using ToastMatcher
-//        onView(withText("Successfully joined the waiting list."))
-//                .inRoot(new ToastMatcher())
-//                .check(matches(isDisplayed()));
+        // Handle the confirmation dialog
+        onView(withText("Join Waiting List")).check(matches(isDisplayed()));
+        onView(withText("Yes")).perform(click());
 
-        // Verify that the Leave button is now visible
-//        onView(withId(R.id.leaveButton)).check(matches(isDisplayed()));
+        // Verify that the success message is displayed
+        onView(withText("Successfully joined the waiting list.")).inRoot(new ToastMatcher())
+                .check(matches(isDisplayed()));
+
+        // Verify that the join button is hidden and leave button is visible
+        onView(withId(R.id.joinButton)).check(matches(withEffectiveVisibility(ViewMatchers.Visibility.GONE)));
+        onView(withId(R.id.leaveButton)).check(matches(withEffectiveVisibility(ViewMatchers.Visibility.VISIBLE)));
     }
 
     /**
-     * Tests that the entrant can leave the waiting list for an event.
+     * Tests that the entrant can leave the waiting list of an event.
      */
     @Test
     public void testLeaveWaitingList() {
-        // Mock event data where entrant is already on the waiting list
+        // Initialize the mock repository
+        EntEventsRepository mockRepository = Mockito.mock(EntEventsRepository.class);
+
+        // Create a mock event with the entrant already on the waiting list
         Event mockEvent = new Event();
         mockEvent.setId("event1");
-        mockEvent.setName("Test Event 1");
-        mockEvent.setCurrentEntrantsNumber(5);
-        mockEvent.setWaitingListCapacity(10);
-        Map<String, String> entrants = new HashMap<>();
-        entrants.put("mockDeviceId", "waitlist"); // Use the same mock device ID
-        mockEvent.setEntrants(entrants);
+        mockEvent.setName("Sample Event 1");
+        mockEvent.setDescription("This is a sample event description.");
+        mockEvent.setEventLocation("Location 1");
+        mockEvent.setPosterImageUrl("");
+        mockEvent.setStartDate(new Date());
+        mockEvent.setEndDate(new Date());
+        mockEvent.setCurrentEntrantsNumber(1);
+        mockEvent.setWaitingListCapacity(100);
+        mockEvent.setGeolocationRequired(false);
+        mockEvent.setStatus("Open");
+        HashMap<String, String> entrantsMap = new HashMap<>();
+        entrantsMap.put("testDeviceId", "waitlist");
+        mockEvent.setEntrants(entrantsMap);
 
-        // Mock EntEventsRepository
-        EntEventsRepository mockRepo = Mockito.mock(EntEventsRepository.class);
-        // Mock getEventById
+        // Mock the getEventById method
         Mockito.doAnswer(invocation -> {
-            String eventId = invocation.getArgument(0);
             EntEventsRepository.EventCallback callback = invocation.getArgument(1);
-            if ("event1".equals(eventId)) {
-                callback.onEventLoaded(mockEvent);
-            } else {
-                callback.onEventLoaded(null);
-            }
+            callback.onEventLoaded(mockEvent);
             return null;
-        }).when(mockRepo).getEventById(Mockito.eq("event1"), Mockito.any());
+        }).when(mockRepository).getEventById(anyString(), Mockito.any());
 
-        // Mock leaveWaitingList
+        // Mock leaveWaitingList to simulate success
         Mockito.doAnswer(invocation -> {
-            String eventId = invocation.getArgument(0);
-            String deviceId = invocation.getArgument(1);
             EntEventsRepository.ActionCallback callback = invocation.getArgument(2);
             callback.onSuccess();
             return null;
-        }).when(mockRepo).leaveWaitingList(Mockito.eq("event1"), Mockito.eq("mockDeviceId"), Mockito.any());
+        }).when(mockRepository).leaveWaitingList(anyString(), anyString(), Mockito.any());
 
-        // Launch EventDetailsEntrantActivity with intent and inject mock repository
+        // Create an Intent with the EVENT_ID extra
         Intent intent = new Intent(ApplicationProvider.getApplicationContext(), EventDetailsEntrantActivity.class);
         intent.putExtra("EVENT_ID", "event1");
+
+        // Launch the activity with the Intent
         ActivityScenario<EventDetailsEntrantActivity> scenario = ActivityScenario.launch(intent);
+
         scenario.onActivity(activity -> {
-            activity.setEntEventsRepository(mockRepo);
-            activity.setDeviceId("mockDeviceId"); // Inject mock device ID
+            activity.setEntEventsRepository(mockRepository);
+            activity.setDeviceId("testDeviceId");
             activity.loadEventDetails("event1");
         });
 
-        // Click on Leave Button
+        // Click the leave button
         onView(withId(R.id.leaveButton)).perform(click());
 
-        // Handle the Confirmation Dialog by clicking "Yes"
-//        onView(withText("Yes"))
-//                .inRoot(RootMatchers.isDialog())
-//                .perform(click());
+        // Handle the confirmation dialog
+        onView(withText("Leave Waiting List")).check(matches(isDisplayed()));
+        onView(withText("Yes")).perform(click());
 
-        // Verify that a success toast is displayed using ToastMatcher
-//        onView(withText("Successfully left the waiting list."))
-//                .inRoot(new ToastMatcher())
-//                .check(matches(isDisplayed()));
+        // Verify that the success message is displayed
+        onView(withText("Successfully left the waiting list.")).inRoot(new ToastMatcher())
+                .check(matches(isDisplayed()));
 
-        // Verify that the Join button is now visible
-//        onView(withId(R.id.joinButton)).check(matches(isDisplayed()));
+        // Verify that the leave button is hidden and join button is visible
+        onView(withId(R.id.leaveButton)).check(matches(withEffectiveVisibility(ViewMatchers.Visibility.GONE)));
+        onView(withId(R.id.joinButton)).check(matches(withEffectiveVisibility(ViewMatchers.Visibility.VISIBLE)));
     }
 
     /**
@@ -361,6 +371,72 @@ public class EntrantHomeTest {
 //        onView(withId(R.id.eventNameTextView)).check(matches(withText("Test Event 1")));
 //        onView(withId(R.id.eventDescriptionTextView)).check(matches(withText("Detailed Description of Test Event 1.")));
 //        onView(withId(R.id.eventLocationTextView)).check(matches(withText("Location: Test Location 1")));
+    }
+
+    /**
+     * Tests that the entrant is prompted for geolocation permissions when required by an event.
+     */
+    @Test
+    public void testGeolocationPermissionPrompt() {
+        // Initialize the mock repository
+        EntEventsRepository mockRepository = Mockito.mock(EntEventsRepository.class);
+
+        // Create a mock event that requires geolocation
+        Event mockEvent = new Event();
+        mockEvent.setId("event1");
+        mockEvent.setName("Sample Event 1");
+        mockEvent.setDescription("This is a sample event description.");
+        mockEvent.setEventLocation("Location 1");
+        mockEvent.setPosterImageUrl("");
+        mockEvent.setStartDate(new Date());
+        mockEvent.setEndDate(new Date());
+        mockEvent.setCurrentEntrantsNumber(0);
+        mockEvent.setWaitingListCapacity(100);
+        mockEvent.setGeolocationRequired(true);
+        mockEvent.setStatus("Open");
+        mockEvent.setEntrants(new HashMap<>());
+
+        // Mock the getEventById method
+        Mockito.doAnswer(invocation -> {
+            EntEventsRepository.EventCallback callback = invocation.getArgument(1);
+            callback.onEventLoaded(mockEvent);
+            return null;
+        }).when(mockRepository).getEventById(anyString(), Mockito.any());
+
+        // Mock joinWaitingList to simulate success
+        Mockito.doAnswer(invocation -> {
+            EntEventsRepository.ActionCallback callback = invocation.getArgument(2);
+            callback.onSuccess();
+            return null;
+        }).when(mockRepository).joinWaitingList(anyString(), anyString(), Mockito.any());
+
+        // Create an Intent with the EVENT_ID extra
+        Intent intent = new Intent(ApplicationProvider.getApplicationContext(), EventDetailsEntrantActivity.class);
+        intent.putExtra("EVENT_ID", "event1");
+
+        // Launch the activity
+        ActivityScenario<EventDetailsEntrantActivity> scenario = ActivityScenario.launch(intent);
+
+        scenario.onActivity(activity -> {
+            activity.setEntEventsRepository(mockRepository);
+            activity.setDeviceId("testDeviceId");
+            activity.loadEventDetails("event1");
+        });
+
+        // Click the join button
+        onView(withId(R.id.joinButton)).perform(click());
+
+        // Verify that the geolocation alert is displayed
+        onView(withText("Geolocation Required")).check(matches(isDisplayed()));
+        onView(withText("OK")).perform(click());
+
+        // Verify that the join confirmation dialog is displayed
+        onView(withText("Join Waiting List")).check(matches(isDisplayed()));
+        onView(withText("Yes")).perform(click());
+
+        // Verify that the success message is displayed
+        onView(withText("Successfully joined the waiting list.")).inRoot(new ToastMatcher())
+                .check(matches(isDisplayed()));
     }
 
 }
