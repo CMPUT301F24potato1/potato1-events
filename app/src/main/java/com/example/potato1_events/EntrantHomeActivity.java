@@ -104,9 +104,11 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
         if (isAdmin) {
             navigationView.getMenu().findItem(R.id.nav_manage_media).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_manage_users).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_manage_events).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_create_event).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_edit_facility).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_my_events).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_manage_facilities).setVisible(true);
         }
         requestNotificationPermission();
         navigationView.setNavigationItemSelectedListener(this);
@@ -265,6 +267,10 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
         } else if (id == R.id.nav_manage_users) {
             // Navigate to ManageUsersActivity (visible only to admins)
             intent = new Intent(EntrantHomeActivity.this, ManageUsersActivity.class);
+        } else if (id == R.id.nav_manage_events) {
+            intent = new Intent(EntrantHomeActivity.this, ManageEventsActivity.class);
+        } else if (id == R.id.nav_manage_facilities) {
+            intent = new Intent(EntrantHomeActivity.this, ManageFacilitiesActivity.class);
         } else if (id == R.id.action_scan_qr) {
             intent = new Intent(EntrantHomeActivity.this, QRScanActivity.class);
         } else if (id == R.id.nav_create_event) {

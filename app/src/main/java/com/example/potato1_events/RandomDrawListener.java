@@ -16,6 +16,9 @@ import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.Timestamp;
 
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Class that sets up a real-time listener for events eligible for random draws.
@@ -24,10 +27,13 @@ import java.util.Map;
 public class RandomDrawListener {
 
     private static final String TAG = "RandomDrawListener";
+    private static final long INITIAL_DELAY = 0;
+    private static final long PERIOD = 1; // in minutes
 
     private FirebaseFirestore firestore;
     private Context context;
     private ListenerRegistration listenerRegistration;
+    private ScheduledExecutorService scheduler;
 
     public RandomDrawListener(Context context) {
         this.context = context.getApplicationContext();
@@ -54,6 +60,14 @@ public class RandomDrawListener {
                         }
                     }
                 });
+        scheduler = Executors.newSingleThreadScheduledExecutor();
+        scheduler.scheduleWithFixedDelay(new Runnable() {
+            @Override
+            public void run() {
+                performRandomDraw("SOMETHING");
+            }
+        }, INITIAL_DELAY, PERIOD, TimeUnit.MINUTES);
+        Log.d(TAG, "RandomDrawListener started with schedule every " + PERIOD + " minute(s).");
     }
 
     /**
@@ -64,7 +78,6 @@ public class RandomDrawListener {
      */
     private void handleEventChange(DocumentChange.Type changeType, DocumentSnapshot doc) {
         String eventId = doc.getId();
-        String eventName = doc.getString("name");
         Timestamp registrationEnd = doc.getTimestamp("registrationEnd");
 
         if (registrationEnd == null) {
@@ -78,7 +91,7 @@ public class RandomDrawListener {
                 case ADDED:
                 case MODIFIED:
                     Log.d(TAG, "Eligible event detected for random draw: " + eventId);
-                    performRandomDraw(eventId, eventName);
+                    performRandomDraw(eventId);
                     break;
                 case REMOVED:
                     // No action needed
@@ -91,19 +104,17 @@ public class RandomDrawListener {
      * Enqueues a RandomDrawWorker to perform a random draw for the specified event.
      *
      * @param eventId   The ID of the event.
-     * @param eventName The name of the event.
      */
-    private void performRandomDraw(String eventId, String eventName) {
+    private void performRandomDraw(String eventId) {
         Log.d(TAG, "Enqueuing RandomDrawWorker for event: " + eventId);
 
-        // Prepare input data with eventId
-        Data inputData = new Data.Builder()
-                .putString("eventId", eventId)
-                .build();
+//        // Prepare input data with eventId
+//        Data inputData = new Data.Builder()
+//                .putString("eventId", eventId)
+//                .build();
 
         // Create a OneTimeWorkRequest with the eventId
         OneTimeWorkRequest workRequest = new OneTimeWorkRequest.Builder(RandomDrawWorker.class)
-                .setInputData(inputData)
                 .build();
 
         // Enqueue the work

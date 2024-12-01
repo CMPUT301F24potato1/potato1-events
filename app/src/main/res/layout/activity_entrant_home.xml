@@ -23,11 +23,13 @@
             <TextView
                 android:id="@+id/toolbar_title"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="My Joined events"
-                android:textSize="22sp"
+                android:layout_height="match_parent"
+                android:text="My Joined Events"
+                android:textSize="20sp"
                 android:textColor="@android:color/white"
-                android:layout_gravity="center" />
+                android:gravity="center_vertical"
+                android:layout_gravity="start"
+                android:layout_marginStart="8dp"/>
 
             <!-- Search Bar -->
             <androidx.appcompat.widget.SearchView

@@ -72,6 +72,8 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".ManageEventsActivity" />
+        <activity android:name=".ManageFacilitiesActivity" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

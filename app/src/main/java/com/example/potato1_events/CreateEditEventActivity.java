@@ -37,7 +37,6 @@ import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.WriterException;
-import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.qrcode.QRCodeWriter;
 import com.squareup.picasso.Picasso;
 
@@ -82,6 +81,7 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
 
     // User Privileges
     private boolean isAdmin = false; // Retrieved from Intent
+    private String qrCodeHash = null; // To track QR code hash
 
     /**
      * Sets the Firestore instance for testing purposes.
@@ -193,9 +193,19 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
                 requestPermissionLauncher.launch(getReadPermission());
             }
         });
-        saveEventButton.setOnClickListener(v -> saveEvent()); // Handle QR code generation internally
+        saveEventButton.setOnClickListener(v -> saveEvent());
         deleteEventButton.setOnClickListener(v -> confirmDeleteEvent());
-        generateQRCodeButton.setOnClickListener(v -> generateQRCode()); // Set up Generate QR Code button listener
+
+        // Set up Generate QR Code button listener
+        generateQRCodeButton.setOnClickListener(v -> {
+            if (generateQRCodeButton.getText().toString().equalsIgnoreCase("Generate QR Code")) {
+                // Generate QR Code
+                generateQRCode();
+            } else if (generateQRCodeButton.getText().toString().equalsIgnoreCase("Remove QR Code")) {
+                // Remove QR Code
+                removeQRCode();
+            }
+        });
 
         // Check if editing an existing event
         Intent intent = getIntent();
@@ -203,10 +213,11 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
             eventId = intent.getStringExtra("EVENT_ID");
             loadEventData(eventId);
             deleteEventButton.setVisibility(View.VISIBLE); // Show delete button in edit mode
-            generateQRCodeButton.setVisibility(View.GONE); // Hide generate QR code button in edit mode
+            // The visibility and text of generateQRCodeButton will be handled in loadEventData()
         } else {
             deleteEventButton.setVisibility(View.GONE); // Hide delete button in create mode
             generateQRCodeButton.setVisibility(View.VISIBLE); // Show generate QR code button in create mode
+            generateQRCodeButton.setText("Generate QR Code"); // Ensure correct initial text
         }
 
         // Verify that the organizer has a facility before allowing event creation
@@ -424,11 +435,11 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
         } else {
             // If editing and no new image is selected, keep the last image
             if (isEditingExistingEvent()) {
-                // Preserve existing posterImageUrl and QR code hash
-                saveEventToFirestore(name, description, location, availableSpots, waitingListSpots, isGeolocationEnabled, posterImageUrl, null);
+                // Preserve existing posterImageUrl and handle QR code hash based on user action
+                saveEventToFirestore(name, description, location, availableSpots, waitingListSpots, isGeolocationEnabled, posterImageUrl);
             } else {
                 // Proceed to save event without poster image
-                saveEventToFirestore(name, description, location, availableSpots, waitingListSpots, isGeolocationEnabled, null, null);
+                saveEventToFirestore(name, description, location, availableSpots, waitingListSpots, isGeolocationEnabled, null);
             }
         }
     }
@@ -456,7 +467,7 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
                     storageRef.getDownloadUrl().addOnSuccessListener(uri -> {
                         posterImageUrl = uri.toString();
                         // Proceed to save the event with the poster URL
-                        generateQRCodeAndSaveEvent(name, description, location, availableSpots, waitingListSpots, isGeolocationEnabled, posterImageUrl);
+                        saveEventToFirestore(name, description, location, availableSpots, waitingListSpots, isGeolocationEnabled, posterImageUrl);
                     }).addOnFailureListener(e -> {
                         Toast.makeText(CreateEditEventActivity.this, "Failed to get poster URL: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                         saveEventButton.setEnabled(true);
@@ -469,28 +480,83 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
     }
 
     /**
-     * Generates a QR code for the event and proceeds to save the event data to Firestore.
+     * Generates a QR code based on the provided hash and displays it in the UI.
      *
-     * @param name                 Event name.
-     * @param description          Event description.
-     * @param location             Event location.
-     * @param availableSpots       Number of available spots.
-     * @param waitingListSpots     Number of waiting list spots (can be null for unlimited).
-     * @param isGeolocationEnabled Whether geolocation is enabled.
-     * @param posterUrl            URL of the uploaded poster image.
+     * @param qrHash The data to encode in the QR code (typically the event ID).
      */
-    private void generateQRCodeAndSaveEvent(String name, String description, String location,
-                                            int availableSpots, Integer waitingListSpots,
-                                            boolean isGeolocationEnabled, String posterUrl) {
+    private void generateQRCodeAndDisplay(String qrHash) {
+        // Define the data to be encoded in the QR code (using qrHash)
+        String qrData = qrHash;
 
+        // Generate QR code bitmap
+        QRCodeWriter qrCodeWriter = new QRCodeWriter();
+        int size = 512; // Size of the QR code image
+
+        Bitmap qrBitmap;
+        try {
+            com.google.zxing.common.BitMatrix bitMatrix = qrCodeWriter.encode(qrData, BarcodeFormat.QR_CODE, size, size);
+            qrBitmap = Bitmap.createBitmap(size, size, Bitmap.Config.RGB_565);
+
+            for (int x = 0; x < size; x++) {
+                for (int y = 0; y < size; y++) {
+                    qrBitmap.setPixel(x, y, bitMatrix.get(x, y) ? Color.BLACK : Color.WHITE);
+                }
+            }
+        } catch (WriterException e) {
+            Toast.makeText(this, "Failed to generate QR code: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            saveEventButton.setEnabled(true);
+            return;
+        }
+
+        // Display the QR code in the UI
+        qrCodeImageView.setImageBitmap(qrBitmap);
+        qrCodeImageView.setVisibility(View.VISIBLE); // Make the QR code visible
+
+        Toast.makeText(this, "QR code generated!", Toast.LENGTH_SHORT).show();
+    }
+
+    /**
+     * Generates a QR code and handles its state based on whether it's being generated or removed.
+     */
+    private void generateQRCode() {
         if (isEditingExistingEvent()) {
-            // **Editing Existing Event: Use Existing QR Code Hash**
-            // No need to regenerate QR code; proceed to save updates
-            saveEventToFirestore(name, description, location, availableSpots, waitingListSpots, isGeolocationEnabled, posterUrl, null);
+            if (qrCodeHash == null) {
+                // Generate QR code hash based on eventId
+                if (eventId == null) {
+                    // eventId should already be set when editing
+                    Toast.makeText(this, "Invalid event ID.", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                qrCodeHash = eventId;
+                generateQRCodeAndDisplay(qrCodeHash);
+                generateQRCodeButton.setText("Remove QR Code");
+            } else {
+                Toast.makeText(this, "QR code already exists.", Toast.LENGTH_SHORT).show();
+            }
         } else {
-            // **Creating New Event: Generate QR Code After Event Creation**
-            // Since QR code generation requires the event ID, proceed to create the event first.
-            saveEventToFirestore(name, description, location, availableSpots, waitingListSpots, isGeolocationEnabled, posterUrl, null);
+            // Creating a new event; QR code will be generated after saving
+            Toast.makeText(this, "Please save the event first to generate a QR code.", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /**
+     * Removes the QR code from the UI and clears the qrCodeHash.
+     */
+    private void removeQRCode() {
+        if (isEditingExistingEvent() && qrCodeHash != null) {
+            // Remove the QR code image
+            qrCodeImageView.setImageBitmap(null);
+            qrCodeImageView.setVisibility(View.GONE);
+
+            // Clear the qrCodeHash
+            qrCodeHash = null;
+
+            // Update button text back to "Generate QR Code"
+            generateQRCodeButton.setText("Generate QR Code");
+
+            Toast.makeText(this, "QR code removed.", Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(this, "No QR code to remove.", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -504,11 +570,10 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
      * @param waitingListSpots     Number of waiting list spots (can be null for unlimited).
      * @param isGeolocationEnabled Whether geolocation is enabled.
      * @param posterUrl            URL of the uploaded poster image.
-     * @param qrCodeHash           QR code hash data. If null, it will be generated after event creation.
      */
     private void saveEventToFirestore(String name, String description, String location,
                                       int availableSpots, Integer waitingListSpots,
-                                      boolean isGeolocationEnabled, String posterUrl, String qrCodeHash) {
+                                      boolean isGeolocationEnabled, String posterUrl) {
 
         if (isEditingExistingEvent()) {
             // **Editing an Existing Event**
@@ -529,6 +594,13 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
             updates.put("startDate", startDateTime.getTime());
             updates.put("endDate", endDateTime.getTime());
             updates.put("registrationEnd", registrationEndDateTime.getTime());
+
+            // Handle QR code hash
+            if (qrCodeHash != null) {
+                updates.put("qrCodeHash", qrCodeHash);
+            } else {
+                updates.put("qrCodeHash", FieldValue.delete()); // Remove the QR code hash from Firestore
+            }
 
             // Update only the specified fields to preserve entrants and other data
             firestore.collection("Events").document(eventId).update(updates)
@@ -568,31 +640,26 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
             eventData.put("registrationEnd", registrationEndDateTime.getTime());
             eventData.put("randomDrawPerformed", false); // Ensure this is set to false during creation
 
+            if (qrCodeHash != null) {
+                eventData.put("qrCodeHash", qrCodeHash);
+            }
+
+            eventData.put("waitingListFilled", false);
             // Create a new event document
             firestore.collection("Events").add(eventData)
                     .addOnSuccessListener(documentReference -> {
                         String eventIdCreated = documentReference.getId();
 
-                        if (qrCodeHash == null) {
-                            // Generate the QR code hash using the event ID
-                            String qrHash = eventIdCreated; // Simple approach: use eventId as QR hash
-
-                            // Update the event with the QR code hash
-                            firestore.collection("Events").document(eventIdCreated).update("qrCodeHash", qrHash)
-                                    .addOnSuccessListener(aVoid -> {
-                                        Toast.makeText(CreateEditEventActivity.this, "Event created successfully!", Toast.LENGTH_SHORT).show();
-                                        // Add eventId to the facility's eventIds list
-                                        addEventToFacility(eventIdCreated);
-                                        // Optionally, generate and display the QR code
-                                        generateQRCodeAndDisplay(qrHash);
-                                    })
-                                    .addOnFailureListener(e -> {
-                                        Toast.makeText(CreateEditEventActivity.this, "Failed to set QR code hash: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                                        saveEventButton.setEnabled(true);
-                                    });
-                        } else {
-                            // If QR code hash is provided (unlikely in create), proceed normally
+                        if (qrCodeHash != null) {
+                            // QR code has been generated; already set in eventData
+                            // Add eventId to the facility's eventIds list
                             addEventToFacility(eventIdCreated);
+                            navigateBackToEventList();
+                        } else {
+                            // QR code not generated yet
+                            // Add eventId to the facility's eventIds list
+                            addEventToFacility(eventIdCreated);
+                            navigateBackToEventList();
                         }
                     })
                     .addOnFailureListener(e -> {
@@ -600,42 +667,6 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
                         saveEventButton.setEnabled(true);
                     });
         }
-    }
-
-    /**
-     * Generates a QR code based on the provided hash and displays it in the UI.
-     *
-     * @param qrHash The data to encode in the QR code (typically the event ID).
-     */
-    private void generateQRCodeAndDisplay(String qrHash) {
-        // Define the data to be encoded in the QR code (using qrHash)
-        String qrData = qrHash;
-
-        // Generate QR code bitmap
-        QRCodeWriter qrCodeWriter = new QRCodeWriter();
-        int size = 512; // Size of the QR code image
-
-        Bitmap qrBitmap;
-        try {
-            com.google.zxing.common.BitMatrix bitMatrix = qrCodeWriter.encode(qrData, BarcodeFormat.QR_CODE, size, size);
-            qrBitmap = Bitmap.createBitmap(size, size, Bitmap.Config.RGB_565);
-
-            for (int x = 0; x < size; x++) {
-                for (int y = 0; y < size; y++) {
-                    qrBitmap.setPixel(x, y, bitMatrix.get(x, y) ? Color.BLACK : Color.WHITE);
-                }
-            }
-        } catch (WriterException e) {
-            Toast.makeText(this, "Failed to generate QR code: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-            saveEventButton.setEnabled(true);
-            return;
-        }
-
-        // Display the QR code in the UI
-        qrCodeImageView.setImageBitmap(qrBitmap);
-        qrCodeImageView.setVisibility(View.VISIBLE); // Make the QR code visible
-
-        Toast.makeText(this, "QR code generated!", Toast.LENGTH_SHORT).show();
     }
 
     /**
@@ -737,11 +768,14 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
                             uploadPosterButton.setText("Change Poster Image"); // Update button text
                         }
 
-                        // Store existing QR code hash
-                        // In this implementation, qrCodeHash is the event ID
+                        // Store existing QR code hash and update button accordingly
                         if (!TextUtils.isEmpty(qrCodeHashFetched)) {
-                            // Optionally, display the QR code if desired
+                            qrCodeHash = qrCodeHashFetched;
                             generateQRCodeAndDisplay(qrCodeHashFetched);
+                            generateQRCodeButton.setText("Remove QR Code");
+                        } else {
+                            qrCodeHash = null;
+                            generateQRCodeButton.setText("Generate QR Code");
                         }
 
                         // Handle unlimited waiting list based on waitingListCapacity being null
@@ -754,6 +788,9 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
                             waitingListSpotsEditText.setEnabled(true);
                         }
 
+                        // Ensure the generateQRCodeButton is visible in edit mode
+                        generateQRCodeButton.setVisibility(View.VISIBLE);
+
                     } else {
                         Toast.makeText(this, "Event not found.", Toast.LENGTH_SHORT).show();
                         finish();
@@ -765,29 +802,6 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
                 });
     }
 
-    /**
-     * Generates QR code when the button is clicked.
-     */
-    private void generateQRCode() {
-        // In this implementation, QR code is generated after event creation
-        // So, when the user clicks "Generate QR Code", it saves the event first
-        // and then generates the QR code based on the event ID
-        saveEvent();
-    }
-
-    /**
-     * Initiates the QR code scanning using ZXing library.
-     */
-    private void scanQRCode() {
-        IntentIntegrator integrator = new IntentIntegrator(this);
-        integrator.setDesiredBarcodeFormats(IntentIntegrator.QR_CODE);
-        integrator.setPrompt("Scan a QR Code");
-        integrator.setOrientationLocked(true);  // Lock orientation to portrait
-        integrator.setCaptureActivity(PortraitCaptureActivity.class);
-        integrator.setBeepEnabled(true);
-        integrator.setBarcodeImageEnabled(true);
-        integrator.initiateScan();
-    }
 
     /**
      * Confirms with the user before deleting the event.
