@@ -1,3 +1,4 @@
+// File: UserInfoActivity.java
 package com.example.potato1_events;
 
 import android.Manifest;
@@ -13,11 +14,11 @@ import android.provider.Settings.Secure;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.MenuItem;
-import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
@@ -42,6 +43,7 @@ import com.squareup.picasso.Picasso;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
+import java.util.Random;
 import java.util.UUID;
 
 import de.hdodenhof.circleimageview.CircleImageView;
@@ -65,8 +67,6 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
     private NavigationView navigationView;
     private androidx.appcompat.widget.Toolbar toolbar;
 
-    // Removed userType
-    // private String userType; // Removed
     private String deviceId;
     private FirebaseFirestore firestore;
     private FirebaseStorage storage;
@@ -81,6 +81,8 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
 
     // Variables to hold existing image paths
     private String existingImagePath = null; // The current image path in Firestore
+    private boolean isUsingDefaultAvatar = true; // Flag to indicate if using default avatar
+    private String originalName = ""; // To track if the name has changed
 
     // ActivityResultLauncher for selecting image
     private ActivityResultLauncher<String> selectImageLauncher;
@@ -99,9 +101,6 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
 
     // Location Components
     private FusedLocationProviderClient fusedLocationClient;
-
-    // Permission Request Codes
-    private static final int LOCATION_PERMISSION_REQUEST_CODE = 2001;
 
     // User Object
     private User currentUser; // To hold the user data being saved
@@ -143,8 +142,6 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_user_info);
 
-
-
         // Initialize Firebase Firestore and Storage
         firestore = FirebaseFirestore.getInstance();
         storage = FirebaseStorage.getInstance();
@@ -159,7 +156,9 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
         // Initialize Toolbar
         toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        getSupportActionBar().setTitle("User Information");
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setTitle("User Information");
+        }
 
         // Setup ActionBarDrawerToggle
         toggle = new ActionBarDrawerToggle(
@@ -169,7 +168,6 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
 
         // Set NavigationView listener
         navigationView.setNavigationItemSelectedListener(this);
-
 
         // Initialize UI Components
         profileImageView = findViewById(R.id.profileImageView);
@@ -183,7 +181,7 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
         Intent intent = getIntent();
         mode = intent.getStringExtra("MODE");
 
-        isAdmin = getIntent().getBooleanExtra("IS_ADMIN", false);
+        isAdmin = intent.getBooleanExtra("IS_ADMIN", false);
 
         if (isAdmin) {
             navigationView.getMenu().findItem(R.id.nav_manage_media).setVisible(true);
@@ -209,6 +207,7 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
                     if (uri != null) {
                         selectedImageUri = uri;
                         isProfilePictureRemoved = false; // Reset removal flag
+                        isUsingDefaultAvatar = false; // Now using a custom image
                         // Display the selected image in ImageView
                         Picasso.get().load(uri).into(profileImageView);
                         // Change button text to "Remove Picture"
@@ -275,8 +274,6 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
             }
         });
 
-
-
         saveButton.setOnClickListener(v -> saveUserInfo());
 
         // Load user data or set up for new user
@@ -316,6 +313,7 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
 
     /**
      * Loads the existing user data from Firestore or initializes for a new user.
+     * Additionally, sets the state of the upload/remove picture button based on imagePath.
      */
     private void loadOrInitializeUserData() {
         saveButton.setEnabled(false); // Disable save button while loading
@@ -330,6 +328,8 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
                             emailEditText.setText(user.getEmail());
                             phoneEditText.setText(user.getPhoneNumber());
 
+                            originalName = user.getName(); // Store the original name
+
                             existingImagePath = user.getImagePath(); // Store the existing image path
 
                             if (existingImagePath != null) {
@@ -337,16 +337,24 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
                                 imageRef.getDownloadUrl()
                                         .addOnSuccessListener(uri -> {
                                             Picasso.get().load(uri).into(profileImageView);
-                                            uploadRemovePictureButton.setText("Remove Picture");
+                                            if (existingImagePath.startsWith("/images/default")) {
+                                                isUsingDefaultAvatar = true;
+                                                uploadRemovePictureButton.setText("Upload Picture");
+                                            } else {
+                                                isUsingDefaultAvatar = false;
+                                                uploadRemovePictureButton.setText("Remove Picture");
+                                            }
                                         })
                                         .addOnFailureListener(e -> {
                                             // If failed to load, set default avatar and button text
                                             generateAndSetDefaultAvatar(user.getName());
+                                            isUsingDefaultAvatar = true;
                                             uploadRemovePictureButton.setText("Upload Picture");
                                             Log.e(TAG, "Failed to load profile image: " + e.getMessage());
                                         });
                             } else {
                                 // No imagePath, generate default avatar
+                                isUsingDefaultAvatar = true;
                                 generateAndSetDefaultAvatar(user.getName());
                                 uploadRemovePictureButton.setText("Upload Picture");
                             }
@@ -355,6 +363,7 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
                         // User data does not exist, proceed in CREATE mode
                         mode = MODE_CREATE;
                         // In CREATE mode, set default UI state
+                        isUsingDefaultAvatar = true;
                         generateAndSetDefaultAvatar("");
                         uploadRemovePictureButton.setText("Upload Picture");
                     }
@@ -409,7 +418,29 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
         // Disable the save button to prevent multiple clicks
         saveButton.setEnabled(false);
 
-        if (isProfilePictureRemoved) {
+        boolean nameChanged = !name.equals(originalName);
+
+        if (isUsingDefaultAvatar && nameChanged) {
+            // User changed their name and is using a default avatar
+            // Delete the old default avatar and upload a new one
+            if (existingImagePath != null && existingImagePath.startsWith("/images/default")) {
+                StorageReference oldAvatarRef = storage.getReference().child(existingImagePath);
+                oldAvatarRef.delete()
+                        .addOnSuccessListener(aVoid -> {
+                            Log.d(TAG, "Old default avatar deleted successfully.");
+                            // Generate and upload new default avatar
+                            generateAndUploadDefaultAvatar(name, email, phoneNumber);
+                        })
+                        .addOnFailureListener(e -> {
+                            Toast.makeText(UserInfoActivity.this, "Failed to delete old avatar: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                            Log.e(TAG, "Failed to delete old avatar", e);
+                            saveButton.setEnabled(true);
+                        });
+            } else {
+                // No existing default avatar found, just generate a new one
+                generateAndUploadDefaultAvatar(name, email, phoneNumber);
+            }
+        } else if (isProfilePictureRemoved) {
             // Handle profile picture removal
             if (existingImagePath != null) {
                 // Delete existing image from Firebase Storage
@@ -463,7 +494,7 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
                     // Get the storage path
                     String imagePath = storageRef.getPath();
                     // Delete existing image if it exists
-                    if (existingImagePath != null) {
+                    if (existingImagePath != null && !existingImagePath.startsWith("/images/default")) {
                         StorageReference existingImageRef = storage.getReference().child(existingImagePath);
                         existingImageRef.delete()
                                 .addOnSuccessListener(aVoid -> {
@@ -486,7 +517,7 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
                                     saveButton.setEnabled(true);
                                 });
                     } else {
-                        // No existing image, initialize currentUser
+                        // No existing image or it's a default avatar, proceed to save
                         currentUser = new User();
                         currentUser.setUserId(deviceId); // Assign device ID as userId
                         currentUser.setName(name);
@@ -610,26 +641,28 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
             return;
         }
         fusedLocationClient.getLastLocation()
-                .addOnCompleteListener(new OnCompleteListener<android.location.Location>() {
-                    @Override
-                    public void onComplete(@NonNull Task<android.location.Location> task) {
-                        if (task.isSuccessful() && task.getResult() != null) {
-                            android.location.Location location = task.getResult();
-                            double latitude = location.getLatitude();
-                            double longitude = location.getLongitude();
-                            user.setLatitude(latitude);
-                            user.setLongitude(longitude);
-                            // Proceed to save user data with location
-                            saveUserToFirestore(user);
-                        } else {
-                            Toast.makeText(UserInfoActivity.this, "Unable to retrieve location. Please ensure location services are enabled.", Toast.LENGTH_SHORT).show();
-                            Log.e(TAG, "Failed to get location");
-                            // Proceed to save user data without location
-                            user.setLatitude(null);
-                            user.setLongitude(null);
-                            saveUserToFirestore(user);
-                        }
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful() && task.getResult() != null) {
+                        android.location.Location location = task.getResult();
+                        double latitude = location.getLatitude();
+                        double longitude = location.getLongitude();
+                        user.setLatitude(latitude);
+                        user.setLongitude(longitude);
+                    } else {
+                        Toast.makeText(UserInfoActivity.this, "Unable to retrieve location. Please ensure location services are enabled.", Toast.LENGTH_SHORT).show();
+                        Log.e(TAG, "Failed to get location");
+                        user.setLatitude(null);
+                        user.setLongitude(null);
                     }
+                    // Proceed to save user data
+                    saveUserToFirestore(user);
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(UserInfoActivity.this, "Unable to retrieve location. Proceeding without location data.", Toast.LENGTH_SHORT).show();
+                    Log.e(TAG, "Failed to get location", e);
+                    user.setLatitude(null);
+                    user.setLongitude(null);
+                    saveUserToFirestore(user);
                 });
     }
 
@@ -680,6 +713,7 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
         // Set ImageView to default avatar
         generateAndSetDefaultAvatar(name);
         isProfilePictureRemoved = true;
+        isUsingDefaultAvatar = true;
         selectedImageUri = null; // Reset selected image
         // Change button text back to "Upload Picture"
         uploadRemovePictureButton.setText("Upload Picture");
@@ -746,24 +780,65 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
     }
 
     /**
-     * Generates a deterministic color based on the user's initials to ensure consistent avatar colors.
+     * Generates a pastel color based on the user's initials to ensure consistent avatar colors.
      *
      * @param initials The user's initials.
      * @return An integer representing the RGB color.
      */
     private int getColorFromName(String initials) {
-        // Simple hash to generate a color from initials
-        int hash = initials.hashCode();
-        // Generate RGB components
-        int r = (hash & 0xFF0000) >> 16;
-        int g = (hash & 0x00FF00) >> 8;
-        int b = (hash & 0x0000FF);
-        // Ensure the color is not too dark
-        if (r + g + b < 300) { // Threshold can be adjusted
-            r = (r + 100) % 256;
-            g = (g + 100) % 256;
-            b = (b + 100) % 256;
+        // Use initials to create a seed
+        long seed = initials.hashCode();
+        Random random = new Random(seed);
+
+        // Generate hue between 0 and 360
+        float hue = random.nextInt(360);
+
+        // Pastel colors have low to medium saturation and high lightness
+        float saturation = 0.4f + (random.nextFloat() * 0.2f); // 0.4 to 0.6
+        float lightness = 0.8f + (random.nextFloat() * 0.1f);  // 0.8 to 0.9
+
+        return hslToRgb(hue, saturation, lightness);
+    }
+
+    /**
+     * Converts HSL color values to RGB.
+     *
+     * @param h Hue angle in degrees [0-360).
+     * @param s Saturation [0-1].
+     * @param l Lightness [0-1].
+     * @return An integer RGB color.
+     */
+    private int hslToRgb(float h, float s, float l) {
+        float c = (1 - Math.abs(2 * l - 1)) * s;
+        float hPrime = h / 60;
+        float x = c * (1 - Math.abs(hPrime % 2 - 1));
+        float r1 = 0, g1 = 0, b1 = 0;
+
+        if (0 <= hPrime && hPrime < 1) {
+            r1 = c;
+            g1 = x;
+        } else if (1 <= hPrime && hPrime < 2) {
+            r1 = x;
+            g1 = c;
+        } else if (2 <= hPrime && hPrime < 3) {
+            g1 = c;
+            b1 = x;
+        } else if (3 <= hPrime && hPrime < 4) {
+            g1 = x;
+            b1 = c;
+        } else if (4 <= hPrime && hPrime < 5) {
+            r1 = x;
+            b1 = c;
+        } else if (5 <= hPrime && hPrime < 6) {
+            r1 = c;
+            b1 = x;
         }
+
+        float m = l - c / 2;
+        int r = Math.round((r1 + m) * 255);
+        int g = Math.round((g1 + m) * 255);
+        int b = Math.round((b1 + m) * 255);
+
         return Color.rgb(r, g, b);
     }
 
@@ -797,13 +872,9 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
         } else if (id == R.id.nav_edit_profile) {
             Toast.makeText(this, "Already on this page.", Toast.LENGTH_SHORT).show();
         } else if (id == R.id.nav_manage_media) {
-
             intent = new Intent(UserInfoActivity.this, ManageMediaActivity.class);
-
         } else if (id == R.id.nav_manage_users) {
-
             intent = new Intent(UserInfoActivity.this, ManageUsersActivity.class);
-
         } else if (id == R.id.action_scan_qr) {
             // Handle QR code scanning
             intent = new Intent(UserInfoActivity.this, QRScanActivity.class);
@@ -828,7 +899,6 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
             startActivity(intent);
         }
 
-
         drawerLayout.closeDrawer(GravityCompat.START);
         return true;
     }
@@ -838,14 +908,14 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
      * Otherwise, perform the default back press action.
      */
     private void handleBackPressed() {
-        androidx.activity.OnBackPressedCallback callback = new androidx.activity.OnBackPressedCallback(true /* enabled */) {
+        OnBackPressedCallback callback = new OnBackPressedCallback(true /* enabled */) {
             @Override
             public void handleOnBackPressed() {
                 if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
                     drawerLayout.closeDrawer(GravityCompat.START);
                 } else {
                     setEnabled(false);
-                    getOnBackPressedDispatcher().onBackPressed();
+                    UserInfoActivity.super.onBackPressed();
                 }
             }
         };
