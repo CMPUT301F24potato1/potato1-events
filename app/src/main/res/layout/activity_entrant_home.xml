@@ -20,11 +20,16 @@
             android:background="?attr/colorPrimary"
             android:elevation="4dp">
 
-            <Button
-                android:id="@+id/switchModeButton"
+            <TextView
+                android:id="@+id/toolbar_title"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Switch Mode" />
+                android:layout_height="match_parent"
+                android:text="My Joined Events"
+                android:textSize="20sp"
+                android:textColor="@android:color/white"
+                android:gravity="center_vertical"
+                android:layout_gravity="start"
+                android:layout_marginStart="8dp"/>
 
             <!-- Search Bar -->
             <androidx.appcompat.widget.SearchView
@@ -61,3 +66,5 @@
         app:menu="@menu/drawer_menu" />
 
 </androidx.drawerlayout.widget.DrawerLayout>
+
+<!--test-->

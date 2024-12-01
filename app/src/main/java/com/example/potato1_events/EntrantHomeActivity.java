@@ -1,69 +1,90 @@
+// File: EntrantHomeActivity.java
 package com.example.potato1_events;
 
-import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.location.Location;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.text.TextUtils;
+import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.activity.EdgeToEdge;
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.cardview.widget.CardView;
+import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 
-import com.google.android.gms.location.FusedLocationProviderClient;
-import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.navigation.NavigationView;
-import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
-import com.google.firebase.firestore.GeoPoint;
+import com.google.zxing.integration.android.IntentIntegrator;
+import com.google.zxing.integration.android.IntentResult;
+import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
+/**
+ * Activity to display all events that the entrant has joined.
+ * Entrants can view event details and manage their participation.
+ */
 public class EntrantHomeActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
+    // UI Components
     private DrawerLayout drawerLayout;
     private LinearLayout eventsLinearLayout;
-    private FirebaseFirestore firestore;
+    private EntEventsRepository entEventRepo;
+    private List<Event> eventList;
 
     private String deviceId;
-    private ArrayList<Event> eventList = new ArrayList<>(); // To store events
+    private Button switchModeButton;
 
-    // Location related variables
-    private FusedLocationProviderClient fusedLocationClient;
-    private Location currentLocation;
-    private static final float SEARCH_RADIUS_KM = 10.0f; // Example: 10 km radius
+    // To keep track of added event IDs to prevent duplicates
+    private Set<String> addedEventIds = new HashSet<>();
 
-    // Permission launcher
-    private ActivityResultLauncher<String> requestPermissionLauncher;
+    // User Privileges
+    private boolean isAdmin = false; // Class-level variable
 
+    private static final int NOTIFICATION_PERMISSION_REQUEST_CODE = 1001;
+
+    /**
+     * Initializes the activity, sets up UI components, Firebase instances, and event listeners.
+     *
+     * @param savedInstanceState The previously saved state of the activity.
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_entrant_home);
 
-        final boolean isAdmin = getIntent().getBooleanExtra("IS_ADMIN", false);
+        // Retrieve the isAdmin flag from Intent extras
+        isAdmin = getIntent().getBooleanExtra("IS_ADMIN", false);
+
 
         // Get device ID
         deviceId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
 
         // Initialize Firebase Firestore
-        firestore = FirebaseFirestore.getInstance();
+        FirebaseFirestore firestore = FirebaseFirestore.getInstance();
+
+        // Initialize EntEventsRepository
+        entEventRepo = new EntEventsRepository(firestore);
 
         // Initialize views
         drawerLayout = findViewById(R.id.drawer_layout);
@@ -81,211 +102,224 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
         // Make admin options available
         if (isAdmin) {
             navigationView.getMenu().findItem(R.id.nav_manage_media).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_manage_users).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_create_event).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_edit_facility).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_my_events).setVisible(true);
         }
-
+        requestNotificationPermission();
         navigationView.setNavigationItemSelectedListener(this);
 
-        // Initialize FusedLocationProviderClient
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+        // Initialize event list
+        eventList = new ArrayList<>();
 
-        // Initialize permission launcher
-        requestPermissionLauncher = registerForActivityResult(
-                new ActivityResultContracts.RequestPermission(),
-                isGranted -> {
-                    if (isGranted) {
-                        fetchLocationAndLoadEvents();
-                    } else {
-                        Toast.makeText(EntrantHomeActivity.this,
-                                "Location permission denied. Unable to load nearby events.",
-                                Toast.LENGTH_SHORT).show();
-                    }
-                }
-        );
-
-        // Check and request location permissions
-        checkLocationPermissionAndLoadEvents();
+        // Load events the entrant has joined
+        loadJoinedEvents();
     }
 
     /**
-     * Checks if location permissions are granted. If not, requests them.
+     * Override onResume to refresh the event list when the activity resumes.
      */
-    private void checkLocationPermissionAndLoadEvents() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-                == PackageManager.PERMISSION_GRANTED) {
-            // Permission is already granted
-            fetchLocationAndLoadEvents();
-        } else {
-            // Request permission
-            requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION);
-        }
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Refresh the list of joined events
+        loadJoinedEvents();
     }
 
     /**
-     * Fetches the device's current location and loads events based on that location.
+     * Navigates back to LandingActivity when Switch Mode button is clicked.
      */
-    private void fetchLocationAndLoadEvents() {
-        try {
-            Task<Location> locationTask = fusedLocationClient.getLastLocation();
-            locationTask.addOnSuccessListener(location -> {
-                if (location != null) {
-                    currentLocation = location;
-                    loadEventsNearLocation(currentLocation);
-                } else {
-                    Toast.makeText(EntrantHomeActivity.this,
-                            "Unable to determine current location.",
-                            Toast.LENGTH_SHORT).show();
-                }
-            }).addOnFailureListener(e -> {
-                Toast.makeText(EntrantHomeActivity.this,
-                        "Error fetching location: " + e.getMessage(),
-                        Toast.LENGTH_SHORT).show();
-            });
-        } catch (SecurityException e) {
-            // This should not happen as we've already checked permissions
-            Toast.makeText(EntrantHomeActivity.this,
-                    "Location permission not granted.",
-                    Toast.LENGTH_SHORT).show();
-        }
+    private void switchMode() {
+        // Create an Intent to navigate to LandingActivity
+        Intent intent = new Intent(EntrantHomeActivity.this, LandingActivity.class);
+
+        // Set flags to clear the current activity stack
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+
+        // Start LandingActivity
+        startActivity(intent);
+
+        // Finish the current activity to remove it from the back stack
+        finish();
     }
 
     /**
-     * Loads events from Firestore based on the provided location.
+     * Sets the EntEventsRepository instance (used for testing).
      *
-     * @param location The current location of the device.
+     * @param repository The EntEventsRepository instance.
      */
-    private void loadEventsNearLocation(Location location) {
+    public void setEntEventsRepository(EntEventsRepository repository) {
+        this.entEventRepo = repository;
+    }
+
+    /**
+     * Sets the device ID (used for testing).
+     *
+     * @param id The device ID.
+     */
+    public void setDeviceId(String id) {
+        this.deviceId = id;
+    }
+
+    /**
+     * Loads events that the entrant has joined from the repository.
+     * Clears existing views and populates the UI with the fetched events.
+     */
+    public void loadJoinedEvents() {
         // Clear existing views and list
         eventsLinearLayout.removeAllViews();
         eventList.clear();
+        addedEventIds.clear();
 
-        // First, query Facilities within the SEARCH_RADIUS_KM
-        CollectionReference facilitiesRef = firestore.collection("Facilities");
-
-        facilitiesRef.get().addOnSuccessListener(facilitiesSnapshot -> {
-            List<String> nearbyFacilityIds = new ArrayList<>();
-
-            for (QueryDocumentSnapshot facilityDoc : facilitiesSnapshot) {
-                Facility facility = facilityDoc.toObject(Facility.class);
-                facility.setId(facilityDoc.getId());
-
-                double distance = calculateDistance(
-                        location.getLatitude(),
-                        location.getLongitude(),
-                        facility.getLatitude(),
-                        facility.getLongitude()
-                );
-
-                if (distance <= SEARCH_RADIUS_KM) {
-                    nearbyFacilityIds.add(facility.getId());
+        // Fetch joined events using the repository
+        entEventRepo.getJoinedEvents(deviceId, new EntEventsRepository.EventListCallback() {
+            @Override
+            public void onEventListLoaded(List<Event> events) {
+                if (events != null && !events.isEmpty()) {
+                    eventList.addAll(events);
+                    // Update UI with eventList
+                    for (Event event : eventList) {
+                        if (!addedEventIds.contains(event.getId())) {
+                            addEventView(event);
+                            addedEventIds.add(event.getId());
+                        }
+                    }
+                } else if (events != null && events.isEmpty()) {
+                    // Entrant hasn't joined any events
+                    Toast.makeText(EntrantHomeActivity.this, "You haven't joined any events yet.", Toast.LENGTH_SHORT).show();
+                } else {
+                    // An error occurred while fetching events
+                    Toast.makeText(EntrantHomeActivity.this, "Error fetching events.", Toast.LENGTH_SHORT).show();
                 }
             }
-
-            if (nearbyFacilityIds.isEmpty()) {
-                Toast.makeText(EntrantHomeActivity.this,
-                        "No facilities found within " + SEARCH_RADIUS_KM + " km.",
-                        Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            // Now, query Events where facilityId is in nearbyFacilityIds
-            firestore.collection("Events")
-                    .whereIn("facilityId", nearbyFacilityIds)
-                    .get()
-                    .addOnSuccessListener(eventsSnapshot -> {
-                        for (QueryDocumentSnapshot eventDoc : eventsSnapshot) {
-                            Event event = eventDoc.toObject(Event.class);
-                            event.setId(eventDoc.getId());
-                            eventList.add(event);
-                            addEventView(event);
-                        }
-
-                        if (eventList.isEmpty()) {
-                            Toast.makeText(EntrantHomeActivity.this,
-                                    "No events found near your location.",
-                                    Toast.LENGTH_SHORT).show();
-                        }
-                    })
-                    .addOnFailureListener(e -> {
-                        Toast.makeText(EntrantHomeActivity.this,
-                                "Error loading events: " + e.getMessage(),
-                                Toast.LENGTH_SHORT).show();
-                    });
-
-        }).addOnFailureListener(e -> {
-            Toast.makeText(EntrantHomeActivity.this,
-                    "Error loading facilities: " + e.getMessage(),
-                    Toast.LENGTH_SHORT).show();
         });
     }
 
     /**
-     * Calculates the distance between two geographic coordinates using the Haversine formula.
-     *
-     * @param lat1 Latitude of the first point.
-     * @param lon1 Longitude of the first point.
-     * @param lat2 Latitude of the second point.
-     * @param lon2 Longitude of the second point.
-     * @return Distance in kilometers.
-     */
-    private double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
-        final int EARTH_RADIUS_KM = 6371; // Radius of the Earth in kilometers
-
-        double dLat = Math.toRadians(lat2 - lat1);
-        double dLon = Math.toRadians(lon2 - lon1);
-
-        double a =
-                Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                        Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
-                                Math.sin(dLon / 2) * Math.sin(dLon / 2);
-
-        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-        return EARTH_RADIUS_KM * c;
-    }
-
-    /**
-     * Adds a Button view for each event to the LinearLayout.
+     * Adds a custom event view to the LinearLayout.
      *
      * @param event The Event object to display.
      */
     private void addEventView(Event event) {
-        // Create a Button for each event
-        Button eventButton = new Button(this);
-        eventButton.setText(event.getName()); // Set event name
-        eventButton.setTag(event.getId()); // Store event ID
+        // Inflate the event_item.xml layout
+        LayoutInflater inflater = LayoutInflater.from(this);
+        View eventView = inflater.inflate(R.layout.event_item, eventsLinearLayout, false);
 
-        // Set OnClickListener
-        eventButton.setOnClickListener(v -> {
-            String eventId = (String) v.getTag();
+        // Initialize UI components within event_item.xml
+        ImageView eventPosterImageView = eventView.findViewById(R.id.eventPosterImageView);
+        TextView eventNameTextView = eventView.findViewById(R.id.eventNameTextView);
+        TextView eventLocationTextView = eventView.findViewById(R.id.eventLocationTextView);
+        CardView eventCardView = eventView.findViewById(R.id.eventCardView);
+
+        // Populate the views with event data
+        eventNameTextView.setText(event.getName());
+        eventLocationTextView.setText(event.getEventLocation());
+
+        if (!TextUtils.isEmpty(event.getPosterImageUrl())) {
+            Picasso.get()
+                    .load(event.getPosterImageUrl())
+                    .placeholder(R.drawable.ic_placeholder_image) // Ensure you have a placeholder image
+                    .error(R.drawable.ic_error_image) // Ensure you have an error image
+                    .into(eventPosterImageView);
+        } else {
+            eventPosterImageView.setImageResource(R.drawable.ic_placeholder_image); // Default image
+        }
+
+        // Set OnClickListener to navigate to Event Details
+        eventCardView.setOnClickListener(v -> {
             Intent intent = new Intent(EntrantHomeActivity.this, EventDetailsEntrantActivity.class);
-            intent.putExtra("EVENT_ID", eventId);
+            intent.putExtra("EVENT_ID", event.getId());
             startActivity(intent);
         });
 
-        // Add the button to the LinearLayout
-        eventsLinearLayout.addView(eventButton);
+        // Add the populated event view to the LinearLayout
+        eventsLinearLayout.addView(eventView);
     }
 
+    /**
+     * Handles navigation menu item selections.
+     *
+     * @param item The selected menu item.
+     * @return True if the event was handled, false otherwise.
+     */
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         // Handle navigation
         int id = item.getItemId();
+        Intent intent = null;
 
         if (id == R.id.nav_notifications) {
-            //FIXME Implement this
             // Navigate to NotificationsActivity
-//            Intent intent = new Intent(EntrantHomeActivity.this, NotificationsActivity.class);
-//            startActivity(intent);
-            Toast.makeText(this, "Notifications feature not implemented yet.", Toast.LENGTH_SHORT).show();
+            // Uncomment and implement if NotificationsActivity exists
+            intent = new Intent(EntrantHomeActivity.this, NotificationsActivity.class);
         } else if (id == R.id.nav_edit_profile) {
-            //FIXME Implement this
-            // Navigate to EditProfileActivity
-//            Intent intent = new Intent(EntrantHomeActivity.this, EditProfileActivity.class);
-//            startActivity(intent);
-            Toast.makeText(this, "Edit Profile feature not implemented yet.", Toast.LENGTH_SHORT).show();
+            // Navigate to UserInfoActivity in EDIT mode
+            intent = new Intent(EntrantHomeActivity.this, UserInfoActivity.class);
+            intent.putExtra("IS_ADMIN", isAdmin);
+            intent.putExtra("MODE", "EDIT");
+        } else if (id == R.id.nav_manage_media) {
+            // Navigate to ManageMediaActivity (visible only to admins)
+            intent = new Intent(EntrantHomeActivity.this, ManageMediaActivity.class);
+        } else if (id == R.id.nav_manage_users) {
+            // Navigate to ManageUsersActivity (visible only to admins)
+            intent = new Intent(EntrantHomeActivity.this, ManageUsersActivity.class);
+        } else if (id == R.id.action_scan_qr) {
+            intent = new Intent(EntrantHomeActivity.this, QRScanActivity.class);
+        } else if (id == R.id.nav_create_event) {
+
+            intent = new Intent(EntrantHomeActivity.this, CreateEditEventActivity.class);
+            intent.putExtra("IS_ADMIN", isAdmin);
+        } else if (id == R.id.nav_edit_facility) {
+
+            intent = new Intent(EntrantHomeActivity.this, CreateEditFacilityActivity.class);
+            intent.putExtra("IS_ADMIN", isAdmin);
+        } else if (id == R.id.nav_my_events) {
+
+            intent = new Intent(EntrantHomeActivity.this, OrganizerHomeActivity.class);
+            intent.putExtra("IS_ADMIN", isAdmin);
+        } else if (id == R.id.nav_view_joined_events) {
+            Toast.makeText(this, "Already on this page.", Toast.LENGTH_SHORT).show();
         }
+
+        if (intent != null) {
+            startActivity(intent);
+        }
+
 
         drawerLayout.closeDrawer(GravityCompat.START);
         return true;
+    }
+
+    /**
+     * Handles the back button press to close the drawer if open.
+     */
+    @Override
+    public void onBackPressed() {
+        if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
+            drawerLayout.closeDrawer(GravityCompat.START);
+        } else {
+            super.onBackPressed();
+        }
+    }
+    private void requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, NOTIFICATION_PERMISSION_REQUEST_CODE);
+            }
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == NOTIFICATION_PERMISSION_REQUEST_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Log.d("EntrantHomeActivity", "Notification permission granted.");
+            } else {
+                Log.d("EntrantHomeActivity", "Notification permission denied.");
+                // Optionally, inform the user that notifications will not be shown
+            }
+        }
     }
 }

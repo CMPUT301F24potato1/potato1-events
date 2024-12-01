@@ -1,4 +1,9 @@
 # Default ignored files
 /shelf/
 /workspace.xml
+/androidTestResultsUserPreferences.xml
+/deploymentTargetSelector.xml
+/gradle.xml
+/misc.xml
+
 

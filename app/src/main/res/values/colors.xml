@@ -2,4 +2,12 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <color name="background_light_blue">#ADD8E6</color> <!-- Light blue background -->
+    <color name="button_dark_blue">#1E90FF</color> <!-- Dark blue for buttons and banners -->
+    <color name="enrolledColor">#4CAF50</color> <!-- Green -->
+    <color name="waitlistColor">#FFC107</color> <!-- Amber/Yellow -->
+    <color name="canceledColor">#F44336</color> <!-- Red -->
+    <color name="chosenColor">#2196F3</color> <!-- Blue -->
+    <color name="unknownColor">#9E9E9E</color> <!-- Grey -->
 </resources>

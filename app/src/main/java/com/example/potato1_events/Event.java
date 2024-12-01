@@ -1,8 +1,11 @@
 package com.example.potato1_events;
 
+import androidx.annotation.Nullable;
+
 import com.google.firebase.firestore.ServerTimestamp;
 import java.util.Date;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Represents an Event that entrants can sign up for.
@@ -61,34 +64,29 @@ public class Event {
     private int capacity;
 
     /**
+     * Current number of entrants.
+     */
+    private int currentEntrantsNumber;
+
+    /**
+     * Maximum number of entrants in the waiting list.
+     */
+    private Integer waitingListCapacity;
+
+    /**
      * URL of the event poster image.
      */
     private String posterImageUrl;
 
     /**
-     * Hashed QR code data for the event.
+     * QR code hash representing the event ID.
      */
     private String qrCodeHash;
 
     /**
-     * List of entrant IDs in the waiting list.
+     * Map of entrant IDs to their status.
      */
-    private List<String> waitingList;
-
-    /**
-     * List of entrant IDs who have been selected.
-     */
-    private List<String> selectedEntrants;
-
-    /**
-     * List of entrant IDs who have confirmed their participation.
-     */
-    private List<String> confirmedEntrants;
-
-    /**
-     * List of entrant IDs who have declined the invitation.
-     */
-    private List<String> declinedEntrants;
+    private Map<String, String> entrants;
 
     /**
      * Timestamp of when the event was created.
@@ -102,38 +100,58 @@ public class Event {
     private String status;
 
     /**
+     * Switch to let organizers set geolocation status.
+     */
+    private boolean geolocationRequired;
+
+    /**
+     * Flag indicating if a random draw has been performed.
+     */
+    private boolean randomDrawPerformed;
+
+    private boolean waitingListFilled;
+
+    /**
+     * Event's location.
+     */
+    private String eventLocation;
+
+    /**
      * Default constructor required for Firebase deserialization.
      */
     public Event() {
         // Default constructor
+        this.entrants = new HashMap<>();
     }
 
     /**
      * Parameterized constructor to create an Event instance.
      *
-     * @param id               Unique identifier for the event.
-     * @param facilityId       Identifier of the hosting facility.
-     * @param name             Name of the event.
-     * @param description      Description of the event.
-     * @param startDate        Start date and time.
-     * @param endDate          End date and time.
-     * @param registrationStart Registration start date and time.
-     * @param registrationEnd   Registration end date and time.
-     * @param price            Price for attending.
-     * @param capacity         Maximum number of attendees.
-     * @param posterImageUrl   URL of the poster image.
-     * @param qrCodeHash       Hashed QR code data.
-     * @param waitingList      List of entrant IDs in waiting.
-     * @param selectedEntrants List of selected entrant IDs.
-     * @param confirmedEntrants List of confirmed entrant IDs.
-     * @param declinedEntrants List of declined entrant IDs.
-     * @param createdAt        Creation timestamp.
-     * @param status           Status of the event.
+     * @param id                    Unique identifier for the event.
+     * @param facilityId            Identifier of the hosting facility.
+     * @param name                  Name of the event.
+     * @param description           Description of the event.
+     * @param startDate             Start date and time.
+     * @param endDate               End date and time.
+     * @param registrationStart     Registration start date and time.
+     * @param registrationEnd       Registration end date and time.
+     * @param price                 Price for attending.
+     * @param capacity              Maximum number of attendees.
+     * @param currentEntrantsNumber Current number of entrants.
+     * @param waitingListCapacity   Maximum entrants in the waiting list.
+     * @param posterImageUrl        URL of the poster image.
+     * @param qrCodeHash            QR code hash representing the event ID.
+     * @param entrants              Map of entrants with their status.
+     * @param createdAt             Creation timestamp.
+     * @param status                Status of the event.
+     * @param geolocationRequired   Switch enabling geolocation requirement.
+     * @param eventLocation         Event's location.
      */
     public Event(String id, String facilityId, String name, String description, Date startDate, Date endDate,
-                 Date registrationStart, Date registrationEnd, double price, int capacity, String posterImageUrl,
-                 String qrCodeHash, List<String> waitingList, List<String> selectedEntrants,
-                 List<String> confirmedEntrants, List<String> declinedEntrants, Date createdAt, String status) {
+                 Date registrationStart, Date registrationEnd, double price, int capacity, int currentEntrantsNumber,
+                 Integer waitingListCapacity, String posterImageUrl, String qrCodeHash,
+                 Map<String, String> entrants, Date createdAt, String status, boolean geolocationRequired,
+                 String eventLocation) {
         this.id = id;
         this.facilityId = facilityId;
         this.name = name;
@@ -144,15 +162,18 @@ public class Event {
         this.registrationEnd = registrationEnd;
         this.price = price;
         this.capacity = capacity;
+        this.currentEntrantsNumber = currentEntrantsNumber;
+        this.waitingListCapacity = waitingListCapacity;
         this.posterImageUrl = posterImageUrl;
         this.qrCodeHash = qrCodeHash;
-        this.waitingList = waitingList;
-        this.selectedEntrants = selectedEntrants;
-        this.confirmedEntrants = confirmedEntrants;
-        this.declinedEntrants = declinedEntrants;
+        this.entrants = entrants != null ? entrants : new HashMap<>();
         this.createdAt = createdAt;
         this.status = status;
+        this.geolocationRequired = geolocationRequired;
+        this.eventLocation = eventLocation;
+        this.randomDrawPerformed = false;
     }
+
 
     // Getters and Setters
 
@@ -333,7 +354,50 @@ public class Event {
      * @param capacity Capacity.
      */
     public void setCapacity(int capacity) {
+        if (capacity < 0) {
+            throw new IllegalArgumentException("Capacity cannot be negative");
+        }
         this.capacity = capacity;
+    }
+
+
+    /**
+     * Gets the current number of entrants in the event.
+     *
+     * @return Current number of entrants.
+     */
+    public int getCurrentEntrantsNumber() {
+        return currentEntrantsNumber;
+    }
+
+    /**
+     * Sets the current number of entrants in the event.
+     *
+     * @param currentEntrantsNumber Current number of entrants.
+     */
+    public void setCurrentEntrantsNumber(int currentEntrantsNumber) {
+        this.currentEntrantsNumber = currentEntrantsNumber;
+    }
+
+    /**
+     * Gets the maximum capacity of the waiting list.
+     *
+     * @return Waiting list capacity, or null if unlimited.
+     */
+    public Integer getWaitingListCapacity() {
+        return waitingListCapacity;
+    }
+
+    /**
+     * Sets the maximum capacity of the waiting list.
+     *
+     * @param waitingListCapacity Waiting list capacity, or null for unlimited.
+     */
+    public void setWaitingListCapacity(Integer waitingListCapacity) {
+        if (waitingListCapacity != null && waitingListCapacity < 0) {
+            throw new IllegalArgumentException("Waiting list capacity cannot be negative");
+        }
+        this.waitingListCapacity = waitingListCapacity;
     }
 
     /**
@@ -355,7 +419,7 @@ public class Event {
     }
 
     /**
-     * Gets the hashed QR code data.
+     * Gets the QR code hash representing the event ID.
      *
      * @return QR code hash.
      */
@@ -364,7 +428,7 @@ public class Event {
     }
 
     /**
-     * Sets the hashed QR code data.
+     * Sets the QR code hash representing the event ID.
      *
      * @param qrCodeHash QR code hash.
      */
@@ -373,75 +437,40 @@ public class Event {
     }
 
     /**
-     * Gets the waiting list of entrant IDs.
+     * Gets the entrants map.
      *
-     * @return Waiting list.
+     * @return Map of entrant IDs to their status.
      */
-    public List<String> getWaitingList() {
-        return waitingList;
+    public Map<String, String> getEntrants() {
+        return entrants;
     }
 
     /**
-     * Sets the waiting list of entrant IDs.
+     * Sets the entrants map.
      *
-     * @param waitingList Waiting list.
+     * @param entrants Map of entrant IDs to their status.
      */
-    public void setWaitingList(List<String> waitingList) {
-        this.waitingList = waitingList;
+    public void setEntrants(Map<String, String> entrants) {
+        this.entrants = entrants;
     }
 
     /**
-     * Gets the list of selected entrant IDs.
+     * Adds or updates an entrant's status.
      *
-     * @return Selected entrants.
+     * @param entrantId The ID of the entrant.
+     * @param status    The status of the entrant (e.g., "Accepted", "Selected", "Not Selected", "Declined", "Waitlist").
      */
-    public List<String> getSelectedEntrants() {
-        return selectedEntrants;
+    public void updateEntrantStatus(String entrantId, String status) {
+        this.entrants.put(entrantId, status);
     }
 
     /**
-     * Sets the list of selected entrant IDs.
+     * Removes an entrant from the entrants map.
      *
-     * @param selectedEntrants Selected entrants.
+     * @param entrantId The ID of the entrant to remove.
      */
-    public void setSelectedEntrants(List<String> selectedEntrants) {
-        this.selectedEntrants = selectedEntrants;
-    }
-
-    /**
-     * Gets the list of confirmed entrant IDs.
-     *
-     * @return Confirmed entrants.
-     */
-    public List<String> getConfirmedEntrants() {
-        return confirmedEntrants;
-    }
-
-    /**
-     * Sets the list of confirmed entrant IDs.
-     *
-     * @param confirmedEntrants Confirmed entrants.
-     */
-    public void setConfirmedEntrants(List<String> confirmedEntrants) {
-        this.confirmedEntrants = confirmedEntrants;
-    }
-
-    /**
-     * Gets the list of declined entrant IDs.
-     *
-     * @return Declined entrants.
-     */
-    public List<String> getDeclinedEntrants() {
-        return declinedEntrants;
-    }
-
-    /**
-     * Sets the list of declined entrant IDs.
-     *
-     * @param declinedEntrants Declined entrants.
-     */
-    public void setDeclinedEntrants(List<String> declinedEntrants) {
-        this.declinedEntrants = declinedEntrants;
+    public void removeEntrant(String entrantId) {
+        this.entrants.remove(entrantId);
     }
 
     /**
@@ -481,56 +510,88 @@ public class Event {
     }
 
     /**
-     * Adds an entrant ID to the waiting list.
-     *
-     * @param entrantId Entrant ID to add.
-     */
-    public void addToWaitingList(String entrantId) {
-        this.waitingList.add(entrantId);
-    }
-
-    /**
-     * Removes an entrant ID from the waiting list.
-     *
-     * @param entrantId Entrant ID to remove.
-     */
-    public void removeFromWaitingList(String entrantId) {
-        this.waitingList.remove(entrantId);
-    }
-
-    /**
-     * Adds an entrant ID to the selected entrants list.
-     *
-     * @param entrantId Entrant ID to add.
-     */
-    public void addSelectedEntrant(String entrantId) {
-        this.selectedEntrants.add(entrantId);
-    }
-
-    /**
-     * Adds an entrant ID to the confirmed entrants list.
-     *
-     * @param entrantId Entrant ID to add.
-     */
-    public void addConfirmedEntrant(String entrantId) {
-        this.confirmedEntrants.add(entrantId);
-    }
-
-    /**
-     * Adds an entrant ID to the declined entrants list.
-     *
-     * @param entrantId Entrant ID to add.
-     */
-    public void addDeclinedEntrant(String entrantId) {
-        this.declinedEntrants.add(entrantId);
-    }
-
-    /**
      * Updates the event status.
      *
      * @param newStatus New status of the event.
      */
     public void updateStatus(String newStatus) {
         this.status = newStatus;
+    }
+
+    /**
+     * Gets the geolocation requirement status.
+     *
+     * @return True if geolocation is required, false otherwise.
+     */
+    public boolean isGeolocationRequired() {
+        return geolocationRequired;
+    }
+
+    /**
+     * Sets the geolocation requirement status.
+     *
+     * @param geolocationRequired True to require geolocation, false otherwise.
+     */
+    public void setGeolocationRequired(boolean geolocationRequired) {
+        this.geolocationRequired = geolocationRequired;
+    }
+
+    /**
+     * Gets whether a random draw has been performed.
+     *
+     * @return True if a random draw has been performed, false otherwise.
+     */
+    public boolean getRandomDrawPerformed() {
+        return randomDrawPerformed;
+    }
+
+    /**
+     * Sets whether a random draw has been performed.
+     *
+     * @param randomDrawPerformed True if a random draw has been performed, false otherwise.
+     */
+    public void setRandomDrawPerformed(boolean randomDrawPerformed) {
+        this.randomDrawPerformed = randomDrawPerformed;
+    }
+
+    /**
+     * Gets the event location.
+     *
+     * @return Event location.
+     */
+    public String getEventLocation() {
+        return eventLocation;
+    }
+
+    /**
+     * Sets the event location.
+     *
+     * @param eventLocation Event location.
+     */
+    public void setEventLocation(String eventLocation) {
+        this.eventLocation = eventLocation;
+    }
+
+    public boolean isWaitingListFilled() {
+        return waitingListFilled;
+    }
+
+    public void setWaitingListFilled(boolean waitingListFilled) {
+        this.waitingListFilled = waitingListFilled;
+    }
+
+    public String getAvailableCapacity() {
+        int acceptedEntrants = 0;
+
+        if (entrants != null && !entrants.isEmpty()) {
+            for (String status : entrants.values()) {
+                if ("Selected".equalsIgnoreCase(status) || "Accepted".equalsIgnoreCase(status)) {
+                    acceptedEntrants++;
+                }
+            }
+        }
+
+        int availableCapacity = capacity - acceptedEntrants;
+        return String.valueOf(availableCapacity);
     }
 }
