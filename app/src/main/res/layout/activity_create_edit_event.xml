@@ -35,23 +35,6 @@
                 android:background="@drawable/white_square_background"
                 android:orientation="vertical">
 
-                <!-- Generate QR Code Button -->
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginBottom="16dp">
-
-                    <Button
-                        android:id="@+id/generateQRCodeButton"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Generate QR Code"
-                        android:textColor="#FFFFFF"
-                        android:layout_marginStart="8dp"
-                        android:paddingStart="8dp"
-                        android:paddingEnd="8dp" />
-                </LinearLayout>
 
                 <!-- Event Name (Required) -->
                 <LinearLayout
@@ -321,6 +304,24 @@
                     android:text="Enable Geolocation Requirement"
                     android:layout_marginTop="16dp" />
                 <!-- No asterisk for optional field -->
+
+                <!-- Generate QR Code Button -->
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="16dp">
+
+                    <Button
+                        android:id="@+id/generateQRCodeButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Generate QR Code"
+                        android:textColor="#FFFFFF"
+                        android:layout_marginStart="8dp"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="8dp" />
+                </LinearLayout>
 
                 <!-- Event Poster (Required) -->
                 <LinearLayout

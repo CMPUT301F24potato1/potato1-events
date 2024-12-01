@@ -8,6 +8,7 @@ plugins {
     id("com.google.gms.google-services")
 }
 
+
 android {
     namespace = "com.example.potato1_events"
     compileSdk = 35
@@ -37,6 +38,8 @@ android {
     buildFeatures {
         viewBinding = true
     }
+
+
 //    packaging {
 //        resources {
 //            excludes += "mockito-extensions/org.mockito.plugins.MockMaker"
@@ -78,11 +81,16 @@ dependencies {
     //implementation(libs.recyclerview.swipedecorator)
 //    implementation(libs.rules)
 //    implementation("androidx.test:rules:1.4.0")
-    testImplementation(libs.junit)
-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.7.0")
-    testImplementation("org.junit.jupiter:junit-jupiter-params:5.7.0")
+//    testImplementation(libs.junit)
+//    testImplementation("org.junit.jupiter:junit-jupiter:5.9.0")
+//    testImplementation("org.junit.jupiter:junit-jupiter-params:5.7.0")
+    testImplementation("junit:junit:4.13.2")
     testImplementation("org.assertj:assertj-core:3.17.2")
     testImplementation("org.mockito:mockito-core:3.5.13")
+//    testImplementation("org.mockito:mockito-core:5.5.0")
+    testImplementation("net.bytebuddy:byte-buddy:1.14.6")
+    testImplementation("net.bytebuddy:byte-buddy-agent:1.14.6")
+
 
     var camerax_version = "1.1.0" // Use the latest stable version if possible
     implementation("androidx.camera:camera-core:$camerax_version")
@@ -96,10 +104,7 @@ dependencies {
     androidTestImplementation(libs.test.runner)
     androidTestImplementation(libs.rules)
 
-    testImplementation("junit:junit:4.13.2")
-    testImplementation("org.mockito:mockito-core:5.5.0")
-    testImplementation("net.bytebuddy:byte-buddy:1.14.6")
-    testImplementation("net.bytebuddy:byte-buddy-agent:1.14.6")
+
 
     // Instrumentation Tests (Run on Android devices/emulators)
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
@@ -118,6 +123,8 @@ dependencies {
 //    androidTestImplementation("org.mockito:mockito-android:3.12.4")
 //    androidTestImplementation("org.mockito:mockito-inline:3.12.4")
 }
+
+
 configurations {
     all {
         exclude(group= "com.google.protobuf", module= "protobuf-lite")
