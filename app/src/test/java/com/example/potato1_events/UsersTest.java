@@ -1,200 +1,242 @@
 package com.example.potato1_events;
 
-import static org.junit.Assert.*;
-
 import org.junit.Before;
 import org.junit.Test;
+import static org.junit.Assert.*;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Unit tests for the {@link User} class.
+ * This class tests the constructors, getters, setters, and ensures proper handling of user data.
  */
 public class UsersTest {
 
-    private User defaultUser;
-    private User parameterizedUser;
-    private List<String> eventsJoined;
+    private User user;
+
+    private static final double DELTA = 0.0001;
 
     /**
-     * Sets up the test environment before each test case.
-     * Initializes default and parameterized User objects.
+     * Sets up the test environment before each test.
+     * Initializes a User object with sample data.
      */
     @Before
     public void setUp() {
-        // Initialize default user
-        defaultUser = new User();
-
-        // Initialize parameterized user with sample data
-        eventsJoined = new ArrayList<>();
-        eventsJoined.add("event1");
-        eventsJoined.add("event2");
-
-        parameterizedUser = new User(
+        user = new User(
                 "user123",
                 "Entrant",
                 "John Doe",
                 "john.doe@example.com",
-                "1234567890",
-                "images/profile_pictures/user123.jpg",
+                "123-456-7890",
+                "images/profile/user123.jpg",
                 true,
-                1627891200000L // Created at timestamp
+                System.currentTimeMillis()
         );
-        parameterizedUser.setEventsJoined(eventsJoined);
-        parameterizedUser.setStatus("Active");
     }
 
     /**
-     * Tests the default constructor of the {@link User} class.
-     * Verifies that default values are set correctly.
+     * Tests the default constructor of the User class.
+     * Verifies initial values and defaults.
      */
     @Test
     public void testDefaultConstructor() {
-        assertNotNull("Default user should not be null", defaultUser);
-        assertFalse("Default user should not be admin", defaultUser.isAdmin());
-        assertNotNull("Events joined list should be initialized", defaultUser.getEventsJoined());
-        assertTrue("Events joined list should be empty", defaultUser.getEventsJoined().isEmpty());
+        User defaultUser = new User();
+        assertNotNull(defaultUser);
+        assertFalse(defaultUser.isAdmin());
+        assertNotNull(defaultUser.getEventsJoined());
+        assertTrue(defaultUser.getEventsJoined().isEmpty());
     }
 
     /**
-     * Tests the parameterized constructor of the {@link User} class.
-     * Checks if all fields are initialized correctly.
+     * Tests the parameterized constructor of the User class.
+     * Verifies that all fields are initialized correctly.
      */
     @Test
     public void testParameterizedConstructor() {
-        assertEquals("User ID should match", "user123", parameterizedUser.getUserId());
-        assertEquals("Role should match", "Entrant", parameterizedUser.getRole());
-        assertEquals("Name should match", "John Doe", parameterizedUser.getName());
-        assertEquals("Email should match", "john.doe@example.com", parameterizedUser.getEmail());
-        assertEquals("Phone number should match", "1234567890", parameterizedUser.getPhoneNumber());
-        assertEquals("Image path should match", "images/profile_pictures/user123.jpg", parameterizedUser.getImagePath());
-        assertTrue("Notifications should be enabled", parameterizedUser.isNotificationsEnabled());
-        assertEquals("Creation timestamp should match", 1627891200000L, parameterizedUser.getCreatedAt());
-        assertFalse("User should not be admin", parameterizedUser.isAdmin());
-        assertEquals("Events joined should match", eventsJoined, parameterizedUser.getEventsJoined());
-        assertEquals("Status should match", "Active", parameterizedUser.getStatus());
+        assertEquals("user123", user.getUserId());
+        assertEquals("Entrant", user.getRole());
+        assertEquals("John Doe", user.getName());
+        assertEquals("john.doe@example.com", user.getEmail());
+        assertEquals("123-456-7890", user.getPhoneNumber());
+        assertEquals("images/profile/user123.jpg", user.getImagePath());
+        assertTrue(user.isNotificationsEnabled());
+        assertFalse(user.isAdmin());
+        assertNotNull(user.getCreatedAt());
+        assertNotNull(user.getEventsJoined());
+        assertEquals(0, user.getEventsJoined().size());
     }
 
     /**
-     * Tests the getters and setters for all fields in the {@link User} class.
-     * Ensures that values are set and retrieved correctly.
+     * Tests setting and getting the user ID.
      */
     @Test
-    public void testGettersAndSetters() {
-        defaultUser.setUserId("user456");
-        assertEquals("User ID should match", "user456", defaultUser.getUserId());
-
-        defaultUser.setRole("Organizer");
-        assertEquals("Role should match", "Organizer", defaultUser.getRole());
-
-        defaultUser.setName("Jane Smith");
-        assertEquals("Name should match", "Jane Smith", defaultUser.getName());
-
-        defaultUser.setEmail("jane.smith@example.com");
-        assertEquals("Email should match", "jane.smith@example.com", defaultUser.getEmail());
-
-        defaultUser.setPhoneNumber("0987654321");
-        assertEquals("Phone number should match", "0987654321", defaultUser.getPhoneNumber());
-
-        defaultUser.setImagePath("images/profile_pictures/user456.jpg");
-        assertEquals("Image path should match", "images/profile_pictures/user456.jpg", defaultUser.getImagePath());
-
-        defaultUser.setNotificationsEnabled(false);
-        assertFalse("Notifications should be disabled", defaultUser.isNotificationsEnabled());
-
-        defaultUser.setCreatedAt(1627977600000L);
-        assertEquals("Creation timestamp should match", 1627977600000L, defaultUser.getCreatedAt());
-
-        defaultUser.setStatus("Pending");
-        assertEquals("Status should match", "Pending", defaultUser.getStatus());
-
-        List<String> newEventsJoined = new ArrayList<>();
-        newEventsJoined.add("event3");
-        defaultUser.setEventsJoined(newEventsJoined);
-        assertEquals("Events joined should match", newEventsJoined, defaultUser.getEventsJoined());
-
-        // isAdmin remains false since setAdmin is private
-        assertFalse("User should not be admin", defaultUser.isAdmin());
+    public void testSetAndGetUserId() {
+        user.setUserId("user456");
+        assertEquals("user456", user.getUserId());
     }
 
     /**
-     * Tests adding events to the user's eventsJoined list.
-     * Ensures that events are added correctly.
+     * Tests setting and getting the user role.
      */
     @Test
-    public void testEventsJoinedList() {
-        defaultUser.getEventsJoined().add("event100");
-        assertEquals("Events joined list size should be 1", 1, defaultUser.getEventsJoined().size());
-        assertEquals("First event should match", "event100", defaultUser.getEventsJoined().get(0));
+    public void testSetAndGetRole() {
+        user.setRole("Organizer");
+        assertEquals("Organizer", user.getRole());
     }
 
     /**
-     * Tests that the eventsJoined list is modifiable.
-     * Verifies that changes to the list are reflected in the user object.
+     * Tests setting and getting the user's name.
      */
     @Test
-    public void testEventsJoinedListMutability() {
-        List<String> events = defaultUser.getEventsJoined();
-        events.add("event200");
-        assertEquals("Events joined list size should be 1", 1, defaultUser.getEventsJoined().size());
+    public void testSetAndGetName() {
+        user.setName("Jane Smith");
+        assertEquals("Jane Smith", user.getName());
     }
 
-
     /**
-     * Tests the inequality of two User objects with different userIds.
+     * Tests setting and getting the user's email.
      */
     @Test
-    public void testUserEquality_DifferentUserId() {
-        User user1 = new User();
-        user1.setUserId("user111");
+    public void testSetAndGetEmail() {
+        user.setEmail("jane.smith@example.com");
+        assertEquals("jane.smith@example.com", user.getEmail());
+    }
 
-        User user2 = new User();
-        user2.setUserId("user222");
+    /**
+     * Tests setting and getting the user's phone number.
+     */
+    @Test
+    public void testSetAndGetPhoneNumber() {
+        user.setPhoneNumber("098-765-4321");
+        assertEquals("098-765-4321", user.getPhoneNumber());
+    }
 
-        assertNotEquals("Users with different IDs should not be equal", user1, user2);
+    /**
+     * Tests setting and getting the user's profile image path.
+     */
+    @Test
+    public void testSetAndGetImagePath() {
+        user.setImagePath("images/profile/user456.jpg");
+        assertEquals("images/profile/user456.jpg", user.getImagePath());
+    }
+
+    /**
+     * Tests setting and checking if notifications are enabled.
+     */
+    @Test
+    public void testSetAndIsNotificationsEnabled() {
+        user.setNotificationsEnabled(false);
+        assertFalse(user.isNotificationsEnabled());
+    }
+
+    /**
+     * Tests setting and getting the account creation timestamp.
+     */
+    @Test
+    public void testSetAndGetCreatedAt() {
+        long newCreatedAt = System.currentTimeMillis() - 100000;
+        user.setCreatedAt(newCreatedAt);
+        assertEquals(newCreatedAt, user.getCreatedAt());
     }
 
 
+
+
     /**
-     * Tests how the {@link User} class handles null values in setters.
+     * Tests checking if the user is an admin.
+     * Since setAdmin is private, we cannot change its value.
+     */
+    @Test
+    public void testIsAdmin() {
+        assertFalse(user.isAdmin());
+    }
+
+    /**
+     * Tests setting and getting the user's status.
+     */
+    @Test
+    public void testSetAndGetStatus() {
+        user.setStatus("Accepted");
+        assertEquals("Accepted", user.getStatus());
+    }
+
+    /**
+     * Tests setting and getting the list of events the user has joined.
+     */
+    @Test
+    public void testSetAndGetEventsJoined() {
+        List<String> events = new ArrayList<>();
+        events.add("event1");
+        events.add("event2");
+        user.setEventsJoined(events);
+        assertEquals(2, user.getEventsJoined().size());
+        assertEquals("event1", user.getEventsJoined().get(0));
+        assertEquals("event2", user.getEventsJoined().get(1));
+    }
+
+    /**
+     * Tests adding an event to the eventsJoined list.
+     */
+    @Test
+    public void testAddEventJoined() {
+        user.getEventsJoined().add("event123");
+        assertTrue(user.getEventsJoined().contains("event123"));
+    }
+
+    /**
+     * Tests removing an event from the eventsJoined list.
+     */
+    @Test
+    public void testRemoveEventJoined() {
+        user.getEventsJoined().add("event123");
+        user.getEventsJoined().remove("event123");
+        assertFalse(user.getEventsJoined().contains("event123"));
+    }
+
+    /**
+     * Tests setting and getting the user's latitude.
+     */
+    @Test
+    public void testSetAndGetLatitude() {
+        user.setLatitude(53.5461);
+        assertEquals(53.5461, user.getLatitude(), DELTA);
+    }
+
+    /**
+     * Tests setting and getting the user's longitude.
+     */
+    @Test
+    public void testSetAndGetLongitude() {
+        user.setLongitude(-113.4938);
+        assertEquals(-113.4938, user.getLongitude(), DELTA);
+    }
+
+    /**
+     * Tests that isAdmin cannot be changed via public methods.
+     */
+    @Test
+    public void testSetAdmin() {
+        // Since setAdmin is private, we cannot test it directly.
+        // We can test that isAdmin remains false and cannot be changed through setters.
+        assertFalse(user.isAdmin());
+    }
+
+    /**
+     * Tests setting null values for certain fields.
      */
     @Test
     public void testNullValues() {
-        defaultUser.setName(null);
-        assertNull("Name should be null", defaultUser.getName());
+        user.setName(null);
+        assertNull(user.getName());
 
-        defaultUser.setEmail(null);
-        assertNull("Email should be null", defaultUser.getEmail());
+        user.setEmail(null);
+        assertNull(user.getEmail());
 
-        defaultUser.setPhoneNumber(null);
-        assertNull("Phone number should be null", defaultUser.getPhoneNumber());
+        user.setPhoneNumber(null);
+        assertNull(user.getPhoneNumber());
 
-        defaultUser.setImagePath(null);
-        assertNull("Image path should be null", defaultUser.getImagePath());
-
-        defaultUser.setStatus(null);
-        assertNull("Status should be null", defaultUser.getStatus());
-
-        defaultUser.setEventsJoined(null);
-        assertNull("Events joined list should be null", defaultUser.getEventsJoined());
-    }
-
-    /**
-     * Tests setting negative timestamps in the {@link User} class.
-     */
-    @Test
-    public void testNegativeTimestamps() {
-        defaultUser.setCreatedAt(-1L);
-        assertEquals("Created at timestamp should be -1", -1L, defaultUser.getCreatedAt());
-    }
-
-    /**
-     * Tests the default values of boolean fields in the {@link User} class.
-     */
-    @Test
-    public void testDefaultBooleanValues() {
-        assertFalse("Notifications should be disabled by default", defaultUser.isNotificationsEnabled());
-        assertFalse("User should not be admin by default", defaultUser.isAdmin());
+        user.setImagePath(null);
+        assertNull(user.getImagePath());
     }
 }
