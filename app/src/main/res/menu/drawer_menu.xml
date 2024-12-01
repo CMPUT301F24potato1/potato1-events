@@ -44,6 +44,14 @@
         android:visible="false"
         android:title="Manage Users"
         android:icon="@drawable/ic_profile_placeholder" />
+
+    <item
+        android:id="@+id/nav_manage_events"
+        android:icon="@android:drawable/ic_menu_gallery"
+        android:title="Manage Events"
+        android:visible="false" />
+
+
 </menu>
 
 <!-- todo: change color of manage media icon to black -->
