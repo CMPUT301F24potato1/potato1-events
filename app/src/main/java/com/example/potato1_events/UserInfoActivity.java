@@ -37,12 +37,14 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.navigation.NavigationView;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.SetOptions;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.squareup.picasso.Picasso;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 
@@ -101,6 +103,9 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
 
     // Location Components
     private FusedLocationProviderClient fusedLocationClient;
+
+    private List<String> existingEventsJoined = new ArrayList<>();
+
 
     // User Object
     private User currentUser; // To hold the user data being saved
@@ -290,6 +295,7 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
         } else {
             enableDrawer();
         }
+        setupFirestoreListener(navigationView, toggle);
     }
 
     /**
@@ -326,6 +332,10 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
                         mode = MODE_EDIT;
                         User user = documentSnapshot.toObject(User.class);
                         if (user != null) {
+                            existingEventsJoined = user.getEventsJoined();
+                            if (existingEventsJoined == null) {
+                                existingEventsJoined = new ArrayList<>();
+                            }
                             nameEditText.setText(user.getName());
                             emailEditText.setText(user.getEmail());
                             phoneEditText.setText(user.getPhoneNumber());
@@ -508,7 +518,7 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
                                     currentUser.setEmail(email);
                                     currentUser.setPhoneNumber(phoneNumber);
                                     currentUser.setImagePath(imagePath);
-                                    currentUser.setEventsJoined(new ArrayList<>()); // Initialize eventsJoined
+                                    currentUser.setEventsJoined(existingEventsJoined); // Initialize eventsJoined
 
                                     // Proceed to fetch location and save
                                     fetchUserLocationAndSave(currentUser);
@@ -574,7 +584,7 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
                     currentUser.setEmail(email);
                     currentUser.setPhoneNumber(phoneNumber);
                     currentUser.setImagePath(avatarPath);
-                    currentUser.setEventsJoined(new ArrayList<>()); // Initialize eventsJoined
+                    currentUser.setEventsJoined(existingEventsJoined); // Initialize eventsJoined
 
                     // Proceed to fetch location and save
                     fetchUserLocationAndSave(currentUser);
@@ -601,7 +611,8 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
         currentUser.setEmail(email);
         currentUser.setPhoneNumber(phoneNumber);
         currentUser.setImagePath(imagePath);
-        currentUser.setEventsJoined(new ArrayList<>()); // Initialize eventsJoined
+        currentUser.setEventsJoined(existingEventsJoined); // Initialize eventsJoined
+        currentUser.setAdmin(isAdmin);
 
         // Proceed to fetch location and save
         fetchUserLocationAndSave(currentUser);
@@ -674,36 +685,21 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
      * @param user The User object containing all user data.
      */
     private void saveUserToFirestore(User user) {
-        if (mode.equals(MODE_CREATE)) {
-            // Initialize eventsJoined list for new users
-            user.setEventsJoined(new ArrayList<>());
-
-            // Save new user to Firestore
-            firestore.collection("Users").document(deviceId)
-                    .set(user)
-                    .addOnSuccessListener(aVoid -> {
+        firestore.collection("Users").document(deviceId)
+                .set(user, SetOptions.merge())
+                .addOnSuccessListener(aVoid -> {
+                    if (mode.equals(MODE_CREATE)) {
                         Toast.makeText(UserInfoActivity.this, "Profile created successfully", Toast.LENGTH_SHORT).show();
-                        navigateToHomePage();
-                    })
-                    .addOnFailureListener(e -> {
-                        Toast.makeText(UserInfoActivity.this, "Error creating profile: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                        Log.e(TAG, "Error creating profile", e);
-                        saveButton.setEnabled(true);
-                    });
-        } else {
-            // Update existing user in Firestore
-            firestore.collection("Users").document(deviceId)
-                    .set(user)
-                    .addOnSuccessListener(aVoid -> {
+                    } else {
                         Toast.makeText(UserInfoActivity.this, "Profile updated successfully", Toast.LENGTH_SHORT).show();
-                        navigateToHomePage();
-                    })
-                    .addOnFailureListener(e -> {
-                        Toast.makeText(UserInfoActivity.this, "Error updating profile: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                        Log.e(TAG, "Error updating profile", e);
-                        saveButton.setEnabled(true);
-                    });
-        }
+                    }
+                    navigateToHomePage();
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(UserInfoActivity.this, "Error saving profile: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    Log.e(TAG, "Error saving profile", e);
+                    saveButton.setEnabled(true);
+                });
     }
 
     /**
@@ -851,6 +847,7 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
      */
     private void navigateToHomePage() {
         Intent intent = new Intent(UserInfoActivity.this, EntrantHomeActivity.class);
+        intent.putExtra("IS_ADMIN", isAdmin);
         startActivity(intent);
         finish(); // Close current activity
     }
@@ -926,5 +923,46 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
             }
         };
         getOnBackPressedDispatcher().addCallback(this, callback);
+    }
+
+    private void setupFirestoreListener(NavigationView navigationView, ActionBarDrawerToggle toggle) {
+        FirebaseFirestore firestore = FirebaseFirestore.getInstance();
+
+        firestore.collection("Users")
+                .document(deviceId)
+                .addSnapshotListener(this, (documentSnapshot, e) -> {
+                    if (e != null) {
+                        return;
+                    }
+
+                    if (documentSnapshot != null && documentSnapshot.exists()) {
+                        // Retrieve the 'admin' field from the user document
+                        Boolean admin = documentSnapshot.getBoolean("admin");
+
+                        if (admin != null && admin != isAdmin) {
+                            // Update the isAdmin variable if there's a change
+                            isAdmin = admin;
+
+                            // Update the navigation menu based on the new isAdmin value
+                            runOnUiThread(() -> {
+                                if (isAdmin) {
+                                    // Show admin-specific menu items
+                                    navigationView.getMenu().findItem(R.id.nav_manage_media).setVisible(true);
+                                    navigationView.getMenu().findItem(R.id.nav_manage_users).setVisible(true);
+                                    navigationView.getMenu().findItem(R.id.nav_manage_facilities).setVisible(true);
+                                    navigationView.getMenu().findItem(R.id.nav_manage_events).setVisible(true);
+                                } else {
+                                    // Hide admin-specific menu items
+                                    navigationView.getMenu().findItem(R.id.nav_manage_media).setVisible(false);
+                                    navigationView.getMenu().findItem(R.id.nav_manage_users).setVisible(false);
+                                    navigationView.getMenu().findItem(R.id.nav_manage_facilities).setVisible(false);
+                                    navigationView.getMenu().findItem(R.id.nav_manage_events).setVisible(false);
+                                }
+                                // Sync the toggle state to reflect menu changes
+                                toggle.syncState();
+                            });
+                        }
+                    }
+                });
     }
 }
