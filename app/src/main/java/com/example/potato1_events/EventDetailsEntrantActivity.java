@@ -1,6 +1,8 @@
 // File: EventDetailsEntrantActivity.java
 package com.example.potato1_events;
 
+import static android.content.ContentValues.TAG;
+
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
@@ -39,6 +41,7 @@ import com.google.firebase.firestore.GeoPoint;
 import com.squareup.picasso.Picasso;
 
 import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -129,10 +132,7 @@ public class EventDetailsEntrantActivity extends AppCompatActivity {
      */
     private String deviceId;
 
-    /**
-     * The type of user, set to "Entrant".
-     */
-    private String userType = "Entrant";
+    private boolean isDeadlinePassed = false;
 
     // Location Components
     private FusedLocationProviderClient fusedLocationClient;
@@ -332,8 +332,25 @@ public class EventDetailsEntrantActivity extends AppCompatActivity {
         eventStatusTextView.setText("Status: " + dynamicStatus);
 
         // Update join and leave button states
+        // **Determine if the registration deadline has passed**
+        if (event.getRegistrationEnd() != null) {
+            Date currentDate = new Date();
+            isDeadlinePassed = currentDate.after(event.getRegistrationEnd());
+            Log.d(TAG, "Registration Deadline Passed: " + isDeadlinePassed);
+        } else {
+            // If no registration deadline is set, assume it's not passed
+            isDeadlinePassed = false;
+        }
+
+        // **Update button states based on deadline and entrant status**
         updateButtonStates();
+
+        // Optionally, display a message if the deadline has passed
+        if (isDeadlinePassed) {
+            Toast.makeText(this, "Registration deadline has passed.", Toast.LENGTH_SHORT).show();
+        }
     }
+
 
     /**
      * Calculates the number of entrants on the waitlist based on their statuses.
@@ -400,9 +417,10 @@ public class EventDetailsEntrantActivity extends AppCompatActivity {
 
     /**
      * Updates the visibility of join and leave buttons based on entrant's status.
+     * Updates the visibility and enabled state of join and leave buttons based on entrant's status and registration deadline.
      */
     private void updateButtonStates() {
-        if (event.getEntrants() != null && event.getEntrants().containsKey(deviceId)) {
+        if (event.getEntrants() != null && event.getEntrants().containsKey(deviceId) && !event.getEntrants().get(deviceId).toLowerCase().equals("left")){
             // Entrant is in the entrants map
             joinButton.setVisibility(View.GONE);
             leaveButton.setVisibility(View.VISIBLE);
@@ -410,8 +428,18 @@ public class EventDetailsEntrantActivity extends AppCompatActivity {
             // Entrant is not in the entrants map
             joinButton.setVisibility(View.VISIBLE);
             leaveButton.setVisibility(View.GONE);
+
+            // **Disable the join button if the deadline has passed**
+            if (isDeadlinePassed) {
+                joinButton.setEnabled(false);
+            } else {
+                joinButton.setEnabled(true);
+                joinButton.setAlpha(1.0f); // Reset to original opacity
+                joinButton.setTextColor(ContextCompat.getColor(this, R.color.white)); // Reset to original text color
+            }
         }
     }
+
 
     /**
      * Handles the join button action.
@@ -542,7 +570,7 @@ public class EventDetailsEntrantActivity extends AppCompatActivity {
 
     /**
      * Handles the leave button action.
-     * Removes the entrant from the event's waiting list.
+     * Removes the entrant from the event's waiting list or updates their status based on the registration deadline.
      */
     private void handleLeaveAction() {
         // Confirm leaving
@@ -555,25 +583,44 @@ public class EventDetailsEntrantActivity extends AppCompatActivity {
     }
 
     /**
-     * Removes the entrant from the event's waiting list using EntEventsRepository.
+     * Removes the entrant from the event's waiting list or updates their status to "left" based on the registration deadline.
      */
     private void leaveWaitingList() {
-        entEventsRepository.leaveWaitingList(eventId, deviceId, new EntEventsRepository.ActionCallback() {
-            @Override
-            public void onSuccess() {
-                Toast.makeText(EventDetailsEntrantActivity.this, "Successfully left the waiting list.", Toast.LENGTH_SHORT).show();
-                // Update local event data
-                event.setCurrentEntrantsNumber(event.getCurrentEntrantsNumber() - 1);
-                event.getEntrants().remove(deviceId);
-                updateButtonStates();
-                populateEventDetails(event);
-            }
+        if (isDeadlinePassed) {
+            // **Change status to "left" instead of removing**
+            entEventsRepository.updateEntrantStatus(eventId, deviceId, "left", new EntEventsRepository.ActionCallback() {
+                @Override
+                public void onSuccess() {
+                    Toast.makeText(EventDetailsEntrantActivity.this, "Successfully left the waiting list.", Toast.LENGTH_SHORT).show();
+                    // Update local event data
+                    event.getEntrants().put(deviceId, "left");
+                    updateButtonStates();
+                    populateEventDetails(event);
+                }
 
-            @Override
-            public void onFailure(Exception e) {
-                Toast.makeText(EventDetailsEntrantActivity.this, "Error leaving waiting list: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-            }
-        });
+                @Override
+                public void onFailure(Exception e) {
+                    Toast.makeText(EventDetailsEntrantActivity.this, "Error leaving waiting list: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            });
+        } else {
+            // **Remove entrant as usual**
+            entEventsRepository.leaveWaitingList(eventId, deviceId, new EntEventsRepository.ActionCallback() {
+                @Override
+                public void onSuccess() {
+                    Toast.makeText(EventDetailsEntrantActivity.this, "Successfully left the waiting list.", Toast.LENGTH_SHORT).show();
+                    // Update local event data
+                    event.getEntrants().remove(deviceId);
+                    updateButtonStates();
+                    populateEventDetails(event);
+                }
+
+                @Override
+                public void onFailure(Exception e) {
+                    Toast.makeText(EventDetailsEntrantActivity.this, "Error leaving waiting list: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
     }
     /**
      * Sets up a real-time listener to Firestore to listen for changes in the event document.
@@ -597,4 +644,5 @@ public class EventDetailsEntrantActivity extends AppCompatActivity {
             }
         });
     }
+
 }
