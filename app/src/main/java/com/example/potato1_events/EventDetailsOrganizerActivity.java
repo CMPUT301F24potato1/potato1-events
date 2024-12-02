@@ -20,6 +20,7 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
@@ -33,6 +34,7 @@ import com.squareup.picasso.Picasso;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.WriterException;
 import com.google.zxing.qrcode.QRCodeWriter;
+import com.google.firebase.firestore.ListenerRegistration;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -164,6 +166,8 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
      * Event object containing all details of the event.
      */
     private Event event;
+
+    private ListenerRegistration eventListener;
 
     /**
      * Sets the FirebaseFirestore instance for testing purposes.
@@ -700,24 +704,42 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
      * Sets up a real-time listener to Firestore to listen for changes in the event document.
      */
     private void setupFirestoreListener() {
-        FirebaseFirestore firestore = FirebaseFirestore.getInstance();
-        firestore.collection("Events").document(eventId).addSnapshotListener(this, (documentSnapshot, e) -> {
-            if (e != null) {
-                //Log.e(TAG, "Listen failed.", e);
-                return;
-            }
-
-            if (documentSnapshot != null && documentSnapshot.exists()) {
-                Event updatedEvent = documentSnapshot.toObject(Event.class);
-                if (updatedEvent != null) {
-                    event = updatedEvent; // Update the current event
-                    populateEventDetails(event); // Refresh UI with updated event details
+            FirebaseFirestore firestore = FirebaseFirestore.getInstance();
+            eventListener = firestore.collection("Events").document(eventId).addSnapshotListener(this, (documentSnapshot, e) -> {
+                if (e != null) {
+                    //Log.e(TAG, "Listen failed.", e);
+                    return;
                 }
-            } else {
-                //Log.d(TAG, "Current data: null");
-            }
-        });
+
+                if (documentSnapshot != null && documentSnapshot.exists()) {
+                    Event updatedEvent = documentSnapshot.toObject(Event.class);
+                    if (updatedEvent != null) {
+                        Log.d("FirestoreListener", "Event updated: " + updatedEvent.getName());
+                        event = updatedEvent; // Update the current event
+                        populateEventDetails(event); // Refresh UI with updated event details
+                    }
+                } else {
+                    Log.d("FirestoreListener", "Current data: null");
+                }
+            });
+        }
+
+
+        @Override
+    protected void onStart() {
+        super.onStart();
+        setupFirestoreListener();
     }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (eventListener != null) {
+            eventListener.remove();
+            eventListener = null;
+        }
+    }
+
 
 
 }
