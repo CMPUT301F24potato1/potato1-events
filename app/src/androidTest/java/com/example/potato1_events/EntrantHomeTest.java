@@ -64,6 +64,10 @@ public class EntrantHomeTest {
     @Rule
     public GrantPermissionRule notificationPermissionRule =
             GrantPermissionRule.grant(android.Manifest.permission.POST_NOTIFICATIONS);
+    @Rule
+    public GrantPermissionRule cameraPermissionRule =
+            GrantPermissionRule.grant(Manifest.permission.CAMERA);
+
 
     @Before
     public void setUp() {
@@ -426,6 +430,7 @@ public class EntrantHomeTest {
 
     /**
      * Tests that the entrant can reach the window to see notifications
+     * US 01.04.01,02
      */
     @Test
     public void testNavigateToNotifications() {
@@ -442,6 +447,29 @@ public class EntrantHomeTest {
 
         // Verify that an intent was sent to start Notifications
         intended(IntentMatchers.hasComponent(NotificationsActivity.class.getName()));
+
+    }
+
+    /**
+     * Tests that the entrant can Scan a QR code
+     * US 01.06.02
+     */
+    @Test
+    public void testScanQR() throws InterruptedException {
+        // Launch EntrantHomeActivity
+        ActivityScenario.launch(EntrantHomeActivity.class);
+
+        // Open the navigation drawer using DrawerActions from Espresso-Contrib
+        onView(withId(R.id.drawer_layout))
+                .perform(DrawerActions.open());
+
+        // Click on the "Notifications" menu item
+        onView(withText("Scan QR Code"))
+                .perform(click());
+        Thread.sleep(4000);
+
+        intended(IntentMatchers.hasComponent(EventDetailsEntrantActivity.class.getName()));
+
 
     }
 

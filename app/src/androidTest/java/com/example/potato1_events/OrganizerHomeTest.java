@@ -78,6 +78,7 @@ public class OrganizerHomeTest {
 
     /**
      * Test that an organizer can create/edit the facility.
+     * US 02.01.03
      */
     @Test
     public void testCreateAFacility() throws WriterException, InterruptedException {
@@ -122,6 +123,7 @@ public class OrganizerHomeTest {
 
         /**
          * Test that an organizer can create a new event and generate a QR code.
+         * US 02.01.01, 02.02.03, 02.03.01, 02.04.01, 02.04.02
          */
     @Test
     public void testCreateEvent() throws WriterException {
