@@ -762,6 +762,12 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
                         if (registrationEnd != null) {
                             registrationEndDateTime.setTime(registrationEnd);
                             waitingListDeadlineButton.setText("Deadline: " + formatDateTime(registrationEndDateTime));
+                            // Check if registration deadline has passed
+                            Date currentDate = new Date();
+                            if (currentDate.after(registrationEndDateTime.getTime())) {
+                                waitingListDeadlineButton.setEnabled(false);
+                                waitingListDeadlineButton.setText("Deadline Passed");
+                            }
                         }
 
                         // Load poster image if available
@@ -789,6 +795,11 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
                         } else {
                             // Waiting list has a capacity
                             waitingListSpotsEditText.setEnabled(true);
+                        }
+
+                        // Disable geolocation checkbox when editing an event
+                        if (isEditingExistingEvent()) {
+                            geolocationCheckBox.setEnabled(false);
                         }
 
                         // Ensure the generateQRCodeButton is visible in edit mode
