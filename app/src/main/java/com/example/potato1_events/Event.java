@@ -2,6 +2,7 @@ package com.example.potato1_events;
 
 import androidx.annotation.Nullable;
 
+import com.google.firebase.firestore.GeoPoint;
 import com.google.firebase.firestore.ServerTimestamp;
 import java.util.Date;
 import java.util.HashMap;
@@ -110,6 +111,8 @@ public class Event {
     private boolean randomDrawPerformed;
 
     private boolean waitingListFilled;
+
+    private Map<String, GeoPoint> entrantsLocation;
 
     /**
      * Event's location.
@@ -552,6 +555,14 @@ public class Event {
      */
     public void setRandomDrawPerformed(boolean randomDrawPerformed) {
         this.randomDrawPerformed = randomDrawPerformed;
+    }
+
+    public Map<String, GeoPoint> getEntrantsLocation() {
+        return entrantsLocation;
+    }
+
+    public void setEntrantsLocation(Map<String, GeoPoint> entrantsLocation) {
+        this.entrantsLocation = entrantsLocation;
     }
 
     /**

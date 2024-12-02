@@ -641,7 +641,7 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
             eventData.put("endDate", endDateTime.getTime());
             eventData.put("registrationEnd", registrationEndDateTime.getTime());
             eventData.put("randomDrawPerformed", false); // Ensure this is set to false during creation
-
+            eventData.put("entrantsLocation", new HashMap<>()); // Initialize with empty entrantsLocation map")
             if (qrCodeHash != null) {
                 eventData.put("qrCodeHash", qrCodeHash);
             }
