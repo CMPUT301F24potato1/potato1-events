@@ -205,7 +205,7 @@ public class EventWaitingListActivity extends AppCompatActivity implements Navig
      */
     private void setupStatusFilterSpinner() {
         // Define status options
-        String[] statusOptions = {"All", "Waitlist", "Enrolled", "Canceled", "Chosen"};
+        String[] statusOptions = {"All", "Selected", "Not Selected", "Accepted", "Declined", "Waitlist", "Cancelled", "Left"};
 
         // Create an ArrayAdapter using the string array and a default spinner layout
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, statusOptions);
@@ -521,15 +521,12 @@ public class EventWaitingListActivity extends AppCompatActivity implements Navig
             for (User user : fullUserList) {
                 // Retrieve the entrant's status from the entrants map
                 String entrantStatus = userAdapter.getEntrantStatus(user.getUserId());
+                String[] statusOptions = {"All", "Selected", "Not Selected", "Accepted", "Declined", "Waitlist", "Cancelled", "Left"};
 
-                if ("Waitlist".equalsIgnoreCase(status) && "waitlist".equalsIgnoreCase(entrantStatus)) {
-                    filteredUserList.add(user);
-                } else if ("Enrolled".equalsIgnoreCase(status) && "enrolled".equalsIgnoreCase(entrantStatus)) {
-                    filteredUserList.add(user);
-                } else if ("Canceled".equalsIgnoreCase(status) && "canceled".equalsIgnoreCase(entrantStatus)) {
-                    filteredUserList.add(user);
-                } else if ("Chosen".equalsIgnoreCase(status) && "chosen".equalsIgnoreCase(entrantStatus)) {
-                    filteredUserList.add(user);
+                for (String loop_status:statusOptions) {
+                    if (loop_status.equalsIgnoreCase(status) && loop_status.equalsIgnoreCase(entrantStatus)) {
+                        filteredUserList.add(user);
+                    }
                 }
             }
         }
@@ -668,12 +665,12 @@ public class EventWaitingListActivity extends AppCompatActivity implements Navig
         DocumentReference eventRef = firestore.collection("Events").document(eventId);
 
         Map<String, Object> updates = new HashMap<>();
-        updates.put("entrants." + user.getUserId(), "Canceled");
+        updates.put("entrants." + user.getUserId(), "Cancelled");
         updates.put("waitingListFilled", false); // Optionally set to false to refill the spot
 
         eventRef.update(updates)
                 .addOnSuccessListener(aVoid -> {
-                    Toast.makeText(this, "Entrant canceled successfully.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Entrant cancelled successfully.", Toast.LENGTH_SHORT).show();
                     // Remove entrant's marker from the map
                     removeEntrantMarker(user.getUserId());
                     // Refresh the entrants list
