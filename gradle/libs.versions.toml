@@ -24,6 +24,7 @@ testRunner = "1.5.0"
 workRuntime = "2.10.0"
 espressoIntentsVersion = "3.6.1"
 espressoContrib = "3.6.1"
+playServicesMaps = "19.0.0"
 
 [libraries]
 concurrent-futures = { module = "androidx.concurrent:concurrent-futures", version.ref = "concurrentFutures" }
@@ -48,6 +49,7 @@ rules = { module = "androidx.test:rules", version.ref = "rules" }
 test-runner = { module = "androidx.test:runner", version.ref = "testRunner" }
 espresso-intents = { group = "androidx.test.espresso", name = "espresso-intents", version.ref = "espressoIntentsVersion" }
 espresso-contrib = { group = "androidx.test.espresso", name = "espresso-contrib", version.ref = "espressoContrib" }
+play-services-maps = { group = "com.google.android.gms", name = "play-services-maps", version.ref = "playServicesMaps" }
 
 
 

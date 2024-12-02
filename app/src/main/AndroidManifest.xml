@@ -7,6 +7,8 @@
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 <!--    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />-->
 <!--    <uses-permission android:name="android.permission.INTERNET" />-->
 
@@ -84,6 +86,10 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
+        <!-- Inside <application> tag -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyDvurnx5XxfGbtcu6h_ONryz41KRyIe3pk" />
     </application>
 
 </manifest>

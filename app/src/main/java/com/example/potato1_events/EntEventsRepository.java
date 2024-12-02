@@ -7,6 +7,7 @@ import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FieldPath;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.GeoPoint;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.firestore.FirebaseFirestoreException;
@@ -201,14 +202,14 @@ public class EntEventsRepository {
     }
 
     /**
-     * Adds the entrant to the event's waiting list.
-     * Supports unlimited waiting list if waitingListCapacity is null.
+     * Adds the entrant to the event's waiting list and records their geopoint if required.
      *
-     * @param eventId  The ID of the event.
-     * @param deviceId The entrant's device ID.
-     * @param callback Callback to handle the result.
+     * @param eventId   The ID of the event.
+     * @param deviceId  The entrant's device ID.
+     * @param geoPoint  The geopoint of the entrant.
+     * @param callback  Callback to handle success or failure.
      */
-    public void joinWaitingList(String eventId, String deviceId, ActionCallback callback) {
+    public void joinWaitingList(String eventId, String deviceId, GeoPoint geoPoint, ActionCallback callback) {
         final CollectionReference eventsCollection = firestore.collection("Events");
         final CollectionReference usersCollection = firestore.collection("Users");
 
@@ -252,8 +253,10 @@ public class EntEventsRepository {
                     // Add entrant to waiting list with status "waitlist"
                     transaction.update(eventsCollection.document(eventId), "entrants." + deviceId, "waitlist");
 
-                    // Note: Do NOT increment currentEntrantsNumber for waiting list
-                    // Assuming currentEntrantsNumber tracks only main entrants
+                    // Conditionally add entrant's GeoPoint to entrantsLocation map
+                    if (event.isGeolocationRequired()) {
+                        transaction.update(eventsCollection.document(eventId), "entrantsLocation." + deviceId, geoPoint);
+                    }
 
                     // Add eventId to the user's eventsJoined list using set with merge
                     Map<String, Object> userData = new HashMap<>();
@@ -266,11 +269,11 @@ public class EntEventsRepository {
     }
 
     /**
-     * Removes the entrant from the event's waiting list.
+     * Removes the entrant from the event's waiting list and deletes their geopoint if required.
      *
      * @param eventId  The ID of the event.
      * @param deviceId The entrant's device ID.
-     * @param callback Callback to handle the result.
+     * @param callback Callback to handle success or failure.
      */
     public void leaveWaitingList(String eventId, String deviceId, ActionCallback callback) {
         final CollectionReference eventsCollection = firestore.collection("Events");
@@ -302,8 +305,10 @@ public class EntEventsRepository {
                     // Remove entrant from entrants map
                     transaction.update(eventsCollection.document(eventId), "entrants." + deviceId, FieldValue.delete());
 
-                    // Note: Do NOT decrement currentEntrantsNumber for waiting list removal
-                    // Assuming currentEntrantsNumber tracks only main entrants
+                    // Conditionally remove entrant's GeoPoint from entrantsLocation map
+                    if (event.isGeolocationRequired()) {
+                        transaction.update(eventsCollection.document(eventId), "entrantsLocation." + deviceId, FieldValue.delete());
+                    }
 
                     // Remove eventId from the user's eventsJoined list
                     transaction.update(usersCollection.document(deviceId), "eventsJoined", FieldValue.arrayRemove(eventId));
