@@ -110,8 +110,14 @@ public class Event {
      */
     private boolean randomDrawPerformed;
 
+    /**
+     * Flag indicating if the waiting list has been filled.
+     */
     private boolean waitingListFilled;
 
+    /**
+     * Map of entrant IDs to their geolocation points.
+     */
     private Map<String, GeoPoint> entrantsLocation;
 
     /**
@@ -123,7 +129,7 @@ public class Event {
      * Default constructor required for Firebase deserialization.
      */
     public Event() {
-        // Default constructor
+        // Initialize the entrants map to prevent NullPointerExceptions
         this.entrants = new HashMap<>();
     }
 
@@ -169,14 +175,15 @@ public class Event {
         this.waitingListCapacity = waitingListCapacity;
         this.posterImageUrl = posterImageUrl;
         this.qrCodeHash = qrCodeHash;
-        this.entrants = entrants != null ? entrants : new HashMap<>();
+        this.entrants = entrants != null ? entrants : new HashMap<>(); // Initialize entrants map
         this.createdAt = createdAt;
         this.status = status;
         this.geolocationRequired = geolocationRequired;
         this.eventLocation = eventLocation;
-        this.randomDrawPerformed = false;
+        this.randomDrawPerformed = false; // Default value upon creation
+        this.waitingListFilled = false; // Default value upon creation
+        this.entrantsLocation = new HashMap<>(); // Initialize entrants' geolocation map
     }
-
 
     // Getters and Setters
 
@@ -355,6 +362,7 @@ public class Event {
      * Sets the maximum number of attendees.
      *
      * @param capacity Capacity.
+     * @throws IllegalArgumentException if capacity is negative.
      */
     public void setCapacity(int capacity) {
         if (capacity < 0) {
@@ -362,7 +370,6 @@ public class Event {
         }
         this.capacity = capacity;
     }
-
 
     /**
      * Gets the current number of entrants in the event.
@@ -395,6 +402,7 @@ public class Event {
      * Sets the maximum capacity of the waiting list.
      *
      * @param waitingListCapacity Waiting list capacity, or null for unlimited.
+     * @throws IllegalArgumentException if waitingListCapacity is negative.
      */
     public void setWaitingListCapacity(Integer waitingListCapacity) {
         if (waitingListCapacity != null && waitingListCapacity < 0) {
@@ -557,10 +565,20 @@ public class Event {
         this.randomDrawPerformed = randomDrawPerformed;
     }
 
+    /**
+     * Gets the map of entrants' geolocations.
+     *
+     * @return Map of entrant IDs to their GeoPoint.
+     */
     public Map<String, GeoPoint> getEntrantsLocation() {
         return entrantsLocation;
     }
 
+    /**
+     * Sets the map of entrants' geolocations.
+     *
+     * @param entrantsLocation Map of entrant IDs to their GeoPoint.
+     */
     public void setEntrantsLocation(Map<String, GeoPoint> entrantsLocation) {
         this.entrantsLocation = entrantsLocation;
     }
@@ -583,14 +601,29 @@ public class Event {
         this.eventLocation = eventLocation;
     }
 
+    /**
+     * Checks if the waiting list is filled.
+     *
+     * @return True if the waiting list is filled, false otherwise.
+     */
     public boolean isWaitingListFilled() {
         return waitingListFilled;
     }
 
+    /**
+     * Sets the waiting list filled status.
+     *
+     * @param waitingListFilled True if the waiting list is filled, false otherwise.
+     */
     public void setWaitingListFilled(boolean waitingListFilled) {
         this.waitingListFilled = waitingListFilled;
     }
 
+    /**
+     * Calculates the available capacity based on the current number of accepted entrants.
+     *
+     * @return Available capacity as a String.
+     */
     public String getAvailableCapacity() {
         int acceptedEntrants = 0;
 
