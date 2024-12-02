@@ -76,6 +76,7 @@ public class ManageMediaActivity extends AppCompatActivity implements MediaAdapt
         if (actionBar != null) {
             actionBar.setDisplayHomeAsUpEnabled(true);
         }
+        actionBar.setTitle("Manage Media");
 
         mediaRecyclerView = findViewById(R.id.mediaRecyclerView);
         mediaRecyclerView.setLayoutManager(new GridLayoutManager(this, 3)); // 3 columns grid
