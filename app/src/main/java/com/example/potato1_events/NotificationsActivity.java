@@ -73,6 +73,8 @@ public class NotificationsActivity extends AppCompatActivity implements Navigati
             navigationView.getMenu().findItem(R.id.nav_create_event).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_edit_facility).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_my_events).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_manage_events).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_manage_facilities).setVisible(true);
         }
 
         // Setup Navigation Drawer
@@ -168,10 +170,10 @@ public class NotificationsActivity extends AppCompatActivity implements Navigati
         int id = item.getItemId();
         Intent intent = null;
 
-        if (id == R.id.nav_view_joined_events) {
+        if (id == R.id.nav_notifications) {
             // Navigate to NotificationsActivity
             // Uncomment and implement if NotificationsActivity exists
-            intent = new Intent(NotificationsActivity.this, EntrantHomeActivity.class);
+            Toast.makeText(this, "Already on this page.", Toast.LENGTH_SHORT).show();
         } else if (id == R.id.nav_edit_profile) {
             // Navigate to UserInfoActivity in EDIT mode
             intent = new Intent(NotificationsActivity.this, UserInfoActivity.class);
@@ -183,22 +185,24 @@ public class NotificationsActivity extends AppCompatActivity implements Navigati
         } else if (id == R.id.nav_manage_users) {
             // Navigate to ManageUsersActivity (visible only to admins)
             intent = new Intent(NotificationsActivity.this, ManageUsersActivity.class);
+        } else if (id == R.id.nav_manage_events) {
+            intent = new Intent(NotificationsActivity.this, ManageEventsActivity.class);
+        } else if (id == R.id.nav_manage_facilities) {
+            intent = new Intent(NotificationsActivity.this, ManageFacilitiesActivity.class);
         } else if (id == R.id.action_scan_qr) {
             intent = new Intent(NotificationsActivity.this, QRScanActivity.class);
         } else if (id == R.id.nav_create_event) {
-
             intent = new Intent(NotificationsActivity.this, CreateEditEventActivity.class);
             intent.putExtra("IS_ADMIN", isAdmin);
         } else if (id == R.id.nav_edit_facility) {
-
             intent = new Intent(NotificationsActivity.this, CreateEditFacilityActivity.class);
             intent.putExtra("IS_ADMIN", isAdmin);
         } else if (id == R.id.nav_my_events) {
-
             intent = new Intent(NotificationsActivity.this, OrganizerHomeActivity.class);
             intent.putExtra("IS_ADMIN", isAdmin);
-        } else if (id == R.id.nav_notifications) {
-            Toast.makeText(this, "Already on this page.", Toast.LENGTH_SHORT).show();
+        } else if (id == R.id.nav_view_joined_events) {
+            intent = new Intent(NotificationsActivity.this, EntrantHomeActivity.class);
+            intent.putExtra("IS_ADMIN", isAdmin);
         }
 
         if (intent != null) {
