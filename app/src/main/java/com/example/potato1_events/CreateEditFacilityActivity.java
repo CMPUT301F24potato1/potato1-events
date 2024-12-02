@@ -35,6 +35,7 @@ import java.util.*;
 /**
  * Activity to create or edit a facility within the application.
  * Handles user input, data validation, image uploads, and interaction with Firebase services.
+ * Integrates the navigation drawer with admin functionalities.
  */
 public class CreateEditFacilityActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
@@ -85,7 +86,6 @@ public class CreateEditFacilityActivity extends AppCompatActivity implements Nav
         // Retrieve the isAdmin flag from Intent extras
         isAdmin = getIntent().getBooleanExtra("IS_ADMIN", false);
 
-
         // Initialize Firebase Instances
         firestore = FirebaseFirestore.getInstance();
         storage = FirebaseStorage.getInstance();
@@ -113,7 +113,7 @@ public class CreateEditFacilityActivity extends AppCompatActivity implements Nav
         navigationView = findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
-        // Set up ActionBarDrawerToggle
+        // Set up ActionBarDrawerToggle for navigation drawer
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawerLayout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawerLayout.addDrawerListener(toggle);
@@ -205,15 +205,18 @@ public class CreateEditFacilityActivity extends AppCompatActivity implements Nav
                 .addOnSuccessListener(documentSnapshot -> {
                     progressBar.setVisibility(View.GONE);
                     if (documentSnapshot.exists()) {
+                        // Convert the document snapshot to a Facility object
                         Facility facility = documentSnapshot.toObject(Facility.class);
                         if (facility != null) {
+                            // Populate the UI fields with existing data
                             facilityNameEditText.setText(facility.getFacilityName());
                             facilityAddressEditText.setText(facility.getFacilityAddress());
                             facilityDescriptionEditText.setText(facility.getFacilityDescription());
 
+                            // Load and display the facility photo if available
                             if (!TextUtils.isEmpty(facility.getFacilityPhotoUrl())) {
                                 facilityPhotoUrl = facility.getFacilityPhotoUrl();
-                                Picasso.get().load(facilityPhotoUrl).placeholder(R.drawable.ic_placeholder_image).into(facilityPhotoView);
+                                Picasso.get().load(facilityPhotoUrl).into(facilityPhotoView);
                                 uploadFacilityPhotoButton.setText("Change Facility Photo"); // Update button text
                             }
                         }
@@ -236,16 +239,17 @@ public class CreateEditFacilityActivity extends AppCompatActivity implements Nav
         String address = facilityAddressEditText.getText().toString().trim();
         String description = facilityDescriptionEditText.getText().toString().trim();
 
-        // Input validation
+        // Input validation to ensure all required fields are filled
         if (TextUtils.isEmpty(name) || TextUtils.isEmpty(address) || TextUtils.isEmpty(description)) {
             Toast.makeText(this, "Please fill in all required fields.", Toast.LENGTH_SHORT).show();
             return;
         }
 
+        // Disable the save button and show progress bar to indicate ongoing operation
         saveFacilityButton.setEnabled(false);
         progressBar.setVisibility(View.VISIBLE);
 
-        // Handle facility photo upload
+        // Handle facility photo upload if a new photo is selected
         if (selectedFacilityPhotoUri != null) {
             uploadFacilityPhoto(name, address, description);
         } else {
@@ -265,14 +269,14 @@ public class CreateEditFacilityActivity extends AppCompatActivity implements Nav
      * @param description Facility description.
      */
     private void uploadFacilityPhoto(String name, String address, String description) {
-        // Create a unique filename
+        // Create a unique filename for the facility photo
         String fileName = "images/facility_photos/" + facilityId + "/" + UUID.randomUUID() + ".jpg";
         StorageReference storageRef = storage.getReference().child(fileName);
 
-        // Upload the image
+        // Upload the image to Firebase Storage
         storageRef.putFile(selectedFacilityPhotoUri)
                 .addOnSuccessListener(taskSnapshot -> {
-                    // Get the download URL
+                    // Get the download URL of the uploaded image
                     storageRef.getDownloadUrl().addOnSuccessListener(uri -> {
                         facilityPhotoUrl = uri.toString();
                         // Proceed to save the facility with the photo URL
@@ -299,7 +303,7 @@ public class CreateEditFacilityActivity extends AppCompatActivity implements Nav
      * @param photoUrl    URL of the uploaded facility photo.
      */
     private void saveFacilityToFirestore(String name, String address, String description, String photoUrl) {
-        // Create a Facility object
+        // Create a Facility object with the provided details
         Facility facility = new Facility();
         facility.setId(facilityId);
         facility.setFacilityName(name);
@@ -309,14 +313,15 @@ public class CreateEditFacilityActivity extends AppCompatActivity implements Nav
         facility.setEventIds(new ArrayList<>()); // Initialize with empty list
         facility.setCreatedAt(new Date());
 
+        // Reference to the facility document in Firestore
         DocumentReference facilityRef = firestore.collection("Facilities").document(facilityId);
 
-        // Save or update the facility document
+        // Save or update the facility document in Firestore
         facilityRef.set(facility)
                 .addOnSuccessListener(aVoid -> {
                     progressBar.setVisibility(View.GONE);
                     Toast.makeText(CreateEditFacilityActivity.this, "Facility saved successfully!", Toast.LENGTH_SHORT).show();
-                    navigateBackToPrevious();
+                    navigateBackToPrevious(); // Navigate back after successful save
                 })
                 .addOnFailureListener(e -> {
                     progressBar.setVisibility(View.GONE);
@@ -344,7 +349,7 @@ public class CreateEditFacilityActivity extends AppCompatActivity implements Nav
      */
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-        // Handle navigation
+        // Handle navigation menu item selections
         int id = item.getItemId();
         Intent intent = null;
 
@@ -365,20 +370,27 @@ public class CreateEditFacilityActivity extends AppCompatActivity implements Nav
             // Navigate to ManageUsersActivity (visible only to admins)
             intent = new Intent(CreateEditFacilityActivity.this, ManageUsersActivity.class);
         } else if (id == R.id.nav_manage_events) {
+            // Navigate to ManageEventsActivity
             intent = new Intent(CreateEditFacilityActivity.this, ManageEventsActivity.class);
         } else if (id == R.id.nav_manage_facilities) {
+            // Navigate to ManageFacilitiesActivity
             intent = new Intent(CreateEditFacilityActivity.this, ManageFacilitiesActivity.class);
         } else if (id == R.id.action_scan_qr) {
+            // Navigate to QRScanActivity
             intent = new Intent(CreateEditFacilityActivity.this, QRScanActivity.class);
         } else if (id == R.id.nav_create_event) {
+            // Navigate to CreateEditEventActivity
             intent = new Intent(CreateEditFacilityActivity.this, CreateEditEventActivity.class);
             intent.putExtra("IS_ADMIN", isAdmin);
         } else if (id == R.id.nav_edit_facility) {
+            // Already on this page
             Toast.makeText(this, "Already on this page.", Toast.LENGTH_SHORT).show();
         } else if (id == R.id.nav_my_events) {
+            // Navigate to OrganizerHomeActivity
             intent = new Intent(CreateEditFacilityActivity.this, OrganizerHomeActivity.class);
             intent.putExtra("IS_ADMIN", isAdmin);
         } else if (id == R.id.nav_view_joined_events) {
+            // Navigate to EntrantHomeActivity
             intent = new Intent(CreateEditFacilityActivity.this, EntrantHomeActivity.class);
             intent.putExtra("IS_ADMIN", isAdmin);
         }
@@ -387,7 +399,7 @@ public class CreateEditFacilityActivity extends AppCompatActivity implements Nav
             startActivity(intent);
         }
 
-
+        // Close the navigation drawer after selection
         drawerLayout.closeDrawer(GravityCompat.START);
         return true;
     }
@@ -402,6 +414,7 @@ public class CreateEditFacilityActivity extends AppCompatActivity implements Nav
                 if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
                     drawerLayout.closeDrawer(GravityCompat.START);
                 } else {
+                    // If the drawer is not open, proceed with the default back behavior
                     setEnabled(false);
                     getOnBackPressedDispatcher().onBackPressed();
                 }
@@ -410,6 +423,12 @@ public class CreateEditFacilityActivity extends AppCompatActivity implements Nav
         getOnBackPressedDispatcher().addCallback(this, callback);
     }
 
+    /**
+     * Sets up a Firestore listener to monitor changes in the user's admin status.
+     *
+     * @param navigationView The NavigationView to update menu items.
+     * @param toggle         The ActionBarDrawerToggle to sync state.
+     */
     private void setupFirestoreListener(NavigationView navigationView, ActionBarDrawerToggle toggle) {
         FirebaseFirestore firestore = FirebaseFirestore.getInstance();
 
@@ -417,6 +436,7 @@ public class CreateEditFacilityActivity extends AppCompatActivity implements Nav
                 .document(deviceId)
                 .addSnapshotListener(this, (documentSnapshot, e) -> {
                     if (e != null) {
+                        // Log the error or handle it as needed
                         return;
                     }
 
