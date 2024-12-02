@@ -80,7 +80,7 @@ public class OrganizerHomeTest {
      * Test that an organizer can create/edit the facility.
      */
     @Test
-    public void testCreateFacility() throws WriterException, InterruptedException {
+    public void testCreateAFacility() throws WriterException, InterruptedException {
         // Define sample event data
         String name = "Laurent3";
         String location = "112 St";
@@ -211,13 +211,33 @@ public class OrganizerHomeTest {
 
 
         // Click on Select Poster button
-        onView(withId(R.id.uploadPosterButton))
+        onView(withId(R.id.saveEventButton))
                 .perform(click());
 
+        intended(IntentMatchers.hasComponent(EntrantHomeActivity.class.getName()));
 
 
-        }
 
+
+    }
+
+    @Test
+    public void testViewCreatedEvents(){
+        // Launch OrganizerHomeActivity with IS_ADMIN = true
+        Intent intent = new Intent(ApplicationProvider.getApplicationContext(), EntrantHomeActivity.class);
+        ActivityScenario<EntrantHomeActivity> scenario = ActivityScenario.launch(intent);
+
+        // Open the navigation drawer using DrawerActions from Espresso-Contrib
+        onView(withId(R.id.drawer_layout))
+                .perform(DrawerActions.open());
+
+        // Click on the "Notifications" menu item
+        onView(withText("My Created Events"))
+                .perform(click());
+
+        intended(IntentMatchers.hasComponent(EntrantHomeActivity.class.getName()));
+
+    }
 
 
     /**
