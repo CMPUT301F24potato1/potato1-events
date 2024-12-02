@@ -140,7 +140,7 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
         navigationView = findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
-        // Set up ActionBarDrawerToggle
+        // Set up ActionBarDrawerToggle for navigation drawer
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawerLayout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawerLayout.addDrawerListener(toggle);
@@ -387,11 +387,13 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
             return;
         }
 
+        // Ensure start date is before end date
         if (!startDateTime.before(endDateTime)) {
             Toast.makeText(this, "Start date must be before end date.", Toast.LENGTH_SHORT).show();
             return;
         }
 
+        // Ensure registration end date is before start date
         if (!registrationEndDateTime.before(startDateTime)) {
             Toast.makeText(this, "Waiting List deadline must be before event starting date.", Toast.LENGTH_SHORT).show();
             return;
@@ -430,10 +432,12 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
             }
         }
 
+        // Disable save button to prevent multiple submissions
         saveEventButton.setEnabled(false);
 
         // Image for the event, if empty then we have a placeholder
         if (selectedPosterUri != null) {
+            // Upload the poster image before saving the event
             uploadPosterImage(name, description, location, availableSpots, waitingListSpots, isGeolocationEnabled);
         } else {
             // If editing and no new image is selected, keep the last image
@@ -459,14 +463,14 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
      */
     private void uploadPosterImage(String name, String description, String location,
                                    int availableSpots, Integer waitingListSpots, boolean isGeolocationEnabled) {
-        // Create a unique filename
+        // Create a unique filename for the poster image
         String fileName = "event_posters/" + UUID.randomUUID() + ".jpg";
         StorageReference storageRef = storage.getReference().child(fileName);
 
-        // Upload the image
+        // Upload the image to Firebase Storage
         storageRef.putFile(selectedPosterUri)
                 .addOnSuccessListener(taskSnapshot -> {
-                    // Get the download URL
+                    // Get the download URL of the uploaded image
                     storageRef.getDownloadUrl().addOnSuccessListener(uri -> {
                         posterImageUrl = uri.toString();
                         // Proceed to save the event with the poster URL
@@ -500,6 +504,7 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
             com.google.zxing.common.BitMatrix bitMatrix = qrCodeWriter.encode(qrData, BarcodeFormat.QR_CODE, size, size);
             qrBitmap = Bitmap.createBitmap(size, size, Bitmap.Config.RGB_565);
 
+            // Convert BitMatrix to Bitmap
             for (int x = 0; x < size; x++) {
                 for (int y = 0; y < size; y++) {
                     qrBitmap.setPixel(x, y, bitMatrix.get(x, y) ? Color.BLACK : Color.WHITE);
@@ -642,7 +647,7 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
             eventData.put("endDate", endDateTime.getTime());
             eventData.put("registrationEnd", registrationEndDateTime.getTime());
             eventData.put("randomDrawPerformed", false); // Ensure this is set to false during creation
-            eventData.put("entrantsLocation", new HashMap<>()); // Initialize with empty entrantsLocation map")
+            eventData.put("entrantsLocation", new HashMap<>()); // Initialize with empty entrantsLocation map
             if (qrCodeHash != null) {
                 eventData.put("qrCodeHash", qrCodeHash);
             }
@@ -809,7 +814,6 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
                 });
     }
 
-
     /**
      * Confirms with the user before deleting the event.
      */
@@ -850,11 +854,11 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
         // Use FieldValue.arrayRemove to remove the eventId from the eventIds list
         facilityRef.update("eventIds", FieldValue.arrayRemove(eventId))
                 .addOnSuccessListener(aVoid -> {
-                    Toast.makeText(CreateEditEventActivity.this, "Event removed from your facility.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Event removed from your facility.", Toast.LENGTH_SHORT).show();
                     navigateBackToEventList();
                 })
                 .addOnFailureListener(e -> {
-                    Toast.makeText(CreateEditEventActivity.this, "Failed to dissociate event from facility: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Failed to dissociate event from facility: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 });
     }
 
@@ -866,7 +870,7 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
      */
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-        // Handle navigation
+        // Handle navigation menu item selections
         int id = item.getItemId();
         Intent intent = null;
 
@@ -887,20 +891,27 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
             // Navigate to ManageUsersActivity (visible only to admins)
             intent = new Intent(CreateEditEventActivity.this, ManageUsersActivity.class);
         } else if (id == R.id.nav_manage_events) {
+            // Navigate to ManageEventsActivity
             intent = new Intent(CreateEditEventActivity.this, ManageEventsActivity.class);
         } else if (id == R.id.nav_manage_facilities) {
+            // Navigate to ManageFacilitiesActivity
             intent = new Intent(CreateEditEventActivity.this, ManageFacilitiesActivity.class);
         } else if (id == R.id.action_scan_qr) {
+            // Navigate to QRScanActivity
             intent = new Intent(CreateEditEventActivity.this, QRScanActivity.class);
         } else if (id == R.id.nav_create_event) {
+            // Already on this page
             Toast.makeText(this, "Already on this page.", Toast.LENGTH_SHORT).show();
         } else if (id == R.id.nav_edit_facility) {
+            // Navigate to CreateEditFacilityActivity
             intent = new Intent(CreateEditEventActivity.this, CreateEditFacilityActivity.class);
             intent.putExtra("IS_ADMIN", isAdmin);
         } else if (id == R.id.nav_my_events) {
+            // Navigate to OrganizerHomeActivity
             intent = new Intent(CreateEditEventActivity.this, OrganizerHomeActivity.class);
             intent.putExtra("IS_ADMIN", isAdmin);
         } else if (id == R.id.nav_view_joined_events) {
+            // Navigate to EntrantHomeActivity
             intent = new Intent(CreateEditEventActivity.this, EntrantHomeActivity.class);
             intent.putExtra("IS_ADMIN", isAdmin);
         }
@@ -909,10 +920,11 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
             startActivity(intent);
         }
 
-
+        // Close the navigation drawer after selection
         drawerLayout.closeDrawer(GravityCompat.START);
         return true;
     }
+
     /**
      * Handles the back button press to close the navigation drawer if it's open.
      */
@@ -923,6 +935,7 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
                 if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
                     drawerLayout.closeDrawer(GravityCompat.START);
                 } else {
+                    // If the drawer is not open, proceed with the default back behavior
                     setEnabled(false);
                     getOnBackPressedDispatcher().onBackPressed();
                 }
@@ -931,6 +944,12 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
         getOnBackPressedDispatcher().addCallback(this, callback);
     }
 
+    /**
+     * Sets up a Firestore listener to monitor changes in the user's admin status.
+     *
+     * @param navigationView The NavigationView to update menu items.
+     * @param toggle         The ActionBarDrawerToggle to sync state.
+     */
     private void setupFirestoreListener(NavigationView navigationView, ActionBarDrawerToggle toggle) {
         FirebaseFirestore firestore = FirebaseFirestore.getInstance();
 
@@ -938,6 +957,7 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
                 .document(deviceId)
                 .addSnapshotListener(this, (documentSnapshot, e) -> {
                     if (e != null) {
+                        // Log the error or handle it as needed
                         return;
                     }
 
