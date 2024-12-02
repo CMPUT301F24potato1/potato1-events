@@ -317,4 +317,24 @@ public class EntEventsRepository {
                 }).addOnSuccessListener(aVoid -> callback.onSuccess())
                 .addOnFailureListener(callback::onFailure);
     }
+
+    /**
+     * Updates the entrant's status in the event's entrants map.
+     *
+     * @param eventId    The ID of the event.
+     * @param entrantId  The ID of the entrant.
+     * @param status     The new status to set.
+     * @param callback   Callback to handle success or failure.
+     */
+    public void updateEntrantStatus(String eventId, String entrantId, String status, ActionCallback callback) {
+        DocumentReference eventRef = firestore.collection("Events").document(eventId);
+
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("entrants." + entrantId, status);
+
+        eventRef.update(updates)
+                .addOnSuccessListener(aVoid -> callback.onSuccess())
+                .addOnFailureListener(e -> callback.onFailure(e));
+    }
+
 }
