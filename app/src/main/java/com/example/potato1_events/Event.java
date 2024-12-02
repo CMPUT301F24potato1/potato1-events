@@ -605,4 +605,22 @@ public class Event {
         int availableCapacity = capacity - acceptedEntrants;
         return String.valueOf(availableCapacity);
     }
+
+    /**
+     * Retrieves the number of entrants with the status "accepted".
+     *
+     * @return The count of accepted entrants.
+     */
+    public int getAcceptedCount() {
+        if (entrants == null || entrants.isEmpty()) {
+            return 0;
+        }
+        int count = 0;
+        for (String status : entrants.values()) {
+            if ("accepted".equalsIgnoreCase(status)) {
+                count++;
+            }
+        }
+        return count;
+    }
 }

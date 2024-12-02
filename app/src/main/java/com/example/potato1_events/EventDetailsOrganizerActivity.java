@@ -97,9 +97,11 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
     private TextView eventCapacityTextView;
 
     /**
-     * TextView to display the event capacity details.
+     * TextView to display the event Available Spots details.
      */
-    private TextView eventAvaliableCapacityTextView;
+    private TextView eventAvailableSpotsTextView;
+
+    private TextView eventRegistrationDeadlineTextView;
 
 
     /**
@@ -206,11 +208,12 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
         eventDescriptionTextView = findViewById(R.id.eventDescriptionTextView);
         eventLocationTextView = findViewById(R.id.eventLocationTextView);
         eventDatesTextView = findViewById(R.id.eventDatesTextView);
-        eventAvaliableCapacityTextView = findViewById(R.id.eventAvaliableCapacityTextView);
+        eventRegistrationDeadlineTextView = findViewById(R.id.eventRegistrationDeadlineTextView);
+        eventWaitlistCountTextView = findViewById(R.id.eventWaitlistCountTextView);
+        eventAvailableSpotsTextView = findViewById(R.id.eventAvailableSpotsTextView);
         eventCapacityTextView = findViewById(R.id.eventCapacityTextView);
         eventGeolocationTextView = findViewById(R.id.eventGeolocationTextView);
         eventStatusTextView = findViewById(R.id.eventStatusTextView);
-        eventWaitlistCountTextView = findViewById(R.id.eventWaitlistCountTextView);
         qrCodeImageView = findViewById(R.id.qrCodeImageView);
         shareQRCodeButton = findViewById(R.id.shareQRCodeButton);
         editButton = findViewById(R.id.editButton);
@@ -244,6 +247,7 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
         deleteButton.setOnClickListener(v -> handleDeleteAction());
         entrantsListButton.setOnClickListener(v -> navigateToWaitingList());
         shareQRCodeButton.setOnClickListener(v -> shareQRCodeImage());
+        setupFirestoreListener();
     }
 
 
@@ -307,16 +311,35 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
         String capacity = "Total Capacity: " + event.getCapacity();
         eventCapacityTextView.setText(capacity);
 
-        eventAvaliableCapacityTextView.setText("Available Spots for the Event: " + event.getAvailableCapacity() );
+        // Calculate and set Available Spots
+        int availableSpots = (event.getCapacity()) - (event.getAcceptedCount());
+        String availableSpotsText = "Available Spots Left: " + availableSpots;
+        eventAvailableSpotsTextView.setText(availableSpotsText);
 
         String geo = "Geolocation Required: " + (event.isGeolocationRequired() ? "Yes" : "No");
         eventGeolocationTextView.setText(geo);
 
-        String status = "Status: " + event.getStatus();
-        eventStatusTextView.setText(status);
+        // Display Registration Deadline
+        if (event.getRegistrationEnd() != null) {
+            SimpleDateFormat deadlineFormat = new SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault());
+            String deadline = "Registration Deadline: " + deadlineFormat.format(event.getRegistrationEnd());
+            eventRegistrationDeadlineTextView.setText(deadline);
+        } else {
+            eventRegistrationDeadlineTextView.setText("Registration Deadline: Not Available");
+        }
 
-        // Fetch and display waitlist count
-        fetchWaitlistCount(eventId);
+        // Calculate Waitlist Count
+        int waitlistCount = calculateWaitlistCount(event.getEntrants());
+        String waitlistText = "Waitlist Count: " + waitlistCount;
+        eventWaitlistCountTextView.setText(waitlistText);
+
+        // Determine and display dynamic event status
+        String dynamicStatus = determineEventStatus(event);
+        eventStatusTextView.setText("Status: " + dynamicStatus);
+
+        // Fetch and display waitlist count (if not already set)
+        // Optional: If you prefer fetching separately
+        // fetchWaitlistCount(eventId);
 
         // Generate and display QR code
         if (!TextUtils.isEmpty(event.getQrCodeHash())) {
@@ -443,6 +466,69 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
         } catch (IOException e) {
             e.printStackTrace();
             Toast.makeText(this, "Error sharing QR Code: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /**
+     * Calculates the number of entrants on the waitlist based on their statuses.
+     *
+     * @param entrantsMap Map of entrant IDs to their statuses.
+     * @return The total number of entrants on the waitlist.
+     */
+    private int calculateWaitlistCount(Map<String, String> entrantsMap) {
+        if (entrantsMap == null || entrantsMap.isEmpty()) {
+            return 0;
+        }
+        int count = 0;
+        for (String status : entrantsMap.values()) {
+            if (status.equalsIgnoreCase("selected") ||
+                    status.equalsIgnoreCase("not selected") ||
+                    status.equalsIgnoreCase("accepted") ||
+                    status.equalsIgnoreCase("declined") ||
+                    status.equalsIgnoreCase("left") ||
+                    status.equalsIgnoreCase("waitlist") ||
+                    status.equalsIgnoreCase("canceled")) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    /**
+     * Determines the current status of the event based on various fields.
+     *
+     * @param event The Event object.
+     * @return A string representing the current status of the event.
+     */
+    private String determineEventStatus(Event event) {
+        if (event.getRandomDrawPerformed()) {
+            return "Finalized";
+        } else if (event.isWaitingListFilled()) {
+            // Check if registration deadline has passed
+            if (event.getRegistrationEnd() != null) {
+                long currentTime = System.currentTimeMillis();
+                long deadlineTime = event.getRegistrationEnd().getTime();
+                if (currentTime < deadlineTime) {
+                    return "Waiting on Participants";
+                } else {
+                    return "Possibility of Resample";
+                }
+            } else {
+                return "Waiting on Participants"; // Default if deadline not set
+            }
+        } else {
+            // Check if registration deadline has passed
+            if (event.getRegistrationEnd() != null) {
+                long currentTime = System.currentTimeMillis();
+                long deadlineTime = event.getRegistrationEnd().getTime();
+                if (currentTime < deadlineTime) {
+                    return "Open";
+                } else {
+                    return "Possibility of Resample";
+                }
+            } else {
+                return "Open"; // Default if deadline not set
+            }
         }
     }
 
@@ -608,6 +694,29 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    /**
+     * Sets up a real-time listener to Firestore to listen for changes in the event document.
+     */
+    private void setupFirestoreListener() {
+        FirebaseFirestore firestore = FirebaseFirestore.getInstance();
+        firestore.collection("Events").document(eventId).addSnapshotListener(this, (documentSnapshot, e) -> {
+            if (e != null) {
+                //Log.e(TAG, "Listen failed.", e);
+                return;
+            }
+
+            if (documentSnapshot != null && documentSnapshot.exists()) {
+                Event updatedEvent = documentSnapshot.toObject(Event.class);
+                if (updatedEvent != null) {
+                    event = updatedEvent; // Update the current event
+                    populateEventDetails(event); // Refresh UI with updated event details
+                }
+            } else {
+                //Log.d(TAG, "Current data: null");
+            }
+        });
     }
 
 
