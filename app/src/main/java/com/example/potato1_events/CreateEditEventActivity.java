@@ -229,6 +229,7 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
 
         // Handle back button presses to manage navigation drawer state
         handleBackPressed();
+        setupFirestoreListener(navigationView, toggle);
     }
 
     /**
@@ -924,5 +925,46 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
             }
         };
         getOnBackPressedDispatcher().addCallback(this, callback);
+    }
+
+    private void setupFirestoreListener(NavigationView navigationView, ActionBarDrawerToggle toggle) {
+        FirebaseFirestore firestore = FirebaseFirestore.getInstance();
+
+        firestore.collection("Users")
+                .document(deviceId)
+                .addSnapshotListener(this, (documentSnapshot, e) -> {
+                    if (e != null) {
+                        return;
+                    }
+
+                    if (documentSnapshot != null && documentSnapshot.exists()) {
+                        // Retrieve the 'admin' field from the user document
+                        Boolean admin = documentSnapshot.getBoolean("admin");
+
+                        if (admin != null && admin != isAdmin) {
+                            // Update the isAdmin variable if there's a change
+                            isAdmin = admin;
+
+                            // Update the navigation menu based on the new isAdmin value
+                            runOnUiThread(() -> {
+                                if (isAdmin) {
+                                    // Show admin-specific menu items
+                                    navigationView.getMenu().findItem(R.id.nav_manage_media).setVisible(true);
+                                    navigationView.getMenu().findItem(R.id.nav_manage_users).setVisible(true);
+                                    navigationView.getMenu().findItem(R.id.nav_manage_facilities).setVisible(true);
+                                    navigationView.getMenu().findItem(R.id.nav_manage_events).setVisible(true);
+                                } else {
+                                    // Hide admin-specific menu items
+                                    navigationView.getMenu().findItem(R.id.nav_manage_media).setVisible(false);
+                                    navigationView.getMenu().findItem(R.id.nav_manage_users).setVisible(false);
+                                    navigationView.getMenu().findItem(R.id.nav_manage_facilities).setVisible(false);
+                                    navigationView.getMenu().findItem(R.id.nav_manage_events).setVisible(false);
+                                }
+                                // Sync the toggle state to reflect menu changes
+                                toggle.syncState();
+                            });
+                        }
+                    }
+                });
     }
 }

@@ -64,6 +64,7 @@ public class ManageFacilitiesActivity extends AppCompatActivity {
         if (actionBar != null) {
             actionBar.setDisplayHomeAsUpEnabled(true);
         }
+        actionBar.setTitle("Manage Facilities");
 
         // Initialize RecyclerView
         facilitiesRecyclerView = findViewById(R.id.facilitiesRecyclerView);

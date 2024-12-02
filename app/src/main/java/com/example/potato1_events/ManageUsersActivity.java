@@ -97,6 +97,7 @@ public class ManageUsersActivity extends AppCompatActivity {
         if (actionBar != null) {
             actionBar.setDisplayHomeAsUpEnabled(true);
         }
+        actionBar.setTitle("Manage Users");
 
         // Initialize RecyclerView
         usersRecyclerView = findViewById(R.id.usersRecyclerView);

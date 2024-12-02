@@ -228,7 +228,7 @@ public class User {
      * @param admin True to grant admin privileges, false to revoke.
      */
     @Exclude // Prevents this setter from being used by Firestore serialization
-    private void setAdmin(boolean admin) {
+    public void setAdmin(boolean admin) {
         this.isAdmin = admin;
     }
 
