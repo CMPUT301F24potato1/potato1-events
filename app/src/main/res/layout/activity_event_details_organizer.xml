@@ -73,6 +73,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Event Description"
+                        android:textSize="16sp"
                         android:textAppearance="?attr/textAppearanceBody1"
                         android:layout_marginTop="8dp" />
 
@@ -82,6 +83,7 @@
                         android:id="@+id/eventLocationTextView"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:textSize="16sp"
                         android:text="Location: Event Location"
                         android:textAppearance="?attr/textAppearanceBody2"
                         android:layout_marginTop="8dp" />
@@ -91,32 +93,48 @@
                         android:id="@+id/eventDatesTextView"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:textSize="16sp"
                         android:text="Dates: Start Date - End Date"
                         android:textAppearance="?attr/textAppearanceBody2"
                         android:layout_marginTop="8dp" />
+
+                    <!-- Registration Deadline -->
+                    <TextView
+                        android:id="@+id/eventRegistrationDeadlineTextView"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Registration Deadline: "
+                        android:textSize="16sp"
+                        android:layout_marginTop="8dp"
+                        android:textColor="@android:color/black"/>
+
 
                     <!-- Capacity in the event -->
                     <TextView
                         android:id="@+id/eventCapacityTextView"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:textSize="16sp"
                         android:text="How many allowed into the event"
                         android:textAppearance="?attr/textAppearanceBody2"
                         android:layout_marginTop="8dp" />
 
-                    <!-- Capacity in the event -->
+                    <!-- Available Spots -->
                     <TextView
-                        android:id="@+id/eventAvaliableCapacityTextView"
-                        android:layout_width="wrap_content"
+                        android:id="@+id/eventAvailableSpotsTextView"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:textAppearance="?attr/textAppearanceBody2"
-                        android:layout_marginTop="8dp" />
+                        android:text="Available Spots: "
+                        android:textSize="16sp"
+                        android:layout_marginTop="8dp"
+                        android:textColor="@android:color/black"/>
 
                     <!-- Event waiting list capacity -->
                     <TextView
                         android:id="@+id/eventWaitlistCountTextView"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:textSize="16sp"
                         android:text="How many allowed inside the waitinglist"
                         android:textAppearance="?attr/textAppearanceBody2"
                         android:layout_marginTop="8dp" />
@@ -126,6 +144,7 @@
                         android:id="@+id/eventGeolocationTextView"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:textSize="16sp"
                         android:text="Geolocation Required: Yes/No"
                         android:textAppearance="?attr/textAppearanceBody2"
                         android:layout_marginTop="8dp" />
@@ -135,6 +154,7 @@
                         android:id="@+id/eventStatusTextView"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:textSize="16sp"
                         android:text="Status: Open/Closed"
                         android:textAppearance="?attr/textAppearanceBody2"
                         android:layout_marginTop="8dp" />
