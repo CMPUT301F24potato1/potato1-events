@@ -88,7 +88,6 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.assertj:assertj-core:3.17.2")
     testImplementation("org.mockito:mockito-core:3.5.13")
-//    testImplementation("org.mockito:mockito-core:5.5.0")
     testImplementation("net.bytebuddy:byte-buddy:1.14.6")
     testImplementation("net.bytebuddy:byte-buddy-agent:1.14.6")
 

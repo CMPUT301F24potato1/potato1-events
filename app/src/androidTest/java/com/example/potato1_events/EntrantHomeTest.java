@@ -2,6 +2,7 @@
 package com.example.potato1_events;
 
 import static androidx.test.espresso.Espresso.onView;
+import static androidx.test.espresso.action.ViewActions.clearText;
 import static androidx.test.espresso.action.ViewActions.closeSoftKeyboard;
 import static androidx.test.espresso.action.ViewActions.typeText;
 import static androidx.test.espresso.assertion.ViewAssertions.matches;
@@ -23,8 +24,10 @@ import android.content.Intent;
 
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.core.app.ApplicationProvider;
+import androidx.test.espresso.contrib.DrawerActions;
 import androidx.test.espresso.contrib.RecyclerViewActions;
 import androidx.test.espresso.intent.Intents;
+import androidx.test.espresso.intent.matcher.IntentMatchers;
 import androidx.test.espresso.matcher.RootMatchers;
 import androidx.test.espresso.matcher.ViewMatchers;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -387,6 +390,7 @@ public class EntrantHomeTest {
 ////        onView(withId(R.id.eventLocationTextView)).check(matches(withText("Location: Test Location 1")));
 //    }
 
+
     /**
      * Tests that the entrant is prompted for geolocation permissions when required by an event.
      */
@@ -452,6 +456,36 @@ public class EntrantHomeTest {
 //        onView(withText("Successfully joined the waiting list.")).inRoot(new ToastMatcher())
 //                .check(matches(isDisplayed()));
 //    }
+
+
+
+    /**
+     * Tests that the entrant can reach the window to edit profile and edit the profile
+     * Including name, email, picture
+     * US 01.02.02, US 01.03.01, US 01.03.02, US 01.03.02
+     */
+    @Test
+    public void testNavigateToEditProfile() {
+        // Launch EntrantHomeActivity
+        ActivityScenario.launch(EntrantHomeActivity.class);
+
+        // Open the navigation drawer using DrawerActions from Espresso-Contrib
+        onView(withId(R.id.drawer_layout))
+                .perform(DrawerActions.open());
+
+        // Click on the "Edit Profile" menu item
+        onView(withText("Edit Profile"))
+                .perform(click());
+
+        // Verify that an intent was sent to start UserInfoActivity
+        intended(IntentMatchers.hasComponent(UserInfoActivity.class.getName()));
+
+        onView(withId(R.id.nameEditText)).perform(clearText()).perform(typeText("Xavier"));
+        onView(withId(R.id.saveButton)).perform(click());
+
+        intended(IntentMatchers.hasComponent(EntrantHomeActivity.class.getName()));
+    }
+
 
 
 }
