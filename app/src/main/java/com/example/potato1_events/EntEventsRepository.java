@@ -68,15 +68,35 @@ public class EntEventsRepository {
         void onFailure(Exception e);
     }
 
-    /**
-     * Constructs an EntEventsRepository with the given Firestore instance.
-     *
-     * @param firestore FirebaseFirestore instance.
-     */
-    public EntEventsRepository(FirebaseFirestore firestore) {
-        this.firestore = firestore;
+    private static EntEventsRepository instance;
+//    private FirebaseFirestore firestore;
+
+    // Private constructor to prevent direct instantiation
+    private EntEventsRepository() {
+        firestore = FirebaseFirestore.getInstance();
     }
 
+    /**
+     * Retrieves the singleton instance of EntEventsRepository.
+     *
+     * @return The singleton instance.
+     */
+    public static synchronized EntEventsRepository getInstance() {
+        if (instance == null) {
+            instance = new EntEventsRepository();
+        }
+        return instance;
+    }
+
+    /**
+     * Sets the singleton instance of EntEventsRepository.
+     * This method is intended for testing purposes to inject a mock repository.
+     *
+     * @param repository The mock EntEventsRepository instance.
+     */
+    public static synchronized void setInstance(EntEventsRepository repository) {
+        instance = repository;
+    }
     /**
      * Retrieves all available events.
      *
