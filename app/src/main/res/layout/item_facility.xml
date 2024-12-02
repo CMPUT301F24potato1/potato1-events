@@ -68,7 +68,7 @@
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@android:drawable/ic_menu_delete"
             android:contentDescription="Delete Facility"
-            android:tint="#FF0000" />
+            card_view:tint="#FF0000" />
 
     </LinearLayout>
 
