@@ -189,6 +189,8 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
             navigationView.getMenu().findItem(R.id.nav_create_event).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_edit_facility).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_my_events).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_manage_events).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_manage_facilities).setVisible(true);
         }
 
         if (mode == null || (!mode.equals(MODE_CREATE) && !mode.equals(MODE_EDIT))) {
@@ -869,28 +871,31 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
             // Navigate to NotificationsActivity
             // Uncomment and implement if NotificationsActivity exists
             intent = new Intent(UserInfoActivity.this, NotificationsActivity.class);
+            intent.putExtra("IS_ADMIN", isAdmin);
         } else if (id == R.id.nav_edit_profile) {
             Toast.makeText(this, "Already on this page.", Toast.LENGTH_SHORT).show();
         } else if (id == R.id.nav_manage_media) {
+            // Navigate to ManageMediaActivity (visible only to admins)
             intent = new Intent(UserInfoActivity.this, ManageMediaActivity.class);
         } else if (id == R.id.nav_manage_users) {
+            // Navigate to ManageUsersActivity (visible only to admins)
             intent = new Intent(UserInfoActivity.this, ManageUsersActivity.class);
+        } else if (id == R.id.nav_manage_events) {
+            intent = new Intent(UserInfoActivity.this, ManageEventsActivity.class);
+        } else if (id == R.id.nav_manage_facilities) {
+            intent = new Intent(UserInfoActivity.this, ManageFacilitiesActivity.class);
         } else if (id == R.id.action_scan_qr) {
-            // Handle QR code scanning
             intent = new Intent(UserInfoActivity.this, QRScanActivity.class);
         } else if (id == R.id.nav_create_event) {
-            // Navigate to CreateEditEventActivity and pass isAdmin flag
             intent = new Intent(UserInfoActivity.this, CreateEditEventActivity.class);
             intent.putExtra("IS_ADMIN", isAdmin);
         } else if (id == R.id.nav_edit_facility) {
-            // Navigate to CreateEditFacilityActivity (current activity)
-            Toast.makeText(this, "Already on this page.", Toast.LENGTH_SHORT).show();
+            intent = new Intent(UserInfoActivity.this, CreateEditFacilityActivity.class);
+            intent.putExtra("IS_ADMIN", isAdmin);
         } else if (id == R.id.nav_my_events) {
-            // Navigate to OrganizerHomeActivity and pass isAdmin flag
             intent = new Intent(UserInfoActivity.this, OrganizerHomeActivity.class);
             intent.putExtra("IS_ADMIN", isAdmin);
         } else if (id == R.id.nav_view_joined_events) {
-            // Navigate to EntrantHomeActivity and pass isAdmin flag
             intent = new Intent(UserInfoActivity.this, EntrantHomeActivity.class);
             intent.putExtra("IS_ADMIN", isAdmin);
         }
@@ -898,6 +903,7 @@ public class UserInfoActivity extends AppCompatActivity implements NavigationVie
         if (intent != null) {
             startActivity(intent);
         }
+
 
         drawerLayout.closeDrawer(GravityCompat.START);
         return true;
