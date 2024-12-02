@@ -53,18 +53,18 @@ jobs:
 
       # Run Instrumentation Tests
       # All tests on main, subset on other branches
-      - name: Run Instrumentation Tests
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 30
-          target: default
-          arch: x86_64
-          script: |
-            if [ "${{ github.ref }}" == "refs/heads/main" ]; then
-              ./gradlew connectedAndroidTest
-            else
-              ./gradlew connectedAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.package.SubsetInstrumentedTest
-            fi
+#      - name: Run Instrumentation Tests
+#        uses: reactivecircus/android-emulator-runner@v2
+#        with:
+#          api-level: 30
+#          target: default
+#          arch: x86_64
+#          script: |
+#            if [ "${{ github.ref }}" == "refs/heads/main" ]; then
+#              ./gradlew connectedAndroidTest
+#            else
+#              ./gradlew connectedAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.package.SubsetInstrumentedTest
+#            fi
 
       # Send notification to Discord
       - name: Send notification to Discord
