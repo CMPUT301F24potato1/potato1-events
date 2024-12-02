@@ -133,6 +133,8 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
             navigationView.getMenu().findItem(R.id.nav_create_event).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_edit_facility).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_my_events).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_manage_events).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_manage_facilities).setVisible(true);
         }
 
         // Load events associated with the organizer's facility
@@ -307,7 +309,7 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
     }
 
     /**
-     * Handles navigation item selections from the navigation drawer.
+     * Handles navigation menu item selections.
      *
      * @param item The selected menu item.
      * @return True if the event was handled, false otherwise.
@@ -322,46 +324,33 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
             // Navigate to NotificationsActivity
             // Uncomment and implement if NotificationsActivity exists
             intent = new Intent(OrganizerHomeActivity.this, NotificationsActivity.class);
+            intent.putExtra("IS_ADMIN", isAdmin);
         } else if (id == R.id.nav_edit_profile) {
-            // Navigate to UserInfoActivity
+            // Navigate to UserInfoActivity in EDIT mode
             intent = new Intent(OrganizerHomeActivity.this, UserInfoActivity.class);
-            intent.putExtra("USER_TYPE", "Organizer"); // or "Entrant" based on context
+            intent.putExtra("IS_ADMIN", isAdmin);
             intent.putExtra("MODE", "EDIT");
-            intent.putExtra("IS_ADMIN", isAdmin); // Pass isAdmin flag
         } else if (id == R.id.nav_manage_media) {
             // Navigate to ManageMediaActivity (visible only to admins)
-            if (isAdmin) {
-                intent = new Intent(OrganizerHomeActivity.this, ManageMediaActivity.class);
-                intent.putExtra("IS_ADMIN", isAdmin); // Pass isAdmin flag
-            } else {
-                // Access denied message (optional as menu item is hidden)
-                Toast.makeText(this, "Access Denied: Admins Only", Toast.LENGTH_SHORT).show();
-            }
+            intent = new Intent(OrganizerHomeActivity.this, ManageMediaActivity.class);
         } else if (id == R.id.nav_manage_users) {
             // Navigate to ManageUsersActivity (visible only to admins)
-            if (isAdmin) {
-                intent = new Intent(OrganizerHomeActivity.this, ManageUsersActivity.class);
-                intent.putExtra("IS_ADMIN", isAdmin); // Pass isAdmin flag
-            } else {
-                // Access denied message (optional as menu item is hidden)
-                Toast.makeText(this, "Access Denied: Admins Only", Toast.LENGTH_SHORT).show();
-            }
+            intent = new Intent(OrganizerHomeActivity.this, ManageUsersActivity.class);
+        } else if (id == R.id.nav_manage_events) {
+            intent = new Intent(OrganizerHomeActivity.this, ManageEventsActivity.class);
+        } else if (id == R.id.nav_manage_facilities) {
+            intent = new Intent(OrganizerHomeActivity.this, ManageFacilitiesActivity.class);
         } else if (id == R.id.action_scan_qr) {
-            // Handle QR code scanning
             intent = new Intent(OrganizerHomeActivity.this, QRScanActivity.class);
-            intent.putExtra("IS_ADMIN", isAdmin); // Pass isAdmin flag
         } else if (id == R.id.nav_create_event) {
-            // Navigate to CreateEditEventActivity
             intent = new Intent(OrganizerHomeActivity.this, CreateEditEventActivity.class);
-            intent.putExtra("IS_ADMIN", isAdmin); // Pass the isAdmin flag
+            intent.putExtra("IS_ADMIN", isAdmin);
         } else if (id == R.id.nav_edit_facility) {
-            // Navigate to CreateEditFacilityActivity and pass isAdmin flag
             intent = new Intent(OrganizerHomeActivity.this, CreateEditFacilityActivity.class);
-            intent.putExtra("IS_ADMIN", isAdmin); // Pass isAdmin flag
+            intent.putExtra("IS_ADMIN", isAdmin);
         } else if (id == R.id.nav_my_events) {
             Toast.makeText(this, "Already on this page.", Toast.LENGTH_SHORT).show();
         } else if (id == R.id.nav_view_joined_events) {
-            // Navigate to EntrantHomeActivity and pass isAdmin flag
             intent = new Intent(OrganizerHomeActivity.this, EntrantHomeActivity.class);
             intent.putExtra("IS_ADMIN", isAdmin);
         }
@@ -369,6 +358,7 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
         if (intent != null) {
             startActivity(intent);
         }
+
 
         drawerLayout.closeDrawer(GravityCompat.START);
         return true;
