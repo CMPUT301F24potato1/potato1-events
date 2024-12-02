@@ -213,17 +213,27 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
 
             // Optional: Change text color based on status for better UX
             switch (status.toLowerCase()) {
-                case "enrolled":
+                //{"All", "Selected", "Not Selected", "Accepted", "Declined", "Waitlist", "Cancelled", "Left"}
+                case "selected":
+                    entrantStatusTextView.setTextColor(context.getResources().getColor(R.color.selectedColor));
+                    break;
+                case "not selected":
+                    entrantStatusTextView.setTextColor(context.getResources().getColor(R.color.notSelectedColor));
+                    break;
+                case "accepted":
                     entrantStatusTextView.setTextColor(context.getResources().getColor(R.color.enrolledColor));
+                    break;
+                case "declined":
+                    entrantStatusTextView.setTextColor(context.getResources().getColor(R.color.declinedColor));
                     break;
                 case "waitlist":
                     entrantStatusTextView.setTextColor(context.getResources().getColor(R.color.waitlistColor));
                     break;
-                case "canceled":
+                case "cancelled":
                     entrantStatusTextView.setTextColor(context.getResources().getColor(R.color.canceledColor));
                     break;
-                case "chosen":
-                    entrantStatusTextView.setTextColor(context.getResources().getColor(R.color.chosenColor));
+                case "left":
+                    entrantStatusTextView.setTextColor(context.getResources().getColor(R.color.leftColor));
                     break;
                 default:
                     entrantStatusTextView.setTextColor(context.getResources().getColor(R.color.unknownColor));
