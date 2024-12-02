@@ -7,6 +7,7 @@ import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.appcompat.app.ActionBar;
 import androidx.cardview.widget.CardView;
 import androidx.core.content.FileProvider;
 import androidx.core.view.GravityCompat;
@@ -192,12 +193,12 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
         toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        // Setup Navigation Drawer
-        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
-                this, drawerLayout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
-        drawerLayout.addDrawerListener(toggle);
-        toggle.syncState();
-        navigationView.setNavigationItemSelectedListener(this);
+        // **Enable the Up Button**
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null) {
+            actionBar.setDisplayHomeAsUpEnabled(true); // Shows the Up button
+            actionBar.setTitle("Event Details"); // Optional: Set a custom title
+        }
 
         // Initialize Event Detail Views
         eventPosterImageView = findViewById(R.id.eventPosterImageView);
@@ -226,9 +227,6 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
             finish();
         }
 
-
-
-
         // Adjust Navigation Drawer Menu Items Based on isAdmin
         isAdmin = getIntent().getBooleanExtra("IS_ADMIN", false);
         if (isAdmin) {
@@ -247,6 +245,7 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
         entrantsListButton.setOnClickListener(v -> navigateToWaitingList());
         shareQRCodeButton.setOnClickListener(v -> shareQRCodeImage());
     }
+
 
     /**
      * Loads event details using OrgEventsRepository based on eventId.
@@ -600,4 +599,16 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
         };
         getOnBackPressedDispatcher().addCallback(this, callback);
     }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        // Handle Up button presses
+        if (item.getItemId() == android.R.id.home) {
+            finish(); // Closes the current activity and returns to the parent
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+
 }

@@ -3,6 +3,7 @@ package com.example.potato1_events;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
@@ -148,11 +149,14 @@ public class EventWaitingListActivity extends AppCompatActivity implements Navig
         setSupportActionBar(toolbar);
         // Initialize Map Container
         mapContainer = findViewById(R.id.mapContainer);
-        // Setup Navigation Drawer
-        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
-                this, drawerLayout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
-        drawerLayout.addDrawerListener(toggle);
-        toggle.syncState();
+
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null) {
+            actionBar.setDisplayHomeAsUpEnabled(true); // Shows the Up button
+            actionBar.setDisplayShowHomeEnabled(true);
+            actionBar.setTitle("Event Details"); // Optional: Set a custom title
+        }
+
         navigationView.setNavigationItemSelectedListener(this);
 
         // Initialize RecyclerView
@@ -675,5 +679,15 @@ public class EventWaitingListActivity extends AppCompatActivity implements Navig
                         Log.d(TAG, "Current data: null");
                     }
                 });
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        // Handle Up button presses
+        if (item.getItemId() == android.R.id.home) {
+            finish(); // Closes the current activity and returns to the parent
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 }
