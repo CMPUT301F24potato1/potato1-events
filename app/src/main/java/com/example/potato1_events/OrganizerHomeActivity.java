@@ -140,6 +140,7 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
         // Load events associated with the organizer's facility
         loadEventsForOrganizerFacility();
         handleBackPressed();
+        setupFirestoreListener(navigationView, toggle);
     }
 
     /**
@@ -169,38 +170,6 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
         finish();
     }
 
-    /**
-     * Loads all events associated with the organizer's facility from Firestore.
-     * Populates the eventsLinearLayout with the fetched events.
-     */
-
-//    public void loadEventsForOrganizerFacility() {
-//        // Clear existing views and list
-//        CollectionReference facilitiesRef = firestore.collection("Facilities");
-//        eventsLinearLayout.removeAllViews();
-//        eventList.clear();
-//
-//        // Use facilityId (e.g., retrieved from deviceId or user session)
-//        String currentFacilityId = facilityId; // Replace with actual retrieval logic
-//
-//        eventRepository.getEventsForOrganizerFacility(currentFacilityId, new OrgEventsRepository.EventListCallback() {
-//            @Override
-//            public void onEventListLoaded(List<Event> events) {
-//                if (events != null && !events.isEmpty()) {
-//                    eventList.addAll(events);
-//                    eventsLinearLayout.removeAllViews(); // Clear existing views
-//                    // Update UI with eventList
-//                    for (Event event : eventList) {
-//                        addEventView(event);
-//                    }
-//                } else {
-//                    Toast.makeText(OrganizerHomeActivity.this,
-//                            "No events found for your facility.",
-//                            Toast.LENGTH_SHORT).show();
-//                }
-//            }
-//        });
-//    }
     public void loadEventsForOrganizerFacility() {
         // Clear existing views and list
         eventsLinearLayout.removeAllViews();
@@ -381,5 +350,46 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
             }
         };
         getOnBackPressedDispatcher().addCallback(this, callback);
+    }
+
+    private void setupFirestoreListener(NavigationView navigationView, ActionBarDrawerToggle toggle) {
+        FirebaseFirestore firestore = FirebaseFirestore.getInstance();
+
+        firestore.collection("Users")
+                .document(deviceId)
+                .addSnapshotListener(this, (documentSnapshot, e) -> {
+                    if (e != null) {
+                        return;
+                    }
+
+                    if (documentSnapshot != null && documentSnapshot.exists()) {
+                        // Retrieve the 'admin' field from the user document
+                        Boolean admin = documentSnapshot.getBoolean("admin");
+
+                        if (admin != null && admin != isAdmin) {
+                            // Update the isAdmin variable if there's a change
+                            isAdmin = admin;
+
+                            // Update the navigation menu based on the new isAdmin value
+                            runOnUiThread(() -> {
+                                if (isAdmin) {
+                                    // Show admin-specific menu items
+                                    navigationView.getMenu().findItem(R.id.nav_manage_media).setVisible(true);
+                                    navigationView.getMenu().findItem(R.id.nav_manage_users).setVisible(true);
+                                    navigationView.getMenu().findItem(R.id.nav_manage_facilities).setVisible(true);
+                                    navigationView.getMenu().findItem(R.id.nav_manage_events).setVisible(true);
+                                } else {
+                                    // Hide admin-specific menu items
+                                    navigationView.getMenu().findItem(R.id.nav_manage_media).setVisible(false);
+                                    navigationView.getMenu().findItem(R.id.nav_manage_users).setVisible(false);
+                                    navigationView.getMenu().findItem(R.id.nav_manage_facilities).setVisible(false);
+                                    navigationView.getMenu().findItem(R.id.nav_manage_events).setVisible(false);
+                                }
+                                // Sync the toggle state to reflect menu changes
+                                toggle.syncState();
+                            });
+                        }
+                    }
+                });
     }
 }
