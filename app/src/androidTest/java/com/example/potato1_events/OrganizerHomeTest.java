@@ -222,7 +222,9 @@ public class OrganizerHomeTest {
 
 
     }
-
+    /**
+     * Test that an organizer can navigate to created events window
+     */
     @Test
     public void testViewCreatedEvents(){
         // Launch OrganizerHomeActivity with IS_ADMIN = true
