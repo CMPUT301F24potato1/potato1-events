@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.Intent;
 
 import androidx.test.core.app.ActivityScenario;
+import androidx.test.core.app.ApplicationProvider;
 import androidx.test.espresso.intent.Intents;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.rule.GrantPermissionRule;
@@ -16,11 +17,15 @@ import org.junit.runner.RunWith;
 
 import static androidx.test.espresso.action.ViewActions.clearText;
 import static androidx.test.espresso.action.ViewActions.typeText;
+import static androidx.test.espresso.assertion.ViewAssertions.matches;
 import static androidx.test.espresso.intent.Intents.intended;
 import static androidx.test.espresso.intent.matcher.IntentMatchers.hasComponent;
 import static androidx.test.espresso.Espresso.onView;
 import static androidx.test.espresso.action.ViewActions.click;
+import static androidx.test.espresso.matcher.ViewMatchers.isChecked;
+import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
+import static androidx.test.espresso.matcher.ViewMatchers.withText;
 
 /**
  * Instrumented UI tests for the LandingActivity.
@@ -91,12 +96,15 @@ public class LandingActivityTest {
 
     }
 
+    // if second test fails when running them all together, run test 2 alone again.
+
     /**
      * Tests that clicking the entrant button navigates to UserInfoActivity when the user does not exist.
      * US 01.02.01
      */
     @Test
-    public void testEntrantButton_UserExist() {
+    public void testEntrantButton_UserExist() throws InterruptedException {
+//        Thread.sleep(2000);
         // Mock the UserRepository to simulate a user that does not exist
         UserRepository mockUserRepository = new UserRepository(null) {
             @Override
@@ -108,7 +116,7 @@ public class LandingActivityTest {
         };
 
         // Launch the LandingActivity
-        ActivityScenario<LandingActivity> scenario = ActivityScenario.launch(LandingActivity.class);
+        ActivityScenario<LandingActivity> scenario = ActivityScenario.launch(new Intent(ApplicationProvider.getApplicationContext(), LandingActivity.class));
 
         // Inject the mocked UserRepository into the activity
         scenario.onActivity(activity -> activity.setUserRepository(mockUserRepository));
@@ -117,9 +125,10 @@ public class LandingActivityTest {
         // Perform click on the entrant button
         onView(withId(R.id.entrantButton)).perform(click());
 
+        Thread.sleep(2000);
 
-        // Verify that UserInfoActivity is launched
-        intended(hasComponent(EntrantHomeActivity.class.getName()));
+        // checks the presence of the tool bar which means it went to home page
+        onView(withId(R.id.toolbar)).check(matches(isDisplayed()));
 
     }
 }

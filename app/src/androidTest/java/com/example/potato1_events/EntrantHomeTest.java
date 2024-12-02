@@ -451,8 +451,10 @@ public class EntrantHomeTest {
     }
 
     /**
-     * Tests that the entrant can Scan a QR code
+     * Tests that the entrant can Scan a QR code, run and manually scan the QR code in 5s
      * US 01.06.02
+     * the test can fail if there is an issue with the 3D-simulator
+     * Note: it is hard to simulate this US
      */
     @Test
     public void testScanQR() throws InterruptedException {
@@ -466,7 +468,8 @@ public class EntrantHomeTest {
         // Click on the "Notifications" menu item
         onView(withText("Scan QR Code"))
                 .perform(click());
-        Thread.sleep(4000);
+        // scan the QR in 5 seconds
+        Thread.sleep(5000);
 
         intended(IntentMatchers.hasComponent(EventDetailsEntrantActivity.class.getName()));
 
