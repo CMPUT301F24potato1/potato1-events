@@ -61,6 +61,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Event Description"
+                    android:textSize="16sp"
                     android:layout_marginTop="8dp" />
 
                 <!-- Event Location -->
@@ -69,6 +70,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Event Location"
+                    android:textSize="16sp"
                     android:layout_marginTop="8dp" />
 
                 <!-- Event Dates -->
@@ -77,6 +79,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Event Dates"
+                    android:textSize="16sp"
                     android:layout_marginTop="8dp" />
 
                 <!-- Event Capacity -->
@@ -85,6 +88,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Event Capacity"
+                    android:textSize="16sp"
                     android:layout_marginTop="8dp" />
 
                 <!-- Geolocation Requirement -->
@@ -93,6 +97,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Geolocation Required"
+                    android:textSize="16sp"
                     android:layout_marginTop="8dp" />
 
                 <!-- Event Status -->
@@ -101,6 +106,34 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Event Status"
+                    android:textSize="16sp"
+                    android:layout_marginTop="8dp" />
+
+                <!-- Registration Deadline -->
+                <TextView
+                    android:id="@+id/eventRegistrationDeadlineTextView"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Registration Deadline: "
+                    android:textSize="16sp"
+                    android:layout_marginTop="8dp" />
+
+                <!-- Waitlist Count -->
+                <TextView
+                    android:id="@+id/eventWaitlistCountTextView"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Waitlist Count: "
+                    android:textSize="16sp"
+                    android:layout_marginTop="8dp" />
+
+                <!-- Available Spots -->
+                <TextView
+                    android:id="@+id/eventAvailableSpotsTextView"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Available Spots: "
+                    android:textSize="16sp"
                     android:layout_marginTop="8dp" />
 
                 <!-- Join and Leave Buttons -->

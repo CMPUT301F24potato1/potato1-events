@@ -3,6 +3,7 @@ package com.example.potato1_events;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
@@ -47,7 +48,7 @@ import java.util.Map;
  * Activity to display the list of entrants on the waiting list for an event with filtering capabilities.
  * Allows organizers to view and manage entrants based on their status.
  */
-public class EventWaitingListActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener, UserAdapter.OnCancelClickListener, OnMapReadyCallback {
+public class EventWaitingListActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener, UserAdapter.OnCancelClickListener,UserAdapter.OnEntrantClickListener, OnMapReadyCallback {
 
     // UI Components
 
@@ -122,6 +123,9 @@ public class EventWaitingListActivity extends AppCompatActivity implements Navig
 
     private boolean isAdmin = false;
 
+    // Add this inside the EventWaitingListActivity class
+    private Event currentEvent;
+
     /**
      * Tag for logging.
      */
@@ -148,11 +152,14 @@ public class EventWaitingListActivity extends AppCompatActivity implements Navig
         setSupportActionBar(toolbar);
         // Initialize Map Container
         mapContainer = findViewById(R.id.mapContainer);
-        // Setup Navigation Drawer
-        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
-                this, drawerLayout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
-        drawerLayout.addDrawerListener(toggle);
-        toggle.syncState();
+
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null) {
+            actionBar.setDisplayHomeAsUpEnabled(true); // Shows the Up button
+            actionBar.setDisplayShowHomeEnabled(true);
+            actionBar.setTitle("Event Details"); // Optional: Set a custom title
+        }
+
         navigationView.setNavigationItemSelectedListener(this);
 
         // Initialize RecyclerView
@@ -198,7 +205,7 @@ public class EventWaitingListActivity extends AppCompatActivity implements Navig
      */
     private void setupStatusFilterSpinner() {
         // Define status options
-        String[] statusOptions = {"All", "Waitlist", "Enrolled", "Canceled", "Chosen"};
+        String[] statusOptions = {"All", "Selected", "Not Selected", "Accepted", "Declined", "Waitlist", "Cancelled", "Left"};
 
         // Create an ArrayAdapter using the string array and a default spinner layout
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, statusOptions);
@@ -389,6 +396,10 @@ public class EventWaitingListActivity extends AppCompatActivity implements Navig
                 .addOnSuccessListener(documentSnapshot -> {
                     if (documentSnapshot.exists()) {
                         Event event = documentSnapshot.toObject(Event.class);
+                        // Inside fetchEntrants method, after converting documentSnapshot to Event object
+                        if (event != null) {
+                            currentEvent = event;
+                        }
                         if (event != null) {
                             Map<String, String> entrantsMap = event.getEntrants();
                             Map<String, GeoPoint> entrantsLocationMap = event.getEntrantsLocation();
@@ -448,7 +459,7 @@ public class EventWaitingListActivity extends AppCompatActivity implements Navig
                                         filteredUserList.addAll(fullUserList);
 
                                         // Initialize the UserAdapter
-                                        userAdapter = new UserAdapter(filteredUserList, entrantsMap, this, this);
+                                        userAdapter = new UserAdapter(filteredUserList, entrantsMap, this, this, this); // Pass 'this' twice
                                         waitingListRecyclerView.setAdapter(userAdapter);
 
                                         userAdapter.notifyDataSetChanged();
@@ -510,15 +521,12 @@ public class EventWaitingListActivity extends AppCompatActivity implements Navig
             for (User user : fullUserList) {
                 // Retrieve the entrant's status from the entrants map
                 String entrantStatus = userAdapter.getEntrantStatus(user.getUserId());
+                String[] statusOptions = {"All", "Selected", "Not Selected", "Accepted", "Declined", "Waitlist", "Cancelled", "Left"};
 
-                if ("Waitlist".equalsIgnoreCase(status) && "waitlist".equalsIgnoreCase(entrantStatus)) {
-                    filteredUserList.add(user);
-                } else if ("Enrolled".equalsIgnoreCase(status) && "enrolled".equalsIgnoreCase(entrantStatus)) {
-                    filteredUserList.add(user);
-                } else if ("Canceled".equalsIgnoreCase(status) && "canceled".equalsIgnoreCase(entrantStatus)) {
-                    filteredUserList.add(user);
-                } else if ("Chosen".equalsIgnoreCase(status) && "chosen".equalsIgnoreCase(entrantStatus)) {
-                    filteredUserList.add(user);
+                for (String loop_status:statusOptions) {
+                    if (loop_status.equalsIgnoreCase(status) && loop_status.equalsIgnoreCase(entrantStatus)) {
+                        filteredUserList.add(user);
+                    }
                 }
             }
         }
@@ -622,6 +630,30 @@ public class EventWaitingListActivity extends AppCompatActivity implements Navig
                 .setNegativeButton("No", null)
                 .show();
     }
+    /**
+     * Callback method when an entrant item is clicked.
+     *
+     * @param user The user that was clicked.
+     */
+    @Override
+    public void onEntrantClick(User user) {
+        if (mMap == null) {
+            Toast.makeText(this, "Map is not initialized.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (currentEvent != null && currentEvent.isGeolocationRequired()) {
+            Marker marker = entrantsMarkersMap.get(user.getUserId());
+            if (marker != null) {
+                LatLng position = marker.getPosition();
+                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(position, 15)); // Adjust zoom level as needed
+            } else {
+                Toast.makeText(this, "Marker not found for this entrant.", Toast.LENGTH_SHORT).show();
+            }
+        } else {
+            Toast.makeText(this, "Geolocation not required for this event.", Toast.LENGTH_SHORT).show();
+        }
+    }
 
     /**
      * Cancels the entrant by updating their status in Firestore and removes their marker from the map.
@@ -633,12 +665,12 @@ public class EventWaitingListActivity extends AppCompatActivity implements Navig
         DocumentReference eventRef = firestore.collection("Events").document(eventId);
 
         Map<String, Object> updates = new HashMap<>();
-        updates.put("entrants." + user.getUserId(), "Canceled");
+        updates.put("entrants." + user.getUserId(), "Cancelled");
         updates.put("waitingListFilled", false); // Optionally set to false to refill the spot
 
         eventRef.update(updates)
                 .addOnSuccessListener(aVoid -> {
-                    Toast.makeText(this, "Entrant canceled successfully.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Entrant cancelled successfully.", Toast.LENGTH_SHORT).show();
                     // Remove entrant's marker from the map
                     removeEntrantMarker(user.getUserId());
                     // Refresh the entrants list
@@ -675,5 +707,15 @@ public class EventWaitingListActivity extends AppCompatActivity implements Navig
                         Log.d(TAG, "Current data: null");
                     }
                 });
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        // Handle Up button presses
+        if (item.getItemId() == android.R.id.home) {
+            finish(); // Closes the current activity and returns to the parent
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 }

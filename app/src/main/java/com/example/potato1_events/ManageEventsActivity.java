@@ -65,6 +65,7 @@ public class ManageEventsActivity extends AppCompatActivity {
         if (actionBar != null) {
             actionBar.setDisplayHomeAsUpEnabled(true);
         }
+        actionBar.setTitle("Manage Events");
 
         // Initialize RecyclerView
         eventsRecyclerView = findViewById(R.id.eventsRecyclerView);

@@ -1,6 +1,7 @@
 // File: EntrantHomeActivity.java
 package com.example.potato1_events;
 
+import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
@@ -30,7 +31,9 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.navigation.NavigationView;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.GeoPoint;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 import com.squareup.picasso.Picasso;
@@ -38,6 +41,7 @@ import com.squareup.picasso.Picasso;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -118,6 +122,7 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
 
         // Load events the entrant has joined
         loadJoinedEvents();
+        setupFirestoreListener(navigationView, toggle);
     }
 
     /**
@@ -309,8 +314,8 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
     }
     private void requestNotificationPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, NOTIFICATION_PERMISSION_REQUEST_CODE);
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.POST_NOTIFICATIONS}, NOTIFICATION_PERMISSION_REQUEST_CODE);
             }
         }
     }
@@ -327,4 +332,46 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
             }
         }
     }
+
+    private void setupFirestoreListener(NavigationView navigationView, ActionBarDrawerToggle toggle) {
+        FirebaseFirestore firestore = FirebaseFirestore.getInstance();
+
+        firestore.collection("Users")
+                .document(deviceId)
+                .addSnapshotListener(this, (documentSnapshot, e) -> {
+                    if (e != null) {
+                        return;
+                    }
+
+                    if (documentSnapshot != null && documentSnapshot.exists()) {
+                        // Retrieve the 'admin' field from the user document
+                        Boolean admin = documentSnapshot.getBoolean("admin");
+
+                        if (admin != null && admin != isAdmin) {
+                            // Update the isAdmin variable if there's a change
+                            isAdmin = admin;
+
+                            // Update the navigation menu based on the new isAdmin value
+                            runOnUiThread(() -> {
+                                if (isAdmin) {
+                                    // Show admin-specific menu items
+                                    navigationView.getMenu().findItem(R.id.nav_manage_media).setVisible(true);
+                                    navigationView.getMenu().findItem(R.id.nav_manage_users).setVisible(true);
+                                    navigationView.getMenu().findItem(R.id.nav_manage_facilities).setVisible(true);
+                                    navigationView.getMenu().findItem(R.id.nav_manage_events).setVisible(true);
+                                } else {
+                                    // Hide admin-specific menu items
+                                    navigationView.getMenu().findItem(R.id.nav_manage_media).setVisible(false);
+                                    navigationView.getMenu().findItem(R.id.nav_manage_users).setVisible(false);
+                                    navigationView.getMenu().findItem(R.id.nav_manage_facilities).setVisible(false);
+                                    navigationView.getMenu().findItem(R.id.nav_manage_events).setVisible(false);
+                                }
+                                // Sync the toggle state to reflect menu changes
+                                toggle.syncState();
+                            });
+                        }
+                    }
+                });
+    }
+
 }

@@ -46,6 +46,8 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
      */
     private OnCancelClickListener onCancelClickListener;
 
+    private OnEntrantClickListener onEntrantClickListener;
+
     /**
      * Tag for logging.
      */
@@ -55,6 +57,13 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
      */
     public interface OnCancelClickListener {
         void onCancelClick(User user);
+    }
+
+    /**
+     * Listener interface for handling entrant item clicks.
+     */
+    public interface OnEntrantClickListener {
+        void onEntrantClick(User user);
     }
     /**
      * Constructor for UserAdapter.
@@ -68,6 +77,17 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
         this.userStatusMap = userStatusMap;
         this.context = context;
         this.onCancelClickListener = onCancelClickListener;
+    }
+
+    // Modify the constructor to accept OnEntrantClickListener
+    public UserAdapter(List<User> userList, Map<String, String> userStatusMap, Context context,
+                       OnCancelClickListener onCancelClickListener,
+                       OnEntrantClickListener onEntrantClickListener) {
+        this.userList = userList;
+        this.userStatusMap = userStatusMap;
+        this.context = context;
+        this.onCancelClickListener = onCancelClickListener;
+        this.onEntrantClickListener = onEntrantClickListener; // Add this line
     }
 
     /**
@@ -193,17 +213,27 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
 
             // Optional: Change text color based on status for better UX
             switch (status.toLowerCase()) {
-                case "enrolled":
+                //{"All", "Selected", "Not Selected", "Accepted", "Declined", "Waitlist", "Cancelled", "Left"}
+                case "selected":
+                    entrantStatusTextView.setTextColor(context.getResources().getColor(R.color.selectedColor));
+                    break;
+                case "not selected":
+                    entrantStatusTextView.setTextColor(context.getResources().getColor(R.color.notSelectedColor));
+                    break;
+                case "accepted":
                     entrantStatusTextView.setTextColor(context.getResources().getColor(R.color.enrolledColor));
+                    break;
+                case "declined":
+                    entrantStatusTextView.setTextColor(context.getResources().getColor(R.color.declinedColor));
                     break;
                 case "waitlist":
                     entrantStatusTextView.setTextColor(context.getResources().getColor(R.color.waitlistColor));
                     break;
-                case "canceled":
+                case "cancelled":
                     entrantStatusTextView.setTextColor(context.getResources().getColor(R.color.canceledColor));
                     break;
-                case "chosen":
-                    entrantStatusTextView.setTextColor(context.getResources().getColor(R.color.chosenColor));
+                case "left":
+                    entrantStatusTextView.setTextColor(context.getResources().getColor(R.color.leftColor));
                     break;
                 default:
                     entrantStatusTextView.setTextColor(context.getResources().getColor(R.color.unknownColor));
@@ -221,6 +251,11 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
                     onCancelClickListener.onCancelClick(user);
                 } else {
                     Toast.makeText(context, "Cancel action not implemented.", Toast.LENGTH_SHORT).show();
+                }
+            });
+            itemView.setOnClickListener(v -> {
+                if (onEntrantClickListener != null) {
+                    onEntrantClickListener.onEntrantClick(user);
                 }
             });
         }
