@@ -3,6 +3,8 @@ package com.example.potato1_events;
 
 import android.text.TextUtils;
 
+import androidx.annotation.VisibleForTesting;
+
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.firestore.CollectionReference;
@@ -20,17 +22,63 @@ import java.util.Map;
  * Repository class to handle organizer event-related Firestore interactions.
  */
 public class OrgEventsRepository {
+    private static final String TAG = "OrgEventsRepository";
+    private static volatile OrgEventsRepository instance;
     private final FirebaseFirestore firestore;
+
+    /**
+     * Private constructor to prevent instantiation.
+     *
+     * @param firestore FirebaseFirestore instance.
+     */
+    private OrgEventsRepository(FirebaseFirestore firestore) {
+        this.firestore = firestore;
+    }
+
+    /**
+     * Retrieves the singleton instance of OrgEventsRepository.
+     *
+     * @return The singleton instance.
+     */
+    public static OrgEventsRepository getInstance() {
+        if (instance == null) {
+            synchronized (OrgEventsRepository.class) {
+                if (instance == null) {
+                    instance = new OrgEventsRepository(FirebaseFirestore.getInstance());
+                }
+            }
+        }
+        return instance;
+    }
+
+    /**
+     * Allows setting a custom instance of OrgEventsRepository.
+     * Useful for injecting mocks during testing.
+     *
+     * @param repository The OrgEventsRepository instance to set.
+     */
+    @VisibleForTesting
+    public static void setInstance(OrgEventsRepository repository) {
+        synchronized (OrgEventsRepository.class) {
+            instance = repository;
+        }
+    }
+
+    /**
+     * Resets the singleton instance to null.
+     * Useful for cleaning up after tests.
+     */
+    @VisibleForTesting
+    public static void resetInstance() {
+        synchronized (OrgEventsRepository.class) {
+            instance = null;
+        }
+    }
 
     /**
      * Callback interface for loading a list of events.
      */
     public interface EventListCallback {
-        /**
-         * Called when the event list is loaded.
-         *
-         * @param events List of events, or null if an error occurred.
-         */
         void onEventListLoaded(List<Event> events);
     }
 
@@ -63,14 +111,6 @@ public class OrgEventsRepository {
         void onFailure(Exception e);
     }
 
-    /**
-     * Constructs an OrgEventsRepository with the given Firestore instance.
-     *
-     * @param firestore FirebaseFirestore instance.
-     */
-    public OrgEventsRepository(FirebaseFirestore firestore) {
-        this.firestore = firestore;
-    }
 
     /**
      * Retrieves all events associated with a specific facility by fetching the facility's eventIds

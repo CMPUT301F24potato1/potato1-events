@@ -75,6 +75,7 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
      */
     private Button switchModeButton;
 
+
     /**
      * Sets the Firestore instance for testing purposes.
      *
@@ -85,6 +86,10 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
     @VisibleForTesting
     public void setFirestore(FirebaseFirestore firestore) {
         this.firestore = firestore;
+    }
+
+    public void setDeviceId(String deviceId) {
+        this.deviceId = deviceId;
     }
 
     /**
@@ -104,7 +109,7 @@ public class OrganizerHomeActivity extends AppCompatActivity implements Navigati
         // Initialize Firestore
         firestore = FirebaseFirestore.getInstance();
 
-        eventRepository = new OrgEventsRepository(FirebaseFirestore.getInstance());
+        eventRepository = OrgEventsRepository.getInstance();
 
 
 

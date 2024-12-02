@@ -151,9 +151,6 @@ public class EventDetailsEntrantActivity extends AppCompatActivity {
      */
     private String deviceId;
 
-    /**
-     * Flag indicating if the registration deadline has passed.
-     */
     private boolean isDeadlinePassed = false;
 
     // Location Components
@@ -175,6 +172,16 @@ public class EventDetailsEntrantActivity extends AppCompatActivity {
      */
     private static final int NOTIFICATION_PERMISSION_REQUEST_CODE = 1001;
 
+    // Add this method to set the EntEventsRepository (used for testing)
+    public void setEntEventsRepository(EntEventsRepository repository) {
+        this.entEventsRepository = repository;
+    }
+
+    // Add this method to set the device ID (used for testing)
+    public void setDeviceId(String id) {
+        this.deviceId = id;
+    }
+
     /**
      * Called when the activity is first created.
      * Initializes UI components, Firebase instances, retrieves event details, and sets up listeners.
@@ -190,6 +197,9 @@ public class EventDetailsEntrantActivity extends AppCompatActivity {
         entEventsRepository = new EntEventsRepository(FirebaseFirestore.getInstance());
 
         // Initialize UI Components by finding views by their IDs
+        // Initialize the repository from the Singleton
+        entEventsRepository = EntEventsRepository.getInstance();
+        // Initialize UI Components
         eventPosterImageView = findViewById(R.id.eventPosterImageView);
         eventNameTextView = findViewById(R.id.eventNameTextView);
         eventDescriptionTextView = findViewById(R.id.eventDescriptionTextView);

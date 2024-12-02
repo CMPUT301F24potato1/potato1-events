@@ -68,6 +68,7 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
 
     private static final int NOTIFICATION_PERMISSION_REQUEST_CODE = 1001; // Request code for notification permissions
 
+
     /**
      * Initializes the activity, sets up UI components, Firebase instances, and event listeners.
      *
@@ -89,6 +90,8 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
 
         // Initialize EntEventsRepository with Firestore instance
         entEventRepo = new EntEventsRepository(firestore);
+        // Initialize the repository from the Singleton
+        entEventRepo = EntEventsRepository.getInstance();
 
         // Initialize UI components
         drawerLayout = findViewById(R.id.drawer_layout); // Navigation drawer
@@ -234,8 +237,8 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
         if (!TextUtils.isEmpty(event.getPosterImageUrl())) {
             Picasso.get()
                     .load(event.getPosterImageUrl())
-                    .placeholder(R.drawable.ic_placeholder_image) // Placeholder image while loading
-                    .error(R.drawable.ic_error_image) // Error image if loading fails
+                    .placeholder(R.drawable.ic_placeholder_image) // Ensure you have a placeholder image
+                    .error(R.drawable.ic_error_image) // Ensure you have an error image
                     .into(eventPosterImageView);
         } else {
             eventPosterImageView.setImageResource(R.drawable.ic_placeholder_image); // Default placeholder image

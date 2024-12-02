@@ -170,9 +170,9 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
     private ListenerRegistration eventListener;
 
     /**
-     * Sets the FirebaseFirestore instance for testing purposes.
+     * Sets the OrgEventsRepository instance for testing purposes.
      *
-     * @param firestore The mocked FirebaseFirestore instance.
+     * @param repository The OrgEventsRepository instance.
      */
     @VisibleForTesting
     public void setOrgEventsRepository(OrgEventsRepository repository) {
@@ -191,7 +191,7 @@ public class EventDetailsOrganizerActivity extends AppCompatActivity implements 
         setContentView(R.layout.activity_event_details_organizer);
 
         // Initialize Repository
-        orgEventsRepository = new OrgEventsRepository(FirebaseFirestore.getInstance());
+        orgEventsRepository = OrgEventsRepository.getInstance();
 
         // Initialize UI Components
         drawerLayout = findViewById(R.id.drawer_event_details_layout);
