@@ -6,8 +6,10 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.util.Log;
 
@@ -345,6 +347,10 @@ public class EventStatusListener {
      * @param status    The new status of the user.
      */
     private void createNotification(String eventId, String eventName, String status) {
+        if (!isPushNotificationsEnabled()) {
+            Log.d(TAG, "Push notifications are disabled. Skipping notification for event: " + eventId);
+            return;
+        }
         Intent intent = new Intent(context, NotificationsActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         intent.putExtra("EVENT_ID", eventId);
@@ -415,6 +421,10 @@ public class EventStatusListener {
      * @param eventName The name of the event.
      */
     private void createOrganizerNotification(String eventId, String eventName) {
+        if (!isPushNotificationsEnabled()) {
+            Log.d(TAG, "Push notifications are disabled. Skipping notification for event: " + eventId);
+            return;
+        }
         Intent intent = new Intent(context, NotificationsActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         intent.putExtra("EVENT_ID", eventId);
@@ -501,6 +511,10 @@ public class EventStatusListener {
      * @param status      The new status of the entrant.
      */
     private void createOrganizerEntrantStatusNotification(String eventId, String eventName, String entrantName, String status) {
+        if (!isPushNotificationsEnabled()) {
+            Log.d(TAG, "Push notifications are disabled. Skipping notification for event: " + eventId);
+            return;
+        }
         Intent intent = new Intent(context, NotificationsActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         intent.putExtra("EVENT_ID", eventId);
@@ -535,6 +549,16 @@ public class EventStatusListener {
 
         notificationManager.notify(notificationId, builder.build());
         Log.d(TAG, "Entrant status notification displayed for event: " + eventId + ", entrant: " + entrantName + ", status: " + status);
+    }
+
+    /**
+     * Checks if push notifications are enabled.
+     *
+     * @return True if enabled, false otherwise.
+     */
+    private boolean isPushNotificationsEnabled() {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        return prefs.getBoolean("push_notifications_enabled", true);
     }
 
     /**
