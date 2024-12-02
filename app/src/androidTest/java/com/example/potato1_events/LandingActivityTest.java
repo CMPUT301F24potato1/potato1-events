@@ -88,10 +88,38 @@ public class LandingActivityTest {
 
         // Verify that UserInfoActivity is launched
         intended(hasComponent(UserInfoActivity.class.getName()));
-        onView(withId(R.id.nameEditText)).perform(clearText()).perform(typeText("Xavier"));
-        onView(withId(R.id.emailEditText)).perform(clearText()).perform(typeText("x@hotmail"));
-        onView(withId(R.id.phoneEditText)).perform(clearText()).perform(typeText("123"));
 
-        onView(withId(R.id.saveButton)).perform(click());
+    }
+
+    /**
+     * Tests that clicking the entrant button navigates to UserInfoActivity when the user does not exist.
+     * US 01.02.01
+     */
+    @Test
+    public void testEntrantButton_UserExist() {
+        // Mock the UserRepository to simulate a user that does not exist
+        UserRepository mockUserRepository = new UserRepository(null) {
+            @Override
+            public void checkUserExists(String deviceId, UserExistsCallback callback) {
+                // Simulate user does not exist
+                UserData userData = new UserData(true, false);
+                callback.onResult(userData);
+            }
+        };
+
+        // Launch the LandingActivity
+        ActivityScenario<LandingActivity> scenario = ActivityScenario.launch(LandingActivity.class);
+
+        // Inject the mocked UserRepository into the activity
+        scenario.onActivity(activity -> activity.setUserRepository(mockUserRepository));
+
+
+        // Perform click on the entrant button
+        onView(withId(R.id.entrantButton)).perform(click());
+
+
+        // Verify that UserInfoActivity is launched
+        intended(hasComponent(EntrantHomeActivity.class.getName()));
+
     }
 }
