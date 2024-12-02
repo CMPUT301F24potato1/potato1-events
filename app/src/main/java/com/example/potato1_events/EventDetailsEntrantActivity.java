@@ -193,9 +193,6 @@ public class EventDetailsEntrantActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_event_details_entrant);
 
-        // Initialize Repository with Firebase Firestore instance
-        entEventsRepository = new EntEventsRepository(FirebaseFirestore.getInstance());
-
         // Initialize UI Components by finding views by their IDs
         // Initialize the repository from the Singleton
         entEventsRepository = EntEventsRepository.getInstance();

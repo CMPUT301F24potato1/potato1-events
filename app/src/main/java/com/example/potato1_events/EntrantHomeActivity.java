@@ -88,8 +88,6 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
         // Initialize Firebase Firestore
         FirebaseFirestore firestore = FirebaseFirestore.getInstance();
 
-        // Initialize EntEventsRepository with Firestore instance
-        entEventRepo = new EntEventsRepository(firestore);
         // Initialize the repository from the Singleton
         entEventRepo = EntEventsRepository.getInstance();
 
