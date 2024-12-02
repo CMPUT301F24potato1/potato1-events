@@ -145,10 +145,29 @@ public class EntrantHomeTest {
 
         // Mock the getEventById method
         Mockito.doAnswer(invocation -> {
+            String eventId = invocation.getArgument(0);
             EntEventsRepository.EventCallback callback = invocation.getArgument(1);
-            callback.onEventLoaded(mockEvent);
+            if ("event1".equals(eventId)) {
+                callback.onEventLoaded(mockEvent);
+            } else {
+                callback.onEventLoaded(null);
+            }
             return null;
-        }).when(mockRepository).getEventById(anyString(), Mockito.any());
+        }).when(mockRepository).getEventById(Mockito.eq("event1"), Mockito.any());
+        // Mock getJoinedEvents to return the joined events
+        List<Event> mockJoinedEvents = new ArrayList<>();
+        mockJoinedEvents.add(mockEvent);
+
+        Mockito.doAnswer(invocation -> {
+            String deviceId = invocation.getArgument(0);
+            EntEventsRepository.EventListCallback callback = invocation.getArgument(1);
+            if ("mockDeviceId".equals(deviceId)) {
+                callback.onEventListLoaded(mockJoinedEvents);
+            } else {
+                callback.onEventListLoaded(new ArrayList<>());
+            }
+            return null;
+        }).when(mockRepository).getJoinedEvents(Mockito.eq("mockDeviceId"), Mockito.any());
 
         // Create an Intent with the EVENT_ID extra
         Intent intent = new Intent(ApplicationProvider.getApplicationContext(), EventDetailsEntrantActivity.class);
@@ -239,7 +258,7 @@ public class EntrantHomeTest {
      * Tests that the entrant can leave the waiting list of an event.
      */
     @Test
-    public void testLeaveWaitingList() {
+    public void testLeaveWaitingList() throws InterruptedException {
         // Initialize the mock repository
         EntEventsRepository mockRepository = Mockito.mock(EntEventsRepository.class);
 
@@ -280,6 +299,8 @@ public class EntrantHomeTest {
 
         // Launch the activity with the Intent
         ActivityScenario<EventDetailsEntrantActivity> scenario = ActivityScenario.launch(intent);
+        Thread.sleep(2000);
+
 
         scenario.onActivity(activity -> {
             activity.setEntEventsRepository(mockRepository);
@@ -287,6 +308,7 @@ public class EntrantHomeTest {
             activity.loadEventDetails("event1");
         });
 
+        Thread.sleep(2000);
         // Click the leave button
         onView(withId(R.id.leaveButton)).perform(click());
 
@@ -307,7 +329,7 @@ public class EntrantHomeTest {
      * Tests that the entrant can view event details correctly.
      */
     @Test
-    public void testViewEventDetailsInHome() {
+    public void testViewEventDetailsInHome() throws InterruptedException {
         // Mock Event
         Event mockEvent = new Event();
         mockEvent.setId("event1");
@@ -360,14 +382,17 @@ public class EntrantHomeTest {
             activity.setDeviceId("mockDeviceId"); // Inject mock device ID
             activity.loadJoinedEvents();
         });
+        onView(withId(R.id.eventNameTextView)).check(matches(withText("Test Event 1")));
 
         // Click on one of the joined events to navigate to EventDetailsEntrantActivity
         onView(withText("Test Event 1")).perform(click());
 
         // Verify that EventDetailsEntrantActivity is launched
         intended(hasComponent(EventDetailsEntrantActivity.class.getName()));
+//        Thread.sleep(2000);
 
-        // Verify that event details are displayed in EventDetailsEntrantActivity
+
+//        // Verify that event details are displayed in EventDetailsEntrantActivity
 //        onView(withId(R.id.eventNameTextView)).check(matches(withText("Test Event 1")));
 //        onView(withId(R.id.eventDescriptionTextView)).check(matches(withText("Detailed Description of Test Event 1.")));
 //        onView(withId(R.id.eventLocationTextView)).check(matches(withText("Location: Test Location 1")));
