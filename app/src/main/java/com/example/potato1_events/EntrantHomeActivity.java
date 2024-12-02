@@ -256,6 +256,7 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
             // Navigate to NotificationsActivity
             // Uncomment and implement if NotificationsActivity exists
             intent = new Intent(EntrantHomeActivity.this, NotificationsActivity.class);
+            intent.putExtra("IS_ADMIN", isAdmin);
         } else if (id == R.id.nav_edit_profile) {
             // Navigate to UserInfoActivity in EDIT mode
             intent = new Intent(EntrantHomeActivity.this, UserInfoActivity.class);
@@ -274,15 +275,12 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
         } else if (id == R.id.action_scan_qr) {
             intent = new Intent(EntrantHomeActivity.this, QRScanActivity.class);
         } else if (id == R.id.nav_create_event) {
-
             intent = new Intent(EntrantHomeActivity.this, CreateEditEventActivity.class);
             intent.putExtra("IS_ADMIN", isAdmin);
         } else if (id == R.id.nav_edit_facility) {
-
             intent = new Intent(EntrantHomeActivity.this, CreateEditFacilityActivity.class);
             intent.putExtra("IS_ADMIN", isAdmin);
         } else if (id == R.id.nav_my_events) {
-
             intent = new Intent(EntrantHomeActivity.this, OrganizerHomeActivity.class);
             intent.putExtra("IS_ADMIN", isAdmin);
         } else if (id == R.id.nav_view_joined_events) {

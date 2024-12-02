@@ -2,11 +2,14 @@
 package com.example.potato1_events;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Canvas;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.MenuItem;
+import android.widget.Switch;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -19,8 +22,11 @@ import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.material.navigation.NavigationView;
 import com.google.firebase.firestore.DocumentChange;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
@@ -67,6 +73,8 @@ public class NotificationsActivity extends AppCompatActivity implements Navigati
             navigationView.getMenu().findItem(R.id.nav_create_event).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_edit_facility).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_my_events).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_manage_events).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_manage_facilities).setVisible(true);
         }
 
         // Setup Navigation Drawer
@@ -107,9 +115,25 @@ public class NotificationsActivity extends AppCompatActivity implements Navigati
         });
 
         itemTouchHelper.attachToRecyclerView(notificationsRecyclerView);
+        Switch pushNotificationsSwitch = findViewById(R.id.switch_push_notifications);
 
+        // Access SharedPreferences
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+
+        // Load the saved state, default is true (enabled)
+        boolean isPushEnabled = prefs.getBoolean("push_notifications_enabled", true);
+        pushNotificationsSwitch.setChecked(isPushEnabled);
+
+        // Set a listener to handle toggle changes
+        pushNotificationsSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            SharedPreferences.Editor editor = prefs.edit();
+            editor.putBoolean("push_notifications_enabled", isChecked);
+            editor.apply();
+            Toast.makeText(this, "Push notifications " + (isChecked ? "enabled" : "disabled"), Toast.LENGTH_SHORT).show();
+        });
         // Fetch Notifications
         fetchNotifications();
+
     }
 
     private void fetchNotifications() {
@@ -146,10 +170,10 @@ public class NotificationsActivity extends AppCompatActivity implements Navigati
         int id = item.getItemId();
         Intent intent = null;
 
-        if (id == R.id.nav_view_joined_events) {
+        if (id == R.id.nav_notifications) {
             // Navigate to NotificationsActivity
             // Uncomment and implement if NotificationsActivity exists
-            intent = new Intent(NotificationsActivity.this, EntrantHomeActivity.class);
+            Toast.makeText(this, "Already on this page.", Toast.LENGTH_SHORT).show();
         } else if (id == R.id.nav_edit_profile) {
             // Navigate to UserInfoActivity in EDIT mode
             intent = new Intent(NotificationsActivity.this, UserInfoActivity.class);
@@ -161,22 +185,24 @@ public class NotificationsActivity extends AppCompatActivity implements Navigati
         } else if (id == R.id.nav_manage_users) {
             // Navigate to ManageUsersActivity (visible only to admins)
             intent = new Intent(NotificationsActivity.this, ManageUsersActivity.class);
+        } else if (id == R.id.nav_manage_events) {
+            intent = new Intent(NotificationsActivity.this, ManageEventsActivity.class);
+        } else if (id == R.id.nav_manage_facilities) {
+            intent = new Intent(NotificationsActivity.this, ManageFacilitiesActivity.class);
         } else if (id == R.id.action_scan_qr) {
             intent = new Intent(NotificationsActivity.this, QRScanActivity.class);
         } else if (id == R.id.nav_create_event) {
-
             intent = new Intent(NotificationsActivity.this, CreateEditEventActivity.class);
             intent.putExtra("IS_ADMIN", isAdmin);
         } else if (id == R.id.nav_edit_facility) {
-
             intent = new Intent(NotificationsActivity.this, CreateEditFacilityActivity.class);
             intent.putExtra("IS_ADMIN", isAdmin);
         } else if (id == R.id.nav_my_events) {
-
             intent = new Intent(NotificationsActivity.this, OrganizerHomeActivity.class);
             intent.putExtra("IS_ADMIN", isAdmin);
-        } else if (id == R.id.nav_notifications) {
-            Toast.makeText(this, "Already on this page.", Toast.LENGTH_SHORT).show();
+        } else if (id == R.id.nav_view_joined_events) {
+            intent = new Intent(NotificationsActivity.this, EntrantHomeActivity.class);
+            intent.putExtra("IS_ADMIN", isAdmin);
         }
 
         if (intent != null) {
@@ -224,22 +250,45 @@ public class NotificationsActivity extends AppCompatActivity implements Navigati
         // Get event organizer's userId
         firestore.collection("Events").document(eventId)
                 .get()
-                .addOnSuccessListener(documentSnapshot -> {
-                    if (documentSnapshot.exists()) {
-                        String organizerId = documentSnapshot.getString("facilityId");
-                        if (organizerId != null) {
-                            // Create notification for organizer
-                            NotificationItem notification = new NotificationItem();
-                            notification.setTitle("Entrant " + status);
-                            notification.setMessage("User has " + status.toLowerCase() + " the invitation.");
-                            notification.setEventId(eventId);
-                            notification.setUserId(organizerId);
-                            notification.setType("entrant_response");
-                            notification.setRead(false);
+                .addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
+                    @Override
+                    public void onSuccess(DocumentSnapshot eventSnapshot) {
+                        if (eventSnapshot.exists()) {
+                            String organizerId = eventSnapshot.getString("facilityId");
+                            String eventName = eventSnapshot.getString("name");
+                            if (organizerId != null) {
+                                // Fetch entrant's name using the getUserName method
+                                getUserName(userId, new NameCallback() {
+                                    @Override
+                                    public void onNameReceived(String entrantName) {
+                                        // Create notification for organizer with entrant's name
+                                        NotificationItem notification = new NotificationItem();
+                                        notification.setTitle("Entrant " + status);
+                                        notification.setMessage(entrantName + " has " + status.toLowerCase() + " the invitation for the event " + eventName);
+                                        notification.setEventId(eventId);
+                                        notification.setUserId(organizerId);
+                                        notification.setType("entrant_response");
+                                        notification.setRead(false);
 
-                            firestore.collection("Notifications").add(notification);
+                                        firestore.collection("Notifications").add(notification)
+                                                .addOnSuccessListener(docRef -> {
+                                                    Log.d(TAG, "Organizer notification saved with ID: " + docRef.getId());
+                                                })
+                                                .addOnFailureListener(e -> {
+                                                    Log.e(TAG, "Error saving organizer notification", e);
+                                                });
+                                    }
+                                });
+                            } else {
+                                Log.w(TAG, "Organizer ID is null for event: " + eventId);
+                            }
+                        } else {
+                            Log.w(TAG, "Event document does not exist for eventId: " + eventId);
                         }
                     }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error fetching event document for eventId: " + eventId, e);
                 });
     }
 
@@ -268,15 +317,38 @@ public class NotificationsActivity extends AppCompatActivity implements Navigati
                     Log.e(TAG, "Error deleting notification", e);
                 });
     }
-    private int findNotificationIndex(String notificationId) {
-        for (int i = 0; i < notificationList.size(); i++) {
-            if (notificationList.get(i).getId().equals(notificationId)) {
-                return i;
-            }
-        }
-        return -1;
+    /**
+     * Fetches the user's name from Firestore given their userId.
+     *
+     * @param userId   The ID of the user whose name is to be fetched.
+     * @param callback The callback to handle the retrieved name.
+     */
+    private void getUserName(String userId, final NameCallback callback) {
+        firestore.collection("Users").document(userId).get()
+                .addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
+                    @Override
+                    public void onSuccess(DocumentSnapshot documentSnapshot) {
+                        if (documentSnapshot.exists()) {
+                            String name = documentSnapshot.getString("name");
+                            if (name != null && !name.isEmpty()) {
+                                callback.onNameReceived(name);
+                            } else {
+                                callback.onNameReceived("Unknown User"); // Fallback name
+                            }
+                        } else {
+                            callback.onNameReceived("Unknown User"); // Fallback name
+                            Log.w(TAG, "No such document for userId: " + userId);
+                        }
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(Exception e) {
+                        callback.onNameReceived("Unknown User"); // Fallback name
+                        Log.e(TAG, "Error fetching user name for userId: " + userId, e);
+                    }
+                });
     }
-
     @Override
     protected void onDestroy() {
         super.onDestroy();

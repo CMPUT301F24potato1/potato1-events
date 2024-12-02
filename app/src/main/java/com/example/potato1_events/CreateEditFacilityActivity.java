@@ -126,6 +126,8 @@ public class CreateEditFacilityActivity extends AppCompatActivity implements Nav
             navigationView.getMenu().findItem(R.id.nav_create_event).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_edit_facility).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_my_events).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_manage_events).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_manage_facilities).setVisible(true);
         }
 
         // Initialize ActivityResultLauncher for image selection
@@ -334,7 +336,7 @@ public class CreateEditFacilityActivity extends AppCompatActivity implements Nav
     }
 
     /**
-     * Handles navigation item selections from the navigation drawer.
+     * Handles navigation menu item selections.
      *
      * @param item The selected menu item.
      * @return True if the event was handled, false otherwise.
@@ -349,36 +351,33 @@ public class CreateEditFacilityActivity extends AppCompatActivity implements Nav
             // Navigate to NotificationsActivity
             // Uncomment and implement if NotificationsActivity exists
             intent = new Intent(CreateEditFacilityActivity.this, NotificationsActivity.class);
+            intent.putExtra("IS_ADMIN", isAdmin);
         } else if (id == R.id.nav_edit_profile) {
-            // Navigate to UserInfoActivity
+            // Navigate to UserInfoActivity in EDIT mode
             intent = new Intent(CreateEditFacilityActivity.this, UserInfoActivity.class);
+            intent.putExtra("IS_ADMIN", isAdmin);
             intent.putExtra("MODE", "EDIT");
-            intent.putExtra("IS_ADMIN", isAdmin);
         } else if (id == R.id.nav_manage_media) {
-
+            // Navigate to ManageMediaActivity (visible only to admins)
             intent = new Intent(CreateEditFacilityActivity.this, ManageMediaActivity.class);
-
         } else if (id == R.id.nav_manage_users) {
-
+            // Navigate to ManageUsersActivity (visible only to admins)
             intent = new Intent(CreateEditFacilityActivity.this, ManageUsersActivity.class);
-
+        } else if (id == R.id.nav_manage_events) {
+            intent = new Intent(CreateEditFacilityActivity.this, ManageEventsActivity.class);
+        } else if (id == R.id.nav_manage_facilities) {
+            intent = new Intent(CreateEditFacilityActivity.this, ManageFacilitiesActivity.class);
         } else if (id == R.id.action_scan_qr) {
-            // Handle QR code scanning
             intent = new Intent(CreateEditFacilityActivity.this, QRScanActivity.class);
-            intent.putExtra("IS_ADMIN", isAdmin);
         } else if (id == R.id.nav_create_event) {
-            // Navigate to CreateEditEventActivity
             intent = new Intent(CreateEditFacilityActivity.this, CreateEditEventActivity.class);
             intent.putExtra("IS_ADMIN", isAdmin);
         } else if (id == R.id.nav_edit_facility) {
-            // Navigate to CreateEditFacilityActivity (current activity)
             Toast.makeText(this, "Already on this page.", Toast.LENGTH_SHORT).show();
         } else if (id == R.id.nav_my_events) {
-            // Navigate to OrganizerHomeActivity and pass isAdmin flag
             intent = new Intent(CreateEditFacilityActivity.this, OrganizerHomeActivity.class);
             intent.putExtra("IS_ADMIN", isAdmin);
         } else if (id == R.id.nav_view_joined_events) {
-            // Navigate to EntrantHomeActivity
             intent = new Intent(CreateEditFacilityActivity.this, EntrantHomeActivity.class);
             intent.putExtra("IS_ADMIN", isAdmin);
         }
@@ -386,6 +385,7 @@ public class CreateEditFacilityActivity extends AppCompatActivity implements Nav
         if (intent != null) {
             startActivity(intent);
         }
+
 
         drawerLayout.closeDrawer(GravityCompat.START);
         return true;

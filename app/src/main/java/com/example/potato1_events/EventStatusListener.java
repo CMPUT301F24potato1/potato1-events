@@ -6,8 +6,10 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.util.Log;
 
@@ -38,6 +40,8 @@ public class EventStatusListener {
     // Map to keep track of previous statuses for each event the user has joined
     private Map<String, String> previousStatuses;
 
+    private Map<String, Map<String, String>> previousEntrantStatuses;
+
     // Map to keep track of previous waitingListFilled values for organizer events
     private Map<String, Boolean> previousWaitingListFilledValues;
 
@@ -53,6 +57,7 @@ public class EventStatusListener {
         listenerRegistrations = new ArrayList<>();
         previousStatuses = new HashMap<>();
         previousWaitingListFilledValues = new HashMap<>();
+        previousEntrantStatuses = new HashMap<>();
         eventListeners = new HashMap<>();
         createNotificationChannel();
     }
@@ -227,6 +232,110 @@ public class EventStatusListener {
                 // Update the previous value
                 previousWaitingListFilledValues.put(eventId, waitingListFilled);
             }
+
+        }
+        // Handle entrants' status changes
+
+        Map<String, Object> entrants = (Map<String, Object>) eventSnapshot.get("entrants");
+
+        if (entrants != null) {
+
+            Map<String, String> currentEntrantStatuses = new HashMap<>();
+
+            for (Map.Entry<String, Object> entry : entrants.entrySet()) {
+
+                String entrantId = entry.getKey();
+
+                String status = (String) entry.getValue();
+
+                currentEntrantStatuses.put(entrantId, status);
+
+            }
+
+
+
+            Map<String, String> previousEntrantStatus = previousEntrantStatuses.get(eventId);
+
+            if (previousEntrantStatus == null) {
+
+                // First time, store but don't notify
+
+                previousEntrantStatuses.put(eventId, currentEntrantStatuses);
+
+                Log.d(TAG, "Initial entrants' statuses for event " + eventId);
+
+            } else {
+
+                for (Map.Entry<String, String> entry : currentEntrantStatuses.entrySet()) {
+
+                    String entrantId = entry.getKey();
+
+                    String currentStatus = entry.getValue();
+
+                    String prevStatus = previousEntrantStatus.get(entrantId);
+
+
+
+                    if (prevStatus == null) {
+
+                        // New entrant, add to previous without notification
+
+                        previousEntrantStatus.put(entrantId, currentStatus);
+
+                        Log.d(TAG, "New entrant " + entrantId + " with status " + currentStatus + " for event " + eventId);
+
+                    } else if (!currentStatus.equals(prevStatus)) {
+
+                        // Status changed
+
+                        if (currentStatus.equalsIgnoreCase("Accepted") || currentStatus.equalsIgnoreCase("Declined")) {
+
+                            // Fetch entrant name
+
+                            firestore.collection("Users").document(entrantId).get()
+
+                                    .addOnSuccessListener(userDoc -> {
+
+                                        String entrantName = userDoc.getString("name");
+
+                                        if (entrantName == null || entrantName.isEmpty()) {
+
+                                            entrantName = entrantId;
+
+                                        }
+
+                                        createOrganizerEntrantStatusNotification(eventId, eventName, entrantName, currentStatus);
+
+                                        // No need to save to Firestore as NotificationsActivity handles it
+
+                                    })
+
+                                    .addOnFailureListener(e -> {
+
+                                        Log.e(TAG, "Error fetching entrant name for ID: " + entrantId, e);
+
+                                        createOrganizerEntrantStatusNotification(eventId, eventName, entrantId, currentStatus);
+
+                                        // No need to save to Firestore as NotificationsActivity handles it
+
+                                    });
+
+                        }
+
+
+
+                        // Update status
+
+                        previousEntrantStatus.put(entrantId, currentStatus);
+
+                    }
+
+                }
+
+                previousEntrantStatuses.put(eventId, previousEntrantStatus);
+
+            }
+
         }
     }
 
@@ -238,6 +347,10 @@ public class EventStatusListener {
      * @param status    The new status of the user.
      */
     private void createNotification(String eventId, String eventName, String status) {
+        if (!isPushNotificationsEnabled()) {
+            Log.d(TAG, "Push notifications are disabled. Skipping notification for event: " + eventId);
+            return;
+        }
         Intent intent = new Intent(context, NotificationsActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         intent.putExtra("EVENT_ID", eventId);
@@ -308,6 +421,10 @@ public class EventStatusListener {
      * @param eventName The name of the event.
      */
     private void createOrganizerNotification(String eventId, String eventName) {
+        if (!isPushNotificationsEnabled()) {
+            Log.d(TAG, "Push notifications are disabled. Skipping notification for event: " + eventId);
+            return;
+        }
         Intent intent = new Intent(context, NotificationsActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         intent.putExtra("EVENT_ID", eventId);
@@ -383,6 +500,65 @@ public class EventStatusListener {
             NotificationManager notificationManager = context.getSystemService(NotificationManager.class);
             notificationManager.createNotificationChannel(channel);
         }
+    }
+
+    /**
+     * Creates a system notification for the organizer when an entrant accepts or declines.
+     *
+     * @param eventId     The ID of the event.
+     * @param eventName   The name of the event.
+     * @param entrantName The name of the entrant.
+     * @param status      The new status of the entrant.
+     */
+    private void createOrganizerEntrantStatusNotification(String eventId, String eventName, String entrantName, String status) {
+        if (!isPushNotificationsEnabled()) {
+            Log.d(TAG, "Push notifications are disabled. Skipping notification for event: " + eventId);
+            return;
+        }
+        Intent intent = new Intent(context, NotificationsActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        intent.putExtra("EVENT_ID", eventId);
+
+        PendingIntent pendingIntent = PendingIntent.getActivity(
+                context,
+                0,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+
+        String title = "Entrant " + status;
+        String message = entrantName + " has " + status.toLowerCase() + " your event \"" + eventName + "\".";
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_notifications) // Ensure this icon exists
+                .setContentTitle(title)
+                .setContentText(message)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setContentIntent(pendingIntent)
+                .setAutoCancel(true);
+
+        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
+        int notificationId = ("entrantStatus_" + eventId + "_" + entrantName).hashCode(); // Unique ID per entrant and event
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ActivityCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                Log.w(TAG, "Notification permission not granted.");
+                return;
+            }
+        }
+
+        notificationManager.notify(notificationId, builder.build());
+        Log.d(TAG, "Entrant status notification displayed for event: " + eventId + ", entrant: " + entrantName + ", status: " + status);
+    }
+
+    /**
+     * Checks if push notifications are enabled.
+     *
+     * @return True if enabled, false otherwise.
+     */
+    private boolean isPushNotificationsEnabled() {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        return prefs.getBoolean("push_notifications_enabled", true);
     }
 
     /**

@@ -8,6 +8,7 @@ import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import android.Manifest;
@@ -34,6 +35,7 @@ import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
+import com.google.firebase.firestore.GeoPoint;
 import com.squareup.picasso.Picasso;
 
 import java.text.SimpleDateFormat;
@@ -399,34 +401,60 @@ public class EventDetailsEntrantActivity extends AppCompatActivity {
 
     /**
      * Adds the entrant to the event's waiting list using EntEventsRepository.
+     * Also captures and stores the entrant's current geopoint in Firestore.
      */
     private void joinWaitingList() {
-        entEventsRepository.joinWaitingList(eventId, deviceId, new EntEventsRepository.ActionCallback() {
-            @Override
-            public void onSuccess() {
-                Toast.makeText(EventDetailsEntrantActivity.this, "Successfully joined the waiting list.", Toast.LENGTH_SHORT).show();
-                // Update local event data
-                event.setCurrentEntrantsNumber(event.getCurrentEntrantsNumber() + 1);
-                event.getEntrants().put(deviceId, "waitlist");
-                updateButtonStates();
-                populateEventDetails(event);
-            }
+        // Fetch the entrant's current location
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // Request fine location permission if needed
+            requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
+            return;
+        }
+        fusedLocationClient.getLastLocation()
+                .addOnCompleteListener(new OnCompleteListener<Location>() {
+                    @Override
+                    public void onComplete(@NonNull Task<Location> task) {
+                        if (task.isSuccessful() && task.getResult() != null) {
+                            Location location = task.getResult();
+                            double latitude = location.getLatitude();
+                            double longitude = location.getLongitude();
 
-            @Override
-            public void onFailure(Exception e) {
-                if (e instanceof FirebaseFirestoreException) {
-                    FirebaseFirestoreException firestoreException = (FirebaseFirestoreException) e;
-                    String message = firestoreException.getMessage();
-                    if (firestoreException.getCode() == FirebaseFirestoreException.Code.ABORTED) {
-                        Toast.makeText(EventDetailsEntrantActivity.this, message, Toast.LENGTH_SHORT).show();
-                    } else {
-                        Toast.makeText(EventDetailsEntrantActivity.this, "Error joining waiting list: " + message, Toast.LENGTH_SHORT).show();
+                            // Create GeoPoint
+                            GeoPoint geoPoint = new GeoPoint(latitude, longitude);
+
+                            // Proceed to add entrant with geopoint
+                            entEventsRepository.joinWaitingList(eventId, deviceId, geoPoint, new EntEventsRepository.ActionCallback() {
+                                @Override
+                                public void onSuccess() {
+                                    Toast.makeText(EventDetailsEntrantActivity.this, "Successfully joined the waiting list.", Toast.LENGTH_SHORT).show();
+                                    // Update local event data
+                                    event.setCurrentEntrantsNumber(event.getCurrentEntrantsNumber() + 1);
+                                    event.getEntrants().put(deviceId, "waitlist");
+                                    updateButtonStates();
+                                    populateEventDetails(event);
+                                }
+
+                                @Override
+                                public void onFailure(Exception e) {
+                                    if (e instanceof FirebaseFirestoreException) {
+                                        FirebaseFirestoreException firestoreException = (FirebaseFirestoreException) e;
+                                        String message = firestoreException.getMessage();
+                                        if (firestoreException.getCode() == FirebaseFirestoreException.Code.ABORTED) {
+                                            Toast.makeText(EventDetailsEntrantActivity.this, message, Toast.LENGTH_SHORT).show();
+                                        } else {
+                                            Toast.makeText(EventDetailsEntrantActivity.this, "Error joining waiting list: " + message, Toast.LENGTH_SHORT).show();
+                                        }
+                                    } else {
+                                        Toast.makeText(EventDetailsEntrantActivity.this, "Error joining waiting list: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                                    }
+                                }
+                            });
+                        } else {
+                            Toast.makeText(EventDetailsEntrantActivity.this, "Unable to retrieve location. Please ensure location services are enabled.", Toast.LENGTH_SHORT).show();
+                            //Log.e(TAG, "Failed to get location.", task.getException());
+                        }
                     }
-                } else {
-                    Toast.makeText(EventDetailsEntrantActivity.this, "Error joining waiting list: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                }
-            }
-        });
+                });
     }
 
     /**
