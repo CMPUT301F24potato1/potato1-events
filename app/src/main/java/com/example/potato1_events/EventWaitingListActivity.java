@@ -48,7 +48,7 @@ import java.util.Map;
  * Activity to display the list of entrants on the waiting list for an event with filtering capabilities.
  * Allows organizers to view and manage entrants based on their status.
  */
-public class EventWaitingListActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener, UserAdapter.OnCancelClickListener, OnMapReadyCallback {
+public class EventWaitingListActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener, UserAdapter.OnCancelClickListener,UserAdapter.OnEntrantClickListener, OnMapReadyCallback {
 
     // UI Components
 
@@ -122,6 +122,9 @@ public class EventWaitingListActivity extends AppCompatActivity implements Navig
     private Map<String, Marker> entrantsMarkersMap = new HashMap<>();
 
     private boolean isAdmin = false;
+
+    // Add this inside the EventWaitingListActivity class
+    private Event currentEvent;
 
     /**
      * Tag for logging.
@@ -393,6 +396,10 @@ public class EventWaitingListActivity extends AppCompatActivity implements Navig
                 .addOnSuccessListener(documentSnapshot -> {
                     if (documentSnapshot.exists()) {
                         Event event = documentSnapshot.toObject(Event.class);
+                        // Inside fetchEntrants method, after converting documentSnapshot to Event object
+                        if (event != null) {
+                            currentEvent = event;
+                        }
                         if (event != null) {
                             Map<String, String> entrantsMap = event.getEntrants();
                             Map<String, GeoPoint> entrantsLocationMap = event.getEntrantsLocation();
@@ -452,7 +459,7 @@ public class EventWaitingListActivity extends AppCompatActivity implements Navig
                                         filteredUserList.addAll(fullUserList);
 
                                         // Initialize the UserAdapter
-                                        userAdapter = new UserAdapter(filteredUserList, entrantsMap, this, this);
+                                        userAdapter = new UserAdapter(filteredUserList, entrantsMap, this, this, this); // Pass 'this' twice
                                         waitingListRecyclerView.setAdapter(userAdapter);
 
                                         userAdapter.notifyDataSetChanged();
@@ -625,6 +632,30 @@ public class EventWaitingListActivity extends AppCompatActivity implements Navig
                 })
                 .setNegativeButton("No", null)
                 .show();
+    }
+    /**
+     * Callback method when an entrant item is clicked.
+     *
+     * @param user The user that was clicked.
+     */
+    @Override
+    public void onEntrantClick(User user) {
+        if (mMap == null) {
+            Toast.makeText(this, "Map is not initialized.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (currentEvent != null && currentEvent.isGeolocationRequired()) {
+            Marker marker = entrantsMarkersMap.get(user.getUserId());
+            if (marker != null) {
+                LatLng position = marker.getPosition();
+                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(position, 15)); // Adjust zoom level as needed
+            } else {
+                Toast.makeText(this, "Marker not found for this entrant.", Toast.LENGTH_SHORT).show();
+            }
+        } else {
+            Toast.makeText(this, "Geolocation not required for this event.", Toast.LENGTH_SHORT).show();
+        }
     }
 
     /**

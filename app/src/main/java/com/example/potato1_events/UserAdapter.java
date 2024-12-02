@@ -46,6 +46,8 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
      */
     private OnCancelClickListener onCancelClickListener;
 
+    private OnEntrantClickListener onEntrantClickListener;
+
     /**
      * Tag for logging.
      */
@@ -55,6 +57,13 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
      */
     public interface OnCancelClickListener {
         void onCancelClick(User user);
+    }
+
+    /**
+     * Listener interface for handling entrant item clicks.
+     */
+    public interface OnEntrantClickListener {
+        void onEntrantClick(User user);
     }
     /**
      * Constructor for UserAdapter.
@@ -68,6 +77,17 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
         this.userStatusMap = userStatusMap;
         this.context = context;
         this.onCancelClickListener = onCancelClickListener;
+    }
+
+    // Modify the constructor to accept OnEntrantClickListener
+    public UserAdapter(List<User> userList, Map<String, String> userStatusMap, Context context,
+                       OnCancelClickListener onCancelClickListener,
+                       OnEntrantClickListener onEntrantClickListener) {
+        this.userList = userList;
+        this.userStatusMap = userStatusMap;
+        this.context = context;
+        this.onCancelClickListener = onCancelClickListener;
+        this.onEntrantClickListener = onEntrantClickListener; // Add this line
     }
 
     /**
@@ -221,6 +241,11 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
                     onCancelClickListener.onCancelClick(user);
                 } else {
                     Toast.makeText(context, "Cancel action not implemented.", Toast.LENGTH_SHORT).show();
+                }
+            });
+            itemView.setOnClickListener(v -> {
+                if (onEntrantClickListener != null) {
+                    onEntrantClickListener.onEntrantClick(user);
                 }
             });
         }
