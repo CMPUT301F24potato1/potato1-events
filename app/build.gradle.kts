@@ -88,7 +88,6 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.assertj:assertj-core:3.17.2")
     testImplementation("org.mockito:mockito-core:3.5.13")
-//    testImplementation("org.mockito:mockito-core:5.5.0")
     testImplementation("net.bytebuddy:byte-buddy:1.14.6")
     testImplementation("net.bytebuddy:byte-buddy-agent:1.14.6")
 
@@ -100,23 +99,13 @@ dependencies {
     implementation ("androidx.camera:camera-view:$camerax_version") // For PreviewView
     implementation ("androidx.camera:camera-extensions:$camerax_version")
 //    implementation(files("/Users/simon/Library/Android/sdk/platforms/android-35/android.jar"))
+    // Instrumentation Tests (Run on Android devices/emulators)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
     androidTestImplementation(libs.test.runner)
     androidTestImplementation(libs.rules)
-
-
-
-    // Instrumentation Tests (Run on Android devices/emulators)
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
-//    androidTestImplementation("org.mockito:mockito-android:5.5.0")
-
-    // Mockito for Android Instrumented Tests
-//    androidTestImplementation("org.mockito:mockito-android:3.12.4")
-
-    // Dexmaker dependencies for mocking final classes
-//    androidTestImplementation("org.mockito:mockito-core:3.12.4") // Add this line
     androidTestImplementation("com.linkedin.dexmaker:dexmaker-mockito-inline:2.28.1")
 //    androidTestImplementation ("org.mockito:mockito-android:4.11.0")
 

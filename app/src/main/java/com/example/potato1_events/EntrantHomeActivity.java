@@ -67,6 +67,7 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
 
     private static final int NOTIFICATION_PERMISSION_REQUEST_CODE = 1001;
 
+
     /**
      * Initializes the activity, sets up UI components, Firebase instances, and event listeners.
      *
@@ -87,8 +88,8 @@ public class EntrantHomeActivity extends AppCompatActivity implements Navigation
         // Initialize Firebase Firestore
         FirebaseFirestore firestore = FirebaseFirestore.getInstance();
 
-        // Initialize EntEventsRepository
-        entEventRepo = new EntEventsRepository(firestore);
+        // Initialize the repository from the Singleton
+        entEventRepo = EntEventsRepository.getInstance();
 
         // Initialize views
         drawerLayout = findViewById(R.id.drawer_layout);

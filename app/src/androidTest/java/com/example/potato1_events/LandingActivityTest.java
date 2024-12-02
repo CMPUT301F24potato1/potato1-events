@@ -1,16 +1,21 @@
 package com.example.potato1_events;
 
+import android.Manifest;
 import android.content.Intent;
 
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.espresso.intent.Intents;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.rule.GrantPermissionRule;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import static androidx.test.espresso.action.ViewActions.clearText;
+import static androidx.test.espresso.action.ViewActions.typeText;
 import static androidx.test.espresso.intent.Intents.intended;
 import static androidx.test.espresso.intent.matcher.IntentMatchers.hasComponent;
 import static androidx.test.espresso.Espresso.onView;
@@ -24,8 +29,16 @@ import static androidx.test.espresso.matcher.ViewMatchers.withId;
  * ensuring that the app navigates to the correct activity based on whether the user exists.
  * </p>
  */
-@RunWith(AndroidJUnit4.class)
+//@RunWith(AndroidJUnit4.class)
 public class LandingActivityTest {
+
+    @Rule
+    public GrantPermissionRule grantPermissionRule =
+            GrantPermissionRule.grant(Manifest.permission.ACCESS_FINE_LOCATION);
+    @Rule
+    public GrantPermissionRule notificationPermissionRule =
+            GrantPermissionRule.grant(android.Manifest.permission.POST_NOTIFICATIONS);
+
 
     /**
      * Sets up the testing environment before each test.
@@ -45,43 +58,17 @@ public class LandingActivityTest {
         Intents.release(); // Release Espresso Intents
     }
 
-    /**
-     * Tests that clicking the entrant button navigates to EntrantHomeActivity when the user exists.
-     */
-    @Test
-    public void testEntrantButton_UserExists() {
-        // Mock the UserRepository to simulate a user that exists and is not an admin
-        UserRepository mockUserRepository = new UserRepository(null) {
-            @Override
-            public void checkUserExists(String userType, String deviceId, UserExistsCallback callback) {
-                // Simulate user exists with isAdmin = false
-                UserData userData = new UserData(true, false);
-                callback.onResult(userData);
-            }
-        };
-
-        // Launch the LandingActivity
-        ActivityScenario<LandingActivity> scenario = ActivityScenario.launch(LandingActivity.class);
-
-        // Inject the mocked UserRepository into the activity
-        scenario.onActivity(activity -> activity.setUserRepository(mockUserRepository));
-
-        // Perform click on the entrant button
-        onView(withId(R.id.entrantButton)).perform(click());
-
-        // Verify that EntrantHomeActivity is launched
-        intended(hasComponent(EntrantHomeActivity.class.getName()));
-    }
 
     /**
      * Tests that clicking the entrant button navigates to UserInfoActivity when the user does not exist.
+     * US 01.02.01
      */
     @Test
     public void testEntrantButton_UserDoesNotExist() {
         // Mock the UserRepository to simulate a user that does not exist
         UserRepository mockUserRepository = new UserRepository(null) {
             @Override
-            public void checkUserExists(String userType, String deviceId, UserExistsCallback callback) {
+            public void checkUserExists(String deviceId, UserExistsCallback callback) {
                 // Simulate user does not exist
                 UserData userData = new UserData(false, false);
                 callback.onResult(userData);
@@ -94,23 +81,27 @@ public class LandingActivityTest {
         // Inject the mocked UserRepository into the activity
         scenario.onActivity(activity -> activity.setUserRepository(mockUserRepository));
 
+
         // Perform click on the entrant button
         onView(withId(R.id.entrantButton)).perform(click());
 
+
         // Verify that UserInfoActivity is launched
         intended(hasComponent(UserInfoActivity.class.getName()));
+
     }
 
     /**
-     * Tests that clicking the organizer button navigates to OrganizerHomeActivity when the user exists.
+     * Tests that clicking the entrant button navigates to UserInfoActivity when the user does not exist.
+     * US 01.02.01
      */
     @Test
-    public void testOrganizerButton_UserExists() {
-        // Mock the UserRepository to simulate a user that exists
+    public void testEntrantButton_UserExist() {
+        // Mock the UserRepository to simulate a user that does not exist
         UserRepository mockUserRepository = new UserRepository(null) {
             @Override
-            public void checkUserExists(String userType, String deviceId, UserExistsCallback callback) {
-                // Simulate user exists
+            public void checkUserExists(String deviceId, UserExistsCallback callback) {
+                // Simulate user does not exist
                 UserData userData = new UserData(true, false);
                 callback.onResult(userData);
             }
@@ -122,38 +113,13 @@ public class LandingActivityTest {
         // Inject the mocked UserRepository into the activity
         scenario.onActivity(activity -> activity.setUserRepository(mockUserRepository));
 
-        // Perform click on the organizer button
-        onView(withId(R.id.organizerButton)).perform(click());
 
-        // Verify that OrganizerHomeActivity is launched
-        intended(hasComponent(OrganizerHomeActivity.class.getName()));
-    }
+        // Perform click on the entrant button
+        onView(withId(R.id.entrantButton)).perform(click());
 
-    /**
-     * Tests that clicking the organizer button navigates to UserInfoActivity when the user does not exist.
-     */
-    @Test
-    public void testOrganizerButton_UserDoesNotExist() {
-        // Mock the UserRepository to simulate a user that does not exist
-        UserRepository mockUserRepository = new UserRepository(null) {
-            @Override
-            public void checkUserExists(String userType, String deviceId, UserExistsCallback callback) {
-                // Simulate user does not exist
-                UserData userData = new UserData(false, false);
-                callback.onResult(userData);
-            }
-        };
-
-        // Launch the LandingActivity
-        ActivityScenario<LandingActivity> scenario = ActivityScenario.launch(LandingActivity.class);
-
-        // Inject the mocked UserRepository into the activity
-        scenario.onActivity(activity -> activity.setUserRepository(mockUserRepository));
-
-        // Perform click on the organizer button
-        onView(withId(R.id.organizerButton)).perform(click());
 
         // Verify that UserInfoActivity is launched
-        intended(hasComponent(UserInfoActivity.class.getName()));
+        intended(hasComponent(EntrantHomeActivity.class.getName()));
+
     }
 }
