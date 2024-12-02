@@ -696,10 +696,6 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
      * Navigates back to the Event Details page after saving/updating.
      */
     private void navigateBackToEventDetails() {
-        Intent intent = new Intent(CreateEditEventActivity.this, EventDetailsOrganizerActivity.class);
-        intent.putExtra("EVENT_ID", eventId);
-        intent.putExtra("IS_ADMIN", isAdmin); // Pass isAdmin flag
-        startActivity(intent);
         finish();
     }
 
@@ -707,9 +703,6 @@ public class CreateEditEventActivity extends AppCompatActivity implements Naviga
      * Navigates back to the Event List page after creating a new event.
      */
     private void navigateBackToEventList() {
-        Intent intent = new Intent(CreateEditEventActivity.this, OrganizerHomeActivity.class);
-        intent.putExtra("IS_ADMIN", isAdmin); // Pass isAdmin flag
-        startActivity(intent);
         finish();
     }
 
