@@ -23,6 +23,13 @@
             android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
             app:title="Notifications" />
 
+        <Switch
+            android:id="@+id/switch_push_notifications"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Enable Push Notifications"
+            android:layout_margin="16dp" />
+
         <!-- RecyclerView for Notifications -->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/notificationsRecyclerView"

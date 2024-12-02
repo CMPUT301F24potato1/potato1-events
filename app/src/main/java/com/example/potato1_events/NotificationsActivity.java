@@ -2,11 +2,14 @@
 package com.example.potato1_events;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Canvas;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.MenuItem;
+import android.widget.Switch;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -107,9 +110,25 @@ public class NotificationsActivity extends AppCompatActivity implements Navigati
         });
 
         itemTouchHelper.attachToRecyclerView(notificationsRecyclerView);
+        Switch pushNotificationsSwitch = findViewById(R.id.switch_push_notifications);
 
+        // Access SharedPreferences
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+
+        // Load the saved state, default is true (enabled)
+        boolean isPushEnabled = prefs.getBoolean("push_notifications_enabled", true);
+        pushNotificationsSwitch.setChecked(isPushEnabled);
+
+        // Set a listener to handle toggle changes
+        pushNotificationsSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            SharedPreferences.Editor editor = prefs.edit();
+            editor.putBoolean("push_notifications_enabled", isChecked);
+            editor.apply();
+            Toast.makeText(this, "Push notifications " + (isChecked ? "enabled" : "disabled"), Toast.LENGTH_SHORT).show();
+        });
         // Fetch Notifications
         fetchNotifications();
+
     }
 
     private void fetchNotifications() {
